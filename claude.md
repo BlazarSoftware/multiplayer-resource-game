@@ -6,10 +6,11 @@
 - Dedicated server can be run in Docker or Mechanical Turk headless mode.
 
 ## Docker Server Workflow
-- Use `./start-docker-server.sh` to build and start the dedicated server.
-- The script runs `docker compose up --build -d` and prints service status.
+- Use `./scripts/start-docker-server.sh` to rebuild and start the dedicated server.
+- The script runs `docker compose up --build -d` from the project root and prints service status.
 - Docker mapping is `7777:7777/udp`.
-- Docker server logs are empty due to Godot headless stdout buffering. Check logs inside container: `docker exec <container> cat "/root/.local/share/godot/app_userdata/Creature Crafting Demo/logs/godot.log"`
+- Docker logs work in real-time via `docker logs -f multiplayer-resource-game-game-server-1` (uses `stdbuf -oL` for line-buffered output).
+- Godot's internal log file is also available: `docker exec <container> cat "/root/.local/share/godot/app_userdata/Creature Crafting Demo/logs/godot.log"`
 
 ## Multiplayer Join/Spawn Stabilization
 - Join flow uses a client-ready handshake before server-side spawn.
@@ -53,6 +54,11 @@
 - Do NOT preload scripts that already have `class_name` — causes "constant has same name as global class" warning
 - Prefix unused parameters/variables with `_` to suppress warnings
 - Use `4.0` instead of `4` in division to avoid integer division warnings
+
+## Export Build Gotchas
+- **DataRegistry .tres/.remap handling**: Godot exports convert `.tres` files to `.tres.remap` (binary format with remap indirection). Any code using `DirAccess` to scan for resources must check `.tres`, `.res`, AND `.remap` extensions — otherwise the exported build loads zero resources while the editor build works fine.
+- **Battle stacking prevention**: All encounter/battle entry points (TallGrass, EncounterManager, TrainerNPC) must check `BattleManager.player_battle_map` before starting a new battle. The `active_encounters` dict in EncounterManager only tracks wild encounters, NOT trainer/PvP battles. Client-side `start_battle_client()` also guards against duplicate `_start_battle_client` RPCs.
+- **stdbuf for Docker logs**: Godot headless buffers stdout, making `docker logs` empty. The Dockerfile uses `stdbuf -oL` in the CMD to force line-buffered output.
 
 ## Kubernetes Deployment
 - **Namespace**: `godot-multiplayer` (shared with other multiplayer game servers)
