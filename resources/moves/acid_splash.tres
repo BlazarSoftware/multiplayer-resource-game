@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "acid_splash"
+display_name = "Acid Splash"
+type = "sour"
+category = "special"
+power = 90
+accuracy = 80
+pp = 5
+priority = 0
+status_effect = ""
+status_chance = 0
+stat_changes = {}
+heal_percent = 0.0
+drain_percent = 0.0
+description = "A powerful splash of acid."

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "wheat_golem"
+display_name = "Wheat Golem"
+types = PackedStringArray("grain")
+base_hp = 55
+base_attack = 14
+base_defense = 14
+base_sp_attack = 8
+base_sp_defense = 10
+base_speed = 6
+moves = PackedStringArray("grain_bash", "bread_wall", "harvest_move", "root_grip")
+mesh_type = "box"
+mesh_color = Color(0.85, 0.75, 0.3, 1)
+mesh_scale = Vector3(0.8, 1.2, 0.8)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("grain_core")
+drop_min = 1
+drop_max = 2

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "mint_wisp"
+display_name = "Mint Wisp"
+types = PackedStringArray("herbal", "sweet")
+base_hp = 35
+base_attack = 8
+base_defense = 8
+base_sp_attack = 14
+base_sp_defense = 14
+base_speed = 16
+moves = PackedStringArray("vine_whip", "brain_freeze", "sugar_rush", "taste_test")
+mesh_type = "capsule"
+mesh_color = Color(0.4, 0.9, 0.7, 1)
+mesh_scale = Vector3(0.5, 0.9, 0.5)
+rarity = "uncommon"
+drop_ingredient_ids = PackedStringArray("herbal_dew", "sweet_crystal")
+drop_min = 1
+drop_max = 1

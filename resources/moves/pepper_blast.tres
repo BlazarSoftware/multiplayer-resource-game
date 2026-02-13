@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "pepper_blast"
+display_name = "Pepper Blast"
+type = "spicy"
+category = "special"
+power = 60
+accuracy = 100
+pp = 15
+priority = 0
+status_effect = "burned"
+status_chance = 20
+stat_changes = {}
+heal_percent = 0.0
+drain_percent = 0.0
+description = "Blasts the foe with hot pepper juice. May burn."

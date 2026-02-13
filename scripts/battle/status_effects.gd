@@ -1,0 +1,103 @@
+extends RefCounted
+
+# Status effect definitions
+# burned (Seared): -1/8 HP per turn, -50% Attack
+# frozen (Brain Freeze): can't act, 25% thaw per turn
+# poisoned (Food Poisoning): -1/8 HP per turn, escalating
+# drowsy (Food Coma): 50% skip turn
+# wilted: -50% Sp.Attack, -25% Speed for 3 turns
+# soured: -50% Defense for 3 turns
+
+static func apply_end_of_turn(creature: Dictionary) -> Dictionary:
+	var result = {"damage": 0, "message": "", "cured": false}
+	var status = creature.get("status", "")
+	if status == "":
+		return result
+
+	var turns = creature.get("status_turns", 0)
+	turns += 1
+	creature["status_turns"] = turns
+
+	match status:
+		"burned":
+			var dmg = max(1, creature.get("max_hp", 40) / 8)
+			creature["hp"] = max(0, creature.get("hp", 0) - dmg)
+			result.damage = dmg
+			result.message = "is hurt by its burn!"
+			if turns >= 5:
+				creature["status"] = ""
+				creature["status_turns"] = 0
+				result.cured = true
+		"poisoned":
+			# Escalating: 1/8, 2/8, 3/8...
+			var fraction = min(turns, 4)
+			var dmg = max(1, creature.get("max_hp", 40) * fraction / 8)
+			creature["hp"] = max(0, creature.get("hp", 0) - dmg)
+			result.damage = dmg
+			result.message = "is hurt by food poisoning!"
+		"frozen":
+			result.message = "is frozen solid!"
+			if turns >= 5:
+				creature["status"] = ""
+				creature["status_turns"] = 0
+				result.cured = true
+				result.message = "thawed out!"
+		"drowsy":
+			result.message = "is in a food coma..."
+			if turns >= 4:
+				creature["status"] = ""
+				creature["status_turns"] = 0
+				result.cured = true
+				result.message = "woke up!"
+		"wilted":
+			result.message = "is wilted..."
+			if turns >= 3:
+				creature["status"] = ""
+				creature["status_turns"] = 0
+				result.cured = true
+				result.message = "recovered from wilting!"
+		"soured":
+			result.message = "is feeling sour..."
+			if turns >= 3:
+				creature["status"] = ""
+				creature["status_turns"] = 0
+				result.cured = true
+				result.message = "recovered from sourness!"
+	return result
+
+static func get_stat_modifier(creature: Dictionary, stat: String) -> float:
+	var status = creature.get("status", "")
+	match status:
+		"burned":
+			if stat == "attack":
+				return 0.5
+		"wilted":
+			if stat == "sp_attack":
+				return 0.5
+			if stat == "speed":
+				return 0.75
+		"soured":
+			if stat == "defense":
+				return 0.5
+	return 1.0
+
+static func try_apply_status(creature: Dictionary, status: String, chance: int) -> bool:
+	if creature.get("status", "") != "":
+		return false # Already has a status
+	if status == "":
+		return false
+	if randi() % 100 >= chance:
+		return false
+	creature["status"] = status
+	creature["status_turns"] = 0
+	return true
+
+static func get_status_display_name(status: String) -> String:
+	match status:
+		"burned": return "Seared"
+		"frozen": return "Brain Freeze"
+		"poisoned": return "Food Poisoning"
+		"drowsy": return "Food Coma"
+		"wilted": return "Wilted"
+		"soured": return "Soured"
+		_: return ""

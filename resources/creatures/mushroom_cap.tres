@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "mushroom_cap"
+display_name = "Mushroom Cap"
+types = PackedStringArray("umami")
+base_hp = 45
+base_attack = 10
+base_defense = 12
+base_sp_attack = 14
+base_sp_defense = 10
+base_speed = 8
+moves = PackedStringArray("savory_slam", "ferment", "umami_bomb", "taste_test")
+mesh_type = "cylinder"
+mesh_color = Color(0.6, 0.45, 0.3, 1)
+mesh_scale = Vector3(0.7, 0.8, 0.7)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("umami_extract")
+drop_min = 1
+drop_max = 2

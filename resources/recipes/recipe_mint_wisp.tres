@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_mint_wisp"
+display_name = "Cook Mint Wisp"
+result_species_id = "mint_wisp"
+ingredients = {"mint": 1, "herb_basil": 1, "sweet_crystal": 2}
+description = "Blend mint and basil with sweet crystals to create a Mint Wisp."

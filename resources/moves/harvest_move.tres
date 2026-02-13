@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "harvest_move"
+display_name = "Harvest"
+type = "grain"
+category = "special"
+power = 75
+accuracy = 100
+pp = 10
+priority = 0
+status_effect = ""
+status_chance = 0
+stat_changes = {}
+heal_percent = 0.0
+drain_percent = 0.25
+description = "Harvests energy. Heals 25% of damage dealt."

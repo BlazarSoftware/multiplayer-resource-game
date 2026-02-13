@@ -1,0 +1,33 @@
+# Claude Notes
+
+## Project Runtime Defaults
+- Multiplayer default port: `7777` (UDP).
+- Local client connects to `127.0.0.1` on port `7777`.
+- Dedicated server can be run in Docker or Mechanical Turk headless mode.
+
+## Docker Server Workflow
+- Use `./start-docker-server.sh` to build and start the dedicated server.
+- The script runs `docker compose up --build -d` and prints service status.
+- Docker mapping is `7777:7777/udp`.
+
+## Multiplayer Join/Spawn Stabilization
+- Join flow uses a client-ready handshake before server-side spawn.
+- Spawn waits for client world path readiness (`/root/Main/GameWorld/Players/MultiplayerSpawner`).
+- Server tracks temporary join state and times out peers that never become ready.
+
+## Player/Camera Notes
+- Player movement uses server authority with replicated input.
+- Camera defaults to over-the-shoulder and captures mouse during world control.
+- Mouse is explicitly made visible during battle UI and recaptured after battle ends.
+
+## Wild Encounter UX
+- Wild zones are represented by glowing colored grass patches.
+- Wild zones include floating in-world labels for better discoverability.
+- HUD provides persistent legend + contextual "wild munch zone" hint when inside encounter grass.
+
+## Recent Infrastructure Changes
+- `scripts/autoload/network_manager.gd`: port switched to `7777`; join handshake and readiness flow hardened.
+- `scripts/player/player_controller.gd`: authority setup and movement/camera reliability updates.
+- `scripts/world/tall_grass.gd`: encounter zone visuals and multiplayer safety guards.
+- `scripts/ui/battle_ui.gd`: cursor visibility behavior for encounter UI.
+- `docker-compose.yml` and `Dockerfile`: updated to `7777`.

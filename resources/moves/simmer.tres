@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "simmer"
+display_name = "Simmer"
+type = "spicy"
+category = "status"
+power = 0
+accuracy = 100
+pp = 10
+priority = 0
+status_effect = ""
+status_chance = 0
+stat_changes = { "sp_attack": 2 }
+heal_percent = 0.0
+drain_percent = 0.0
+description = "Simmers with intensity. Sharply raises Sp.Attack."

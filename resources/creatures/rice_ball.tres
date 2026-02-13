@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "rice_ball"
+display_name = "Rice Ball"
+types = PackedStringArray("grain")
+base_hp = 45
+base_attack = 12
+base_defense = 14
+base_sp_attack = 10
+base_sp_defense = 14
+base_speed = 10
+moves = PackedStringArray("grain_bash", "quick_bite", "bread_wall", "taste_test")
+mesh_type = "sphere"
+mesh_color = Color(0.95, 0.95, 0.85, 1)
+mesh_scale = Vector3(0.8, 0.8, 0.8)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("grain_core")
+drop_min = 1
+drop_max = 2

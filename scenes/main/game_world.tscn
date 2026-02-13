@@ -1,0 +1,341 @@
+[gd_scene load_steps=30 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/game_world.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/world/season_manager.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/world/encounter_manager.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/battle/battle_manager.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/crafting/crafting_system.gd" id="5"]
+[ext_resource type="Script" path="res://scripts/world/farm_manager.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/world/tall_grass.gd" id="7"]
+[ext_resource type="Script" path="res://scripts/world/farm_plot.gd" id="8"]
+
+[sub_resource type="BoxShape3D" id="ground_shape"]
+size = Vector3(200, 0.2, 200)
+
+[sub_resource type="BoxMesh" id="ground_mesh"]
+size = Vector3(200, 0.2, 200)
+
+[sub_resource type="StandardMaterial3D" id="ground_mat"]
+albedo_color = Color(0.3, 0.55, 0.25, 1)
+
+[sub_resource type="BoxMesh" id="building_mesh"]
+size = Vector3(6, 4, 6)
+
+[sub_resource type="StandardMaterial3D" id="building_mat"]
+albedo_color = Color(0.6, 0.6, 0.65, 1)
+
+[sub_resource type="BoxShape3D" id="building_shape"]
+size = Vector3(6, 4, 6)
+
+[sub_resource type="BoxMesh" id="table_mesh"]
+size = Vector3(2, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="table_mat"]
+albedo_color = Color(0.5, 0.3, 0.15, 1)
+
+[sub_resource type="BoxShape3D" id="table_interact_shape"]
+size = Vector3(3, 2, 2)
+
+[sub_resource type="BoxMesh" id="fence_mesh"]
+size = Vector3(0.2, 1.5, 14)
+
+[sub_resource type="StandardMaterial3D" id="fence_mat"]
+albedo_color = Color(0.45, 0.3, 0.15, 1)
+
+[sub_resource type="BoxMesh" id="water_mesh"]
+size = Vector3(2, 0.8, 2)
+
+[sub_resource type="StandardMaterial3D" id="water_mat"]
+albedo_color = Color(0.2, 0.4, 0.9, 1)
+
+[sub_resource type="BoxShape3D" id="water_interact_shape"]
+size = Vector3(3, 2, 3)
+
+[sub_resource type="BoxMesh" id="path_mesh"]
+size = Vector3(3, 0.05, 3)
+
+[sub_resource type="StandardMaterial3D" id="path_mat"]
+albedo_color = Color(0.5, 0.4, 0.25, 1)
+
+[sub_resource type="BoxMesh" id="grass_blade_mesh"]
+size = Vector3(0.3, 1.2, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="grass_green_mat"]
+albedo_color = Color(0.2, 0.6, 0.2, 0.7)
+transparency = 1
+
+[sub_resource type="StandardMaterial3D" id="grass_red_mat"]
+albedo_color = Color(0.6, 0.3, 0.2, 0.7)
+transparency = 1
+
+[sub_resource type="StandardMaterial3D" id="grass_gold_mat"]
+albedo_color = Color(0.6, 0.55, 0.2, 0.7)
+transparency = 1
+
+[sub_resource type="StandardMaterial3D" id="grass_blue_mat"]
+albedo_color = Color(0.3, 0.4, 0.7, 0.7)
+transparency = 1
+
+[sub_resource type="BoxShape3D" id="grass_area_shape"]
+size = Vector3(8, 2, 8)
+
+[node name="GameWorld" type="Node3D"]
+script = ExtResource("1")
+
+[node name="SeasonManager" type="Node" parent="."]
+script = ExtResource("2")
+
+[node name="EncounterManager" type="Node" parent="."]
+script = ExtResource("3")
+
+[node name="BattleManager" type="Node" parent="."]
+script = ExtResource("4")
+
+[node name="CraftingSystem" type="Node" parent="."]
+script = ExtResource("5")
+
+[node name="Environment" type="Node3D" parent="."]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Environment"]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 15, 10)
+shadow_enabled = true
+
+[node name="Ground" type="StaticBody3D" parent="Environment"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+
+[node name="GroundMesh" type="MeshInstance3D" parent="Environment/Ground"]
+mesh = SubResource("ground_mesh")
+material_override = SubResource("ground_mat")
+
+[node name="GroundCollision" type="CollisionShape3D" parent="Environment/Ground"]
+shape = SubResource("ground_shape")
+
+[node name="Players" type="Node3D" parent="."]
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="Players"]
+_spawnable_scenes = PackedStringArray("res://scenes/player/player.tscn")
+spawn_path = NodePath("..")
+
+[node name="Zones" type="Node3D" parent="."]
+
+; === RESTAURANT ZONE (0, 0, 0) ===
+[node name="RestaurantZone" type="Node3D" parent="Zones"]
+
+[node name="Building" type="StaticBody3D" parent="Zones/RestaurantZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -5)
+
+[node name="BuildingMesh" type="MeshInstance3D" parent="Zones/RestaurantZone/Building"]
+mesh = SubResource("building_mesh")
+material_override = SubResource("building_mat")
+
+[node name="BuildingCollision" type="CollisionShape3D" parent="Zones/RestaurantZone/Building"]
+shape = SubResource("building_shape")
+
+[node name="CraftingTable" type="StaticBody3D" parent="Zones/RestaurantZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.5, 0)
+
+[node name="TableMesh" type="MeshInstance3D" parent="Zones/RestaurantZone/CraftingTable"]
+mesh = SubResource("table_mesh")
+material_override = SubResource("table_mat")
+
+[node name="InteractArea" type="Area3D" parent="Zones/RestaurantZone/CraftingTable" groups=["crafting_table"]]
+
+[node name="InteractShape" type="CollisionShape3D" parent="Zones/RestaurantZone/CraftingTable/InteractArea"]
+shape = SubResource("table_interact_shape")
+
+[node name="SpawnPoint" type="Marker3D" parent="Zones/RestaurantZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
+
+; === FARM ZONE (20, 0, 0) ===
+[node name="FarmZone" type="Node3D" parent="Zones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 0)
+
+[node name="FarmManager" type="Node3D" parent="Zones/FarmZone"]
+script = ExtResource("6")
+
+[node name="FenceLeft" type="MeshInstance3D" parent="Zones/FarmZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.75, 0)
+mesh = SubResource("fence_mesh")
+material_override = SubResource("fence_mat")
+
+[node name="FenceRight" type="MeshInstance3D" parent="Zones/FarmZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.75, 0)
+mesh = SubResource("fence_mesh")
+material_override = SubResource("fence_mat")
+
+[node name="FenceFront" type="MeshInstance3D" parent="Zones/FarmZone"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0.75, 7)
+mesh = SubResource("fence_mesh")
+material_override = SubResource("fence_mat")
+
+[node name="FenceBack" type="MeshInstance3D" parent="Zones/FarmZone"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0.75, -7)
+mesh = SubResource("fence_mesh")
+material_override = SubResource("fence_mat")
+
+[node name="WaterSource" type="StaticBody3D" parent="Zones/FarmZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.4, 6)
+
+[node name="WaterMesh" type="MeshInstance3D" parent="Zones/FarmZone/WaterSource"]
+mesh = SubResource("water_mesh")
+material_override = SubResource("water_mat")
+
+[node name="WaterArea" type="Area3D" parent="Zones/FarmZone/WaterSource" groups=["water_source"]]
+
+[node name="WaterShape" type="CollisionShape3D" parent="Zones/FarmZone/WaterSource/WaterArea"]
+shape = SubResource("water_interact_shape")
+
+; === WILD ZONE (-20, 0, 0) ===
+[node name="WildZone" type="Node3D" parent="Zones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, 0)
+
+; Paths
+[node name="PathCenter" type="MeshInstance3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+mesh = SubResource("path_mesh")
+material_override = SubResource("path_mat")
+
+[node name="PathNorth" type="MeshInstance3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -8)
+mesh = SubResource("path_mesh")
+material_override = SubResource("path_mat")
+
+[node name="PathSouth" type="MeshInstance3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 8)
+mesh = SubResource("path_mesh")
+material_override = SubResource("path_mat")
+
+[node name="PathEast" type="MeshInstance3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.03, 0)
+mesh = SubResource("path_mesh")
+material_override = SubResource("path_mat")
+
+[node name="PathWest" type="MeshInstance3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.03, 0)
+mesh = SubResource("path_mesh")
+material_override = SubResource("path_mat")
+
+; Herb Garden Grass Patch (NE)
+[node name="HerbGarden" type="Area3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -8)
+script = ExtResource("7")
+encounter_table_id = "herb_garden"
+grass_color = Color(0.2, 0.6, 0.2, 0.7)
+
+[node name="GrassShape" type="CollisionShape3D" parent="Zones/WildZone/HerbGarden"]
+shape = SubResource("grass_area_shape")
+
+[node name="Grass1" type="MeshInstance3D" parent="Zones/WildZone/HerbGarden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.6, -1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_green_mat")
+
+[node name="Grass2" type="MeshInstance3D" parent="Zones/WildZone/HerbGarden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_green_mat")
+
+[node name="Grass3" type="MeshInstance3D" parent="Zones/WildZone/HerbGarden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.5, -2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_green_mat")
+
+[node name="Grass4" type="MeshInstance3D" parent="Zones/WildZone/HerbGarden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.65, 2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_green_mat")
+
+[node name="Grass5" type="MeshInstance3D" parent="Zones/WildZone/HerbGarden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.55, 0)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_green_mat")
+
+; Flame Kitchen Grass Patch (SE)
+[node name="FlameKitchen" type="Area3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 8)
+script = ExtResource("7")
+encounter_table_id = "flame_kitchen"
+grass_color = Color(0.6, 0.3, 0.2, 0.7)
+
+[node name="GrassShape" type="CollisionShape3D" parent="Zones/WildZone/FlameKitchen"]
+shape = SubResource("grass_area_shape")
+
+[node name="Grass1" type="MeshInstance3D" parent="Zones/WildZone/FlameKitchen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.6, -1.5)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_red_mat")
+
+[node name="Grass2" type="MeshInstance3D" parent="Zones/WildZone/FlameKitchen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.7, 0)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_red_mat")
+
+[node name="Grass3" type="MeshInstance3D" parent="Zones/WildZone/FlameKitchen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0.5, 2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_red_mat")
+
+[node name="Grass4" type="MeshInstance3D" parent="Zones/WildZone/FlameKitchen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.65, -1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_red_mat")
+
+; Harvest Field Grass Patch (NW)
+[node name="HarvestField" type="Area3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -8)
+script = ExtResource("7")
+encounter_table_id = "harvest_field"
+grass_color = Color(0.6, 0.55, 0.2, 0.7)
+
+[node name="GrassShape" type="CollisionShape3D" parent="Zones/WildZone/HarvestField"]
+shape = SubResource("grass_area_shape")
+
+[node name="Grass1" type="MeshInstance3D" parent="Zones/WildZone/HarvestField"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.6, -1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_gold_mat")
+
+[node name="Grass2" type="MeshInstance3D" parent="Zones/WildZone/HarvestField"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.7, 1.5)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_gold_mat")
+
+[node name="Grass3" type="MeshInstance3D" parent="Zones/WildZone/HarvestField"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_gold_mat")
+
+[node name="Grass4" type="MeshInstance3D" parent="Zones/WildZone/HarvestField"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.65, 2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_gold_mat")
+
+; Frost Pantry Grass Patch (SW)
+[node name="FrostPantry" type="Area3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 8)
+script = ExtResource("7")
+encounter_table_id = "frost_pantry"
+grass_color = Color(0.3, 0.4, 0.7, 0.7)
+
+[node name="GrassShape" type="CollisionShape3D" parent="Zones/WildZone/FrostPantry"]
+shape = SubResource("grass_area_shape")
+
+[node name="Grass1" type="MeshInstance3D" parent="Zones/WildZone/FrostPantry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.6, 1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_blue_mat")
+
+[node name="Grass2" type="MeshInstance3D" parent="Zones/WildZone/FrostPantry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.7, -1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_blue_mat")
+
+[node name="Grass3" type="MeshInstance3D" parent="Zones/WildZone/FrostPantry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.5, 2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_blue_mat")
+
+[node name="Grass4" type="MeshInstance3D" parent="Zones/WildZone/FrostPantry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.65, -2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_blue_mat")

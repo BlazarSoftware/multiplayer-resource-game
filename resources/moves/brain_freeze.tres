@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "brain_freeze"
+display_name = "Brain Freeze"
+type = "sweet"
+category = "special"
+power = 70
+accuracy = 95
+pp = 15
+priority = 0
+status_effect = "frozen"
+status_chance = 20
+stat_changes = {}
+heal_percent = 0.0
+drain_percent = 0.0
+description = "Chills the foe's brain. May freeze."

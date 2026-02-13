@@ -1,0 +1,29 @@
+# Godot 4+ specific ignores
+.godot/
+*.uid
+
+# Godot-specific ignores
+*.import
+export_presets.cfg
+
+# Imported textures, audio, etc.
+.import/
+
+# Build exports
+builds/
+*.exe
+*.x86_64
+*.pck
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+*.swp
+*.swo
+
+# Docker
+docker-compose.override.yml
+server_data/

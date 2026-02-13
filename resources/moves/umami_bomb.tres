@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "umami_bomb"
+display_name = "Umami Bomb"
+type = "umami"
+category = "special"
+power = 110
+accuracy = 70
+pp = 5
+priority = 0
+status_effect = "poisoned"
+status_chance = 10
+stat_changes = {}
+heal_percent = 0.0
+drain_percent = 0.0
+description = "A devastating umami explosion. May poison."

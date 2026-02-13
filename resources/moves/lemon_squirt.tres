@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "lemon_squirt"
+display_name = "Lemon Squirt"
+type = "sour"
+category = "special"
+power = 55
+accuracy = 100
+pp = 20
+priority = 0
+status_effect = "soured"
+status_chance = 30
+stat_changes = {}
+heal_percent = 0.0
+drain_percent = 0.0
+description = "Squirts sour lemon juice. May lower Defense."

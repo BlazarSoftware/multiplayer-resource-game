@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "herb_basil"
+display_name = "Basil"
+description = "Fragrant green basil leaves."
+category = "farm_crop"
+icon_color = Color(0.2, 0.7, 0.2, 1)
+season = "spring"
+grow_time = 30.0
+harvest_min = 2
+harvest_max = 2

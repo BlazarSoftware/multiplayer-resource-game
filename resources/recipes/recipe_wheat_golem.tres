@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_wheat_golem"
+display_name = "Cook Wheat Golem"
+result_species_id = "wheat_golem"
+ingredients = {"wheat": 3, "grain_core": 1}
+description = "Knead wheat with a grain core to create a Wheat Golem."

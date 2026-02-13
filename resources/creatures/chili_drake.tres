@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "chili_drake"
+display_name = "Chili Drake"
+types = PackedStringArray("spicy")
+base_hp = 40
+base_attack = 14
+base_defense = 10
+base_sp_attack = 14
+base_sp_defense = 8
+base_speed = 12
+moves = PackedStringArray("pepper_blast", "flame_sear", "simmer", "quick_bite")
+mesh_type = "capsule"
+mesh_color = Color(0.9, 0.3, 0.1, 1)
+mesh_scale = Vector3(0.8, 1.0, 0.8)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("spicy_essence")
+drop_min = 1
+drop_max = 2

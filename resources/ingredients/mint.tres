@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "mint"
+display_name = "Mint"
+description = "Cool, refreshing mint leaves."
+category = "farm_crop"
+icon_color = Color(0.4, 0.9, 0.6, 1)
+season = "spring"
+grow_time = 40.0
+harvest_min = 2
+harvest_max = 2

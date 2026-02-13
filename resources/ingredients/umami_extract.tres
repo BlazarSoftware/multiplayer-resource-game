@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "umami_extract"
+display_name = "Umami Extract"
+description = "Rich savory extract."
+category = "battle_drop"
+icon_color = Color(0.5, 0.3, 0.2, 1)
+season = ""
+grow_time = 0.0
+harvest_min = 0
+harvest_max = 0
