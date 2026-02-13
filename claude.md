@@ -25,6 +25,12 @@
 - Wild zones include floating in-world labels for better discoverability.
 - HUD provides persistent legend + contextual "wild munch zone" hint when inside encounter grass.
 
+## Kubernetes Deployment
+- **Namespace**: `godot-multiplayer` (shared with other multiplayer game servers)
+- **MCP config**: `.claude/mcp.json` provides both Godot and Kubernetes MCP servers
+- **K8s MCP**: Uses `blazar-kubernetes-mcp/run-mcp.sh` with `K8S_NAMESPACE=godot-multiplayer`
+- **RBAC**: Service account `mcp-admin` in `godot-multiplayer` namespace (configured in `blazar-kubernetes-mcp/k8s/rbac-setup.yaml`)
+
 ## Recent Infrastructure Changes
 - `scripts/autoload/network_manager.gd`: port switched to `7777`; join handshake and readiness flow hardened.
 - `scripts/player/player_controller.gd`: authority setup and movement/camera reliability updates.

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "godot": {
+      "command": "node",
+      "args": ["/Users/sam/Documents/GitHub/mechanicalturk/mechanical-turk/mcp_server/build/index.js"],
+      "env": { "GODOT_PATH": "/Applications/Mechanical Turk.app/Contents/MacOS/Mechanical Turk" }
+    },
+    "kubernetes-mcp-server": {
+      "command": "bash",
+      "args": ["/Users/sam/Documents/GitHub/mechanicalturk/blazar-kubernetes-mcp/run-mcp.sh"],
+      "env": {
+        "K8S_NAMESPACE": "godot-multiplayer"
+      }
+    }
+  }
+}
