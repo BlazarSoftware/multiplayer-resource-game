@@ -121,8 +121,8 @@ func _on_player_connected(peer_id: int, _info: Dictionary) -> void:
 func _on_player_disconnected(peer_id: int) -> void:
 	# Clean up battle/encounter state for this peer
 	var battle_mgr = get_node_or_null("BattleManager")
-	if battle_mgr and peer_id in battle_mgr.battles:
-		battle_mgr.battles.erase(peer_id)
+	if battle_mgr:
+		battle_mgr.handle_player_disconnect(peer_id)
 	var encounter_mgr = get_node_or_null("EncounterManager")
 	if encounter_mgr:
 		encounter_mgr.end_encounter(peer_id)

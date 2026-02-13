@@ -9,7 +9,13 @@ var inventory: Dictionary = {}
 
 # Party: array of CreatureInstance data (dictionaries for now)
 var party: Array = []
-const MAX_PARTY_SIZE = 4
+const MAX_PARTY_SIZE = 3
+
+# Money
+var money: int = 0
+
+# Defeated trainers: trainer_id -> unix timestamp of last defeat
+var defeated_trainers: Dictionary = {}
 
 # Current tool
 enum Tool { HANDS, HOE, AXE, WATERING_CAN, SEEDS }
@@ -60,6 +66,9 @@ func load_from_server(data: Dictionary) -> void:
 		party.append(creature)
 	# Load watering can
 	watering_can_current = int(data.get("watering_can_current", watering_can_capacity))
+	# Load money and trainer defeats
+	money = int(data.get("money", 0))
+	defeated_trainers = data.get("defeated_trainers", {})
 	# Reset tool
 	current_tool = Tool.HANDS
 	selected_seed_id = ""
@@ -71,7 +80,9 @@ func to_dict() -> Dictionary:
 		"player_name": player_name,
 		"inventory": inventory.duplicate(),
 		"party": party.duplicate(true),
-		"watering_can_current": watering_can_current
+		"watering_can_current": watering_can_current,
+		"money": money,
+		"defeated_trainers": defeated_trainers.duplicate(),
 	}
 
 func reset() -> void:
@@ -81,6 +92,8 @@ func reset() -> void:
 	selected_seed_id = ""
 	watering_can_current = watering_can_capacity
 	player_name = "Player"
+	money = 0
+	defeated_trainers.clear()
 	inventory_changed.emit()
 	party_changed.emit()
 

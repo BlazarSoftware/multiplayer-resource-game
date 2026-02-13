@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Always run from project root (where docker-compose.yml lives)
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "Error: docker is not installed or not in PATH." >&2
@@ -23,7 +25,7 @@ else
   exit 1
 fi
 
-echo "Starting game server container..."
+echo "Rebuilding and starting game server container..."
 "${COMPOSE_CMD[@]}" up --build -d
 
 echo

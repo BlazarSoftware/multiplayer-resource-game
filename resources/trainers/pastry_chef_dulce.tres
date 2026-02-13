@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainerDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/trainer_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+trainer_id = "pastry_chef_dulce"
+display_name = "Pastry Chef Dulce"
+dialogue_before = "Let me serve you something sweet... and painful!"
+dialogue_after = "My dessert was half-baked..."
+party = [{"species_id": "frost_berry", "level": 8}, {"species_id": "mint_wisp", "level": 9}, {"species_id": "taffy_serpent", "level": 8}]
+ai_difficulty = "medium"
+rematch_cooldown_sec = 600
+reward_money = 300
+reward_ingredients = {"sweet_crystal": 3}

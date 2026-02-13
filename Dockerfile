@@ -45,7 +45,7 @@ FROM ubuntu:22.04
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libx11-6 libxcursor1 libxinerama1 libxrandr2 libxi6 \
-    libgl1 libglu1-mesa libasound2 libpulse0 \
+    libgl1 libglu1-mesa libasound2 libpulse0 coreutils \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -54,4 +54,5 @@ RUN mkdir -p /app/data/players
 
 EXPOSE 7777/udp
 
-CMD ["./creature_crafting_server.x86_64", "--headless"]
+# Use stdbuf to force line-buffered stdout so docker logs works
+CMD ["stdbuf", "-oL", "./creature_crafting_server.x86_64", "--headless"]

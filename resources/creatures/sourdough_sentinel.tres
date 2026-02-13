@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "sourdough_sentinel"
+display_name = "Sourdough Sentinel"
+types = PackedStringArray("sour", "grain")
+base_hp = 60
+base_attack = 16
+base_defense = 18
+base_sp_attack = 8
+base_sp_defense = 10
+base_speed = 4
+moves = PackedStringArray("sour_punch", "grain_bash", "bread_wall", "caltrops")
+mesh_type = "box"
+mesh_color = Color(0.85, 0.75, 0.5, 1)
+mesh_scale = Vector3(1.0, 1.1, 1.0)
+rarity = "uncommon"
+drop_ingredient_ids = PackedStringArray("sour_essence", "grain_core")
+drop_min = 1
+drop_max = 2
+learnset = {3: "grain_bash", 6: "sour_punch", 9: "bread_wall", 12: "caltrops", 15: "clean_sweep"}
+ability_ids = PackedStringArray("crusty_armor", "starter_culture")
+ev_yield = {"defense": 2}
+base_xp_yield = 65

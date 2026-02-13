@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AbilityDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ability_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ability_id = "stretchy"
+display_name = "Stretchy"
+description = "Physical moves deal 20% more damage."
+trigger = "on_attack"
+effect = {"category_boost": "physical", "multiplier": 1.2}

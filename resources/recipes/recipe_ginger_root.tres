@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_ginger_root"
+display_name = "Craft Ginger Root"
+result_item_id = "ginger_root"
+ingredients = {"herbal_dew": 2, "spicy_essence": 1, "sour_essence": 1}
+description = "A potent root. Cures status conditions once, then consumed."

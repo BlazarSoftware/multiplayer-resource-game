@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainerDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/trainer_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+trainer_id = "sous_chef_pepper"
+display_name = "Sous Chef Pepper"
+dialogue_before = "Time to turn up the heat!"
+dialogue_after = "Looks like I got burned..."
+party = [{"species_id": "chili_drake", "level": 6}, {"species_id": "sear_slug", "level": 5}]
+ai_difficulty = "easy"
+rematch_cooldown_sec = 300
+reward_money = 150
+reward_ingredients = {"spicy_essence": 2}

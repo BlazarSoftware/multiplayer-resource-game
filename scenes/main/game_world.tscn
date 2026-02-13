@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3]
+[gd_scene load_steps=36 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/game_world.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/world/season_manager.gd" id="2"]
@@ -8,6 +8,9 @@
 [ext_resource type="Script" path="res://scripts/world/farm_manager.gd" id="6"]
 [ext_resource type="Script" path="res://scripts/world/tall_grass.gd" id="7"]
 [ext_resource type="Script" path="res://scripts/world/farm_plot.gd" id="8"]
+[ext_resource type="Script" path="res://scripts/world/trainer_npc.gd" id="9"]
+[ext_resource type="PackedScene" path="res://scenes/ui/pvp_challenge_ui.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://scenes/ui/trainer_dialogue_ui.tscn" id="11"]
 
 [sub_resource type="BoxShape3D" id="ground_shape"]
 size = Vector3(200, 0.2, 200)
@@ -74,6 +77,14 @@ transparency = 1
 
 [sub_resource type="StandardMaterial3D" id="grass_blue_mat"]
 albedo_color = Color(0.3, 0.4, 0.7, 0.7)
+transparency = 1
+
+[sub_resource type="StandardMaterial3D" id="grass_yellow_mat"]
+albedo_color = Color(0.7, 0.8, 0.2, 0.7)
+transparency = 1
+
+[sub_resource type="StandardMaterial3D" id="grass_purple_mat"]
+albedo_color = Color(0.6, 0.3, 0.6, 0.7)
 transparency = 1
 
 [sub_resource type="BoxShape3D" id="grass_area_shape"]
@@ -339,3 +350,115 @@ material_override = SubResource("grass_blue_mat")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.65, -2)
 mesh = SubResource("grass_blade_mesh")
 material_override = SubResource("grass_blue_mat")
+
+; === SOUR SPRINGS (far NE of wild zone) ===
+[node name="SourSprings" type="Area3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, -16)
+script = ExtResource("7")
+encounter_table_id = "sour_springs"
+grass_color = Color(0.7, 0.8, 0.2, 0.7)
+
+[node name="GrassShape" type="CollisionShape3D" parent="Zones/WildZone/SourSprings"]
+shape = SubResource("grass_area_shape")
+
+[node name="Grass1" type="MeshInstance3D" parent="Zones/WildZone/SourSprings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.6, -1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_yellow_mat")
+
+[node name="Grass2" type="MeshInstance3D" parent="Zones/WildZone/SourSprings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.7, 1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_yellow_mat")
+
+[node name="Grass3" type="MeshInstance3D" parent="Zones/WildZone/SourSprings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_yellow_mat")
+
+[node name="Grass4" type="MeshInstance3D" parent="Zones/WildZone/SourSprings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.65, -2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_yellow_mat")
+
+; === FUSION KITCHEN (far SW of wild zone) ===
+[node name="FusionKitchen" type="Area3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, 16)
+script = ExtResource("7")
+encounter_table_id = "fusion_kitchen"
+grass_color = Color(0.6, 0.3, 0.6, 0.7)
+
+[node name="GrassShape" type="CollisionShape3D" parent="Zones/WildZone/FusionKitchen"]
+shape = SubResource("grass_area_shape")
+
+[node name="Grass1" type="MeshInstance3D" parent="Zones/WildZone/FusionKitchen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.6, -2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_purple_mat")
+
+[node name="Grass2" type="MeshInstance3D" parent="Zones/WildZone/FusionKitchen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.7, 0)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_purple_mat")
+
+[node name="Grass3" type="MeshInstance3D" parent="Zones/WildZone/FusionKitchen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_purple_mat")
+
+[node name="Grass4" type="MeshInstance3D" parent="Zones/WildZone/FusionKitchen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.65, 2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_purple_mat")
+
+; === TRAINER NPCs ===
+[node name="Trainers" type="Node3D" parent="Zones"]
+
+; Sous Chef Pepper — near Flame Kitchen
+[node name="SousChefPepper" type="Area3D" parent="Zones/Trainers"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 12)
+script = ExtResource("9")
+trainer_id = "sous_chef_pepper"
+
+; Farmer Green — near Harvest Field
+[node name="FarmerGreen" type="Area3D" parent="Zones/Trainers"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, 0, -12)
+script = ExtResource("9")
+trainer_id = "farmer_green"
+
+; Pastry Chef Dulce — near Frost Pantry
+[node name="PastryChefDulce" type="Area3D" parent="Zones/Trainers"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, 0, 12)
+script = ExtResource("9")
+trainer_id = "pastry_chef_dulce"
+
+; Brinemaster Vlad — near Sour Springs
+[node name="BrinemasterVlad" type="Area3D" parent="Zones/Trainers"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -20)
+script = ExtResource("9")
+trainer_id = "brinemaster_vlad"
+
+; Chef Umami — between wild zone and farm
+[node name="ChefUmami" type="Area3D" parent="Zones/Trainers"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+script = ExtResource("9")
+trainer_id = "chef_umami"
+
+; Head Chef Roux — near Fusion Kitchen
+[node name="HeadChefRoux" type="Area3D" parent="Zones/Trainers"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -36, 0, 20)
+script = ExtResource("9")
+trainer_id = "head_chef_roux"
+
+; Grand Chef Michelin — far end, boss area
+[node name="GrandChefMichelin" type="Area3D" parent="Zones/Trainers"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 0, 0)
+script = ExtResource("9")
+trainer_id = "grand_chef_michelin"
+
+; === UI Overlays ===
+[node name="UI" type="Node" parent="."]
+
+[node name="PvPChallengeUI" parent="UI" instance=ExtResource("10")]
+
+[node name="TrainerDialogueUI" parent="UI" instance=ExtResource("11")]

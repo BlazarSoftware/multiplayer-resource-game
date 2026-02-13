@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="HeldItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/held_item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_id = "espresso_shot"
+display_name = "Espresso Shot"
+description = "Boosts Speed by 50% when HP drops below 25%. Single use."
+effect_type = "on_hp_threshold"
+effect_params = {"hp_threshold": 0.25, "stat": "speed", "multiplier": 1.5}
+consumable = true

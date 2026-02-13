@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "citrus_fiend"
+display_name = "Citrus Fiend"
+types = PackedStringArray("sour", "spicy")
+base_hp = 45
+base_attack = 12
+base_defense = 12
+base_sp_attack = 22
+base_sp_defense = 14
+base_speed = 15
+moves = PackedStringArray("citrus_burst", "sour_punch", "pepper_blast", "acid_splash")
+mesh_type = "capsule"
+mesh_color = Color(0.9, 0.7, 0.1, 1)
+mesh_scale = Vector3(0.8, 1.1, 0.8)
+rarity = "rare"
+drop_ingredient_ids = PackedStringArray("sour_essence", "spicy_essence")
+drop_min = 1
+drop_max = 2
+evolves_from = "lemon_imp"
+learnset = {3: "lemon_squirt", 6: "sour_punch", 9: "acid_splash", 12: "citrus_burst", 15: "pepper_blast", 18: "kombucha_burst"}
+ability_ids = PackedStringArray("sharp_zest", "flash_fry")
+ev_yield = {"sp_attack": 2}
+base_xp_yield = 85

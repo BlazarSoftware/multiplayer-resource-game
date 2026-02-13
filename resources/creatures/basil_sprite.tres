@@ -21,3 +21,7 @@ rarity = "common"
 drop_ingredient_ids = PackedStringArray("herbal_dew")
 drop_min = 1
 drop_max = 2
+learnset = {3: "vine_whip", 5: "pollen_cloud", 8: "zest_shield", 11: "taste_test", 14: "bitter_pill"}
+ability_ids = PackedStringArray("herbivore", "photosynthesis")
+ev_yield = {"sp_attack": 1}
+base_xp_yield = 45

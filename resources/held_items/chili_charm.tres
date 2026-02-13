@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="HeldItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/held_item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_id = "chili_charm"
+display_name = "Chili Charm"
+description = "Boosts Spicy moves by 20%."
+effect_type = "type_boost"
+effect_params = {"type": "spicy", "multiplier": 1.2}
+consumable = false

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="EncounterTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/encounter_table.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+table_id = "fusion_kitchen"
+display_name = "Fusion Kitchen"
+entries = [{"species_id": "taffy_serpent", "weight": 20, "min_level": 5, "max_level": 9}, {"species_id": "tofu_block", "weight": 20, "min_level": 5, "max_level": 8}, {"species_id": "sourdough_sentinel", "weight": 15, "min_level": 6, "max_level": 9}, {"species_id": "mint_wisp", "weight": 15, "min_level": 5, "max_level": 8}, {"species_id": "sear_slug", "weight": 15, "min_level": 5, "max_level": 8}, {"species_id": "pickle_toad", "weight": 15, "min_level": 5, "max_level": 8}]
+season_bonus = {"summer": "taffy_serpent"}

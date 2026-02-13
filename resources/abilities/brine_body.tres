@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AbilityDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ability_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ability_id = "brine_body"
+display_name = "Brine Body"
+description = "Takes 20% less damage from special moves."
+trigger = "on_defend"
+effect = {"category_resist": "special", "multiplier": 0.8}

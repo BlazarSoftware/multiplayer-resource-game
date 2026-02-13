@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_herb_sachet"
+display_name = "Craft Herb Sachet"
+result_item_id = "herb_sachet"
+ingredients = {"herb_basil": 3, "herbal_dew": 1}
+description = "A fragrant sachet of herbs. Boosts Herbal moves by 20%."

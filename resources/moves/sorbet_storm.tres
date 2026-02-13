@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "sorbet_storm"
+display_name = "Sorbet Storm"
+type = "sweet"
+category = "special"
+power = 130
+accuracy = 90
+pp = 5
+is_charging = true
+charge_message = "is gathering frozen sweetness!"
+status_effect = "frozen"
+status_chance = 30
+description = "Charges one turn, then unleashes a frozen storm."

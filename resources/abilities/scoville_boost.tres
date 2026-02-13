@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AbilityDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ability_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ability_id = "scoville_boost"
+display_name = "Scoville Boost"
+description = "Spicy moves deal 30% more damage."
+trigger = "on_attack"
+effect = {"type_boost": "spicy", "multiplier": 1.3}

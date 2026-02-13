@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainerDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/trainer_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+trainer_id = "farmer_green"
+display_name = "Farmer Green"
+dialogue_before = "My crops will show you what's what!"
+dialogue_after = "Well, harvest is over for me..."
+party = [{"species_id": "wheat_golem", "level": 6}, {"species_id": "basil_sprite", "level": 5}]
+ai_difficulty = "easy"
+rematch_cooldown_sec = 300
+reward_money = 150
+reward_ingredients = {"herbal_dew": 2, "grain_core": 1}

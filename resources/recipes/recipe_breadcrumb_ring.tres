@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_breadcrumb_ring"
+display_name = "Craft Breadcrumb Ring"
+result_item_id = "breadcrumb_ring"
+ingredients = {"grain_core": 3, "wheat": 1}
+description = "A ring of toasted breadcrumbs. Boosts Grain moves by 20%."

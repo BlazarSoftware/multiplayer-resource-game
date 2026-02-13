@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "tofu_block"
+display_name = "Tofu Block"
+types = PackedStringArray("umami", "herbal")
+base_hp = 55
+base_attack = 8
+base_defense = 12
+base_sp_attack = 10
+base_sp_defense = 20
+base_speed = 4
+moves = PackedStringArray("savory_slam", "vine_whip", "taste_test", "ferment")
+mesh_type = "box"
+mesh_color = Color(0.95, 0.92, 0.85, 1)
+mesh_scale = Vector3(0.7, 0.7, 0.7)
+rarity = "uncommon"
+drop_ingredient_ids = PackedStringArray("umami_extract", "herbal_dew")
+drop_min = 1
+drop_max = 2
+learnset = {3: "savory_slam", 6: "vine_whip", 9: "taste_test", 12: "ferment", 15: "truffle_burst"}
+ability_ids = PackedStringArray("firm_press", "herbivore")
+ev_yield = {"sp_defense": 2}
+base_xp_yield = 60

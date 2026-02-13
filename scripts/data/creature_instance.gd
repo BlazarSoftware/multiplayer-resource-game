@@ -15,12 +15,19 @@ extends Resource
 @export var pp: PackedInt32Array = []
 @export var types: PackedStringArray = []
 
+# New fields for battle depth
+@export var xp: int = 0
+@export var xp_to_next: int = 100
+@export var ability_id: String = ""
+@export var held_item_id: String = ""
+@export var evs: Dictionary = {} # e.g. {"attack": 4, "speed": 8}
+
 static func create_from_species(species, lvl: int = 1) -> CreatureInstance:
 	var inst = CreatureInstance.new()
 	inst.species_id = species.species_id
 	inst.nickname = species.display_name
 	inst.level = lvl
-	# Scale stats by level
+	# Scale stats by level (+ EVs if any)
 	var mult = 1.0 + (lvl - 1) * 0.1
 	inst.max_hp = int(species.base_hp * mult)
 	inst.hp = inst.max_hp
@@ -39,7 +46,18 @@ static func create_from_species(species, lvl: int = 1) -> CreatureInstance:
 			inst.pp[i] = move.pp
 		else:
 			inst.pp[i] = 10
+	# XP
+	inst.xp = 0
+	inst.xp_to_next = _calc_xp_to_next(lvl)
+	# Randomly assign ability from species
+	if species.ability_ids.size() > 0:
+		inst.ability_id = species.ability_ids[randi() % species.ability_ids.size()]
+	inst.evs = {}
 	return inst
+
+static func _calc_xp_to_next(lvl: int) -> int:
+	# Simple cubic curve: XP needed grows with level
+	return int(10 * lvl * lvl + 40 * lvl + 50)
 
 func to_dict() -> Dictionary:
 	return {
@@ -55,7 +73,12 @@ func to_dict() -> Dictionary:
 		"speed": speed,
 		"moves": Array(moves),
 		"pp": Array(pp),
-		"types": Array(types)
+		"types": Array(types),
+		"xp": xp,
+		"xp_to_next": xp_to_next,
+		"ability_id": ability_id,
+		"held_item_id": held_item_id,
+		"evs": evs.duplicate(),
 	}
 
 static func from_dict(data: Dictionary) -> CreatureInstance:
@@ -73,4 +96,9 @@ static func from_dict(data: Dictionary) -> CreatureInstance:
 	inst.moves = PackedStringArray(data.get("moves", []))
 	inst.pp = PackedInt32Array(data.get("pp", []))
 	inst.types = PackedStringArray(data.get("types", []))
+	inst.xp = data.get("xp", 0)
+	inst.xp_to_next = data.get("xp_to_next", _calc_xp_to_next(inst.level))
+	inst.ability_id = data.get("ability_id", "")
+	inst.held_item_id = data.get("held_item_id", "")
+	inst.evs = data.get("evs", {})
 	return inst

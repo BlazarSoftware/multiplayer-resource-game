@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainerDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/trainer_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+trainer_id = "grand_chef_michelin"
+display_name = "Grand Chef Michelin"
+dialogue_before = "I am the final course. Are you ready?"
+dialogue_after = "A masterful performance! You are a true chef!"
+party = [{"species_id": "sorbet_phoenix", "level": 16}, {"species_id": "citrus_fiend", "level": 15}, {"species_id": "sourdough_sentinel", "level": 16}]
+ai_difficulty = "hard"
+rematch_cooldown_sec = 1200
+reward_money = 1000
+reward_ingredients = {"sweet_crystal": 3, "sour_essence": 3, "grain_core": 3}

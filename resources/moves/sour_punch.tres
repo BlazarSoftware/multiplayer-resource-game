@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "sour_punch"
+display_name = "Sour Punch"
+type = "sour"
+category = "physical"
+power = 60
+accuracy = 100
+pp = 15
+is_contact = true
+status_effect = "soured"
+status_chance = 20
+description = "A tangy punch that may sour the target."

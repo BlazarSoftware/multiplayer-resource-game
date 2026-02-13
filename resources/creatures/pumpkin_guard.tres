@@ -21,3 +21,7 @@ rarity = "uncommon"
 drop_ingredient_ids = PackedStringArray("grain_core")
 drop_min = 1
 drop_max = 2
+learnset = {3: "grain_bash", 5: "savory_slam", 8: "bread_wall", 11: "harvest_move", 14: "caltrops"}
+ability_ids = PackedStringArray("crusty_armor", "grain_shield")
+ev_yield = {"defense": 1, "hp": 1}
+base_xp_yield = 60

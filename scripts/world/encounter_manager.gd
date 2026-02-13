@@ -9,7 +9,11 @@ func start_encounter(peer_id: int, table_id: String) -> void:
 	if not multiplayer.is_server():
 		return
 	if peer_id in active_encounters:
-		return # Already in battle
+		return # Already in wild encounter
+	# Check if player is in ANY battle (wild, trainer, or PvP)
+	var battle_mgr = get_node_or_null("/root/Main/GameWorld/BattleManager")
+	if battle_mgr and peer_id in battle_mgr.player_battle_map:
+		return
 	DataRegistry.ensure_loaded()
 	var table = DataRegistry.get_encounter_table(table_id)
 	if table == null:
@@ -34,7 +38,8 @@ func start_encounter(peer_id: int, table_id: String) -> void:
 		"species_id": species_id
 	}
 	print("Encounter for peer ", peer_id, ": ", species.display_name, " Lv.", level)
-	_trigger_encounter_client.rpc_id(peer_id, enemy_data)
+	if battle_mgr:
+		battle_mgr.server_start_battle(peer_id, enemy_data)
 	encounter_started.emit(peer_id, enemy_data)
 
 func _roll_encounter(table) -> String:
@@ -74,9 +79,3 @@ func end_encounter(peer_id: int) -> void:
 func is_in_encounter(peer_id: int) -> bool:
 	return peer_id in active_encounters
 
-@rpc("authority", "reliable")
-func _trigger_encounter_client(enemy_data: Dictionary) -> void:
-	# Client receives encounter - start battle
-	var battle_mgr = get_node_or_null("/root/Main/GameWorld/BattleManager")
-	if battle_mgr:
-		battle_mgr.start_battle_client(enemy_data)

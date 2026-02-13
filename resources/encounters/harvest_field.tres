@@ -6,5 +6,5 @@
 script = ExtResource("1")
 table_id = "harvest_field"
 display_name = "Harvest Field"
-entries = [{"species_id": "wheat_golem", "weight": 40, "min_level": 2, "max_level": 5}, {"species_id": "pumpkin_guard", "weight": 30, "min_level": 3, "max_level": 6}, {"species_id": "mushroom_cap", "weight": 20, "min_level": 2, "max_level": 4}, {"species_id": "basil_sprite", "weight": 10, "min_level": 4, "max_level": 7}]
+entries = [{"species_id": "wheat_golem", "weight": 30, "min_level": 2, "max_level": 5}, {"species_id": "pumpkin_guard", "weight": 30, "min_level": 3, "max_level": 6}, {"species_id": "mushroom_cap", "weight": 20, "min_level": 2, "max_level": 4}, {"species_id": "basil_sprite", "weight": 10, "min_level": 4, "max_level": 7}, {"species_id": "sourdough_sentinel", "weight": 10, "min_level": 4, "max_level": 7}]
 season_bonus = {"autumn": "pumpkin_guard"}

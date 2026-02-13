@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_honey_drop"
+display_name = "Craft Honey Drop"
+result_item_id = "honey_drop"
+ingredients = {"sweet_crystal": 3, "herb_basil": 1}
+description = "A sweet honey bead. Boosts Sweet moves by 20%."

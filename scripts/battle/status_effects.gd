@@ -1,3 +1,4 @@
+class_name StatusEffects
 extends RefCounted
 
 # Status effect definitions

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "grain_dust"
+display_name = "Grain Dust"
+type = "grain"
+category = "status"
+power = 0
+accuracy = 100
+pp = 5
+weather_set = "grain"
+description = "Kicks up grain dust that boosts Grain moves."

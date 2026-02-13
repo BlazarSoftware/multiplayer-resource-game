@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "blaze_wyvern"
+display_name = "Blaze Wyvern"
+types = PackedStringArray("spicy")
+base_hp = 50
+base_attack = 20
+base_defense = 12
+base_sp_attack = 18
+base_sp_defense = 10
+base_speed = 12
+moves = PackedStringArray("inferno_fang", "flame_sear", "pepper_blast", "simmer")
+mesh_type = "capsule"
+mesh_color = Color(0.95, 0.2, 0.05, 1)
+mesh_scale = Vector3(1.0, 1.3, 1.0)
+rarity = "rare"
+drop_ingredient_ids = PackedStringArray("spicy_essence", "chili_pepper")
+drop_min = 1
+drop_max = 2
+evolves_from = "chili_drake"
+learnset = {3: "quick_bite", 6: "pepper_blast", 9: "flame_sear", 12: "simmer", 14: "inferno_fang", 18: "sizzle_sun"}
+ability_ids = PackedStringArray("flash_fry", "scoville_boost")
+ev_yield = {"attack": 2}
+base_xp_yield = 90

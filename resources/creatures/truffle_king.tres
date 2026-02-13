@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "truffle_king"
+display_name = "Truffle King"
+types = PackedStringArray("umami")
+base_hp = 50
+base_attack = 10
+base_defense = 14
+base_sp_attack = 24
+base_sp_defense = 14
+base_speed = 11
+moves = PackedStringArray("truffle_burst", "umami_bomb", "savory_slam", "taste_test")
+mesh_type = "cylinder"
+mesh_color = Color(0.3, 0.2, 0.15, 1)
+mesh_scale = Vector3(0.9, 1.0, 0.9)
+rarity = "rare"
+drop_ingredient_ids = PackedStringArray("umami_extract", "mushroom")
+drop_min = 1
+drop_max = 2
+evolves_from = "mushroom_cap"
+learnset = {3: "savory_slam", 6: "ferment", 9: "umami_bomb", 13: "truffle_burst", 16: "umami_fog", 19: "taste_test"}
+ability_ids = PackedStringArray("deep_umami", "mycelium_net")
+ev_yield = {"sp_attack": 2}
+base_xp_yield = 90

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainerDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/trainer_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+trainer_id = "brinemaster_vlad"
+display_name = "Brinemaster Vlad"
+dialogue_before = "My fermented fighters will pickle you!"
+dialogue_after = "I've lost my brine..."
+party = [{"species_id": "pickle_toad", "level": 10}, {"species_id": "lemon_imp", "level": 9}, {"species_id": "sourdough_sentinel", "level": 10}]
+ai_difficulty = "medium"
+rematch_cooldown_sec = 600
+reward_money = 350
+reward_ingredients = {"sour_essence": 3}

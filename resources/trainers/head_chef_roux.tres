@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainerDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/trainer_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+trainer_id = "head_chef_roux"
+display_name = "Head Chef Roux"
+dialogue_before = "In my kitchen, only the strong survive!"
+dialogue_after = "You've earned your place in my kitchen."
+party = [{"species_id": "blaze_wyvern", "level": 14}, {"species_id": "truffle_king", "level": 13}, {"species_id": "pumpkin_guard", "level": 14}]
+ai_difficulty = "hard"
+rematch_cooldown_sec = 900
+reward_money = 600
+reward_ingredients = {"spicy_essence": 3, "umami_extract": 3}

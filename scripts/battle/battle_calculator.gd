@@ -1,3 +1,4 @@
+class_name BattleCalculator
 extends RefCounted
 
 # Type effectiveness chart
@@ -20,7 +21,7 @@ static func get_type_effectiveness(attack_type: String, defender_types: Array) -
 		multiplier *= chart.get(def_type, 1.0)
 	return multiplier
 
-static func calculate_damage(attacker: Dictionary, defender: Dictionary, move, level: int) -> Dictionary:
+static func calculate_damage(attacker: Dictionary, defender: Dictionary, move, level: int, weather: String = "") -> Dictionary:
 	if move.category == "status":
 		return {"damage": 0, "effectiveness": 1.0, "critical": false}
 
@@ -48,6 +49,10 @@ static func calculate_damage(attacker: Dictionary, defender: Dictionary, move, l
 	var effectiveness = get_type_effectiveness(move.type, defender_types)
 	base *= effectiveness
 
+	# Weather modifier
+	var weather_mod = FieldEffects.get_weather_modifier(weather, move.type)
+	base *= weather_mod
+
 	# Random factor (0.85 - 1.0)
 	var random_factor = randf_range(0.85, 1.0)
 	base *= random_factor
@@ -74,12 +79,24 @@ static func _stage_multiplier(stage: int) -> float:
 	else:
 		return 2.0 / (2.0 - stage)
 
-static func check_accuracy(move, _attacker: Dictionary, _defender: Dictionary) -> bool:
+static func check_accuracy(move, attacker: Dictionary, defender: Dictionary) -> bool:
 	if move.accuracy <= 0 or move.accuracy >= 100:
 		return true
 	var acc = float(move.accuracy)
-	# Apply accuracy/evasion stages if we add them later
+	# Apply accuracy/evasion stages
+	var acc_stage = attacker.get("accuracy_stage", 0)
+	var eva_stage = defender.get("evasion_stage", 0)
+	var net_stage = clampi(acc_stage - eva_stage, -6, 6)
+	acc *= _accuracy_stage_multiplier(net_stage)
 	return randf() * 100.0 < acc
+
+static func _accuracy_stage_multiplier(stage: int) -> float:
+	# Accuracy/evasion uses 3/3, 3/4, 3/5... for negative and 3/3, 4/3, 5/3... for positive
+	stage = clampi(stage, -6, 6)
+	if stage >= 0:
+		return (3.0 + stage) / 3.0
+	else:
+		return 3.0 / (3.0 - stage)
 
 static func get_speed(creature: Dictionary) -> int:
 	var base_speed = creature.get("speed", 10)

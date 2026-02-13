@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainerDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/trainer_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+trainer_id = "chef_umami"
+display_name = "Chef Umami"
+dialogue_before = "Prepare your palate for the fifth taste!"
+dialogue_after = "My umami wasn't deep enough..."
+party = [{"species_id": "mushroom_cap", "level": 11}, {"species_id": "tofu_block", "level": 10}, {"species_id": "sear_slug", "level": 11}]
+ai_difficulty = "medium"
+rematch_cooldown_sec = 600
+reward_money = 400
+reward_ingredients = {"umami_extract": 3, "mushroom": 2}

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "sorbet_phoenix"
+display_name = "Sorbet Phoenix"
+types = PackedStringArray("sweet", "spicy")
+base_hp = 40
+base_attack = 10
+base_defense = 10
+base_sp_attack = 22
+base_sp_defense = 14
+base_speed = 18
+moves = PackedStringArray("sorbet_storm", "sugar_rush", "pepper_blast", "brain_freeze")
+mesh_type = "capsule"
+mesh_color = Color(1.0, 0.5, 0.6, 1)
+mesh_scale = Vector3(0.8, 1.2, 0.8)
+rarity = "rare"
+drop_ingredient_ids = PackedStringArray("sweet_crystal", "spicy_essence")
+drop_min = 1
+drop_max = 2
+evolves_from = "frost_berry"
+learnset = {3: "brain_freeze", 6: "sugar_rush", 9: "syrup_trap", 12: "pepper_blast", 15: "sorbet_storm", 18: "sugar_hail"}
+ability_ids = PackedStringArray("flash_freeze", "flavor_absorb")
+ev_yield = {"speed": 2}
+base_xp_yield = 85

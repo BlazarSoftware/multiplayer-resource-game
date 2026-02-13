@@ -44,6 +44,7 @@ func _on_body_entered(body: Node3D) -> void:
 		return
 	if body is CharacterBody3D and body.name.is_valid_int():
 		var peer_id = body.name.to_int()
+		print("[TallGrass] body_entered: peer ", peer_id, " in zone '", zone_label_text, "'")
 		player_step_counters[peer_id] = 0
 		_show_grass_indicator.rpc_id(peer_id, true)
 
@@ -65,7 +66,11 @@ func _physics_process(_delta: float) -> void:
 	var players_node = get_node_or_null("/root/Main/GameWorld/Players")
 	if not players_node:
 		return
+	var battle_mgr = get_node_or_null("/root/Main/GameWorld/BattleManager")
 	for peer_id in player_step_counters.keys():
+		# Skip step counting if player is already in a battle
+		if battle_mgr and peer_id in battle_mgr.player_battle_map:
+			continue
 		var player = players_node.get_node_or_null(str(peer_id))
 		if player and player is CharacterBody3D:
 			if player.velocity.length() > 0.5:
@@ -82,8 +87,8 @@ func _trigger_encounter(peer_id: int) -> void:
 		encounter_mgr.start_encounter(peer_id, encounter_table_id)
 
 @rpc("authority", "reliable")
-func _show_grass_indicator(show: bool) -> void:
+func _show_grass_indicator(visible_state: bool) -> void:
 	# Client-side: show/hide grass overlay indicator
 	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
 	if hud and hud.has_method("show_grass_indicator"):
-		hud.show_grass_indicator(show)
+		hud.show_grass_indicator(visible_state)

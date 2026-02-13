@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_tofu_block"
+display_name = "Cook Tofu Block"
+result_species_id = "tofu_block"
+ingredients = {"umami_extract": 2, "herbal_dew": 2}
+description = "Combine umami extract with herbal dew to create a Tofu Block."

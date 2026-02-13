@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "herb_breeze"
+display_name = "Herb Breeze"
+type = "herbal"
+category = "status"
+power = 0
+accuracy = 100
+pp = 5
+weather_set = "herbal"
+description = "Summons an aromatic breeze that boosts Herbal moves."

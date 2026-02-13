@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "flash_sear"
+display_name = "Flash Sear"
+type = "spicy"
+category = "physical"
+power = 45
+accuracy = 100
+pp = 20
+priority = 1
+is_contact = true
+description = "A quick searing strike that always goes first."

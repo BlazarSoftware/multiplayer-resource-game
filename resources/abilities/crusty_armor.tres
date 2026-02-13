@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AbilityDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ability_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ability_id = "crusty_armor"
+display_name = "Crusty Armor"
+description = "Takes 20% less damage from physical moves."
+trigger = "on_defend"
+effect = {"category_resist": "physical", "multiplier": 0.8}

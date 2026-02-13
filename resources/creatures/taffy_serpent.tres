@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "taffy_serpent"
+display_name = "Taffy Serpent"
+types = PackedStringArray("sweet", "sour")
+base_hp = 40
+base_attack = 16
+base_defense = 10
+base_sp_attack = 10
+base_sp_defense = 10
+base_speed = 14
+moves = PackedStringArray("taffy_pull", "sugar_rush", "sour_punch", "quick_bite")
+mesh_type = "capsule"
+mesh_color = Color(0.95, 0.5, 0.7, 1)
+mesh_scale = Vector3(0.5, 1.2, 0.5)
+rarity = "uncommon"
+drop_ingredient_ids = PackedStringArray("sweet_crystal", "sour_essence")
+drop_min = 1
+drop_max = 1
+learnset = {3: "quick_bite", 6: "sugar_rush", 9: "taffy_pull", 12: "sour_punch", 15: "caramel_crash"}
+ability_ids = PackedStringArray("stretchy", "sugar_coat")
+ev_yield = {"speed": 1, "attack": 1}
+base_xp_yield = 55

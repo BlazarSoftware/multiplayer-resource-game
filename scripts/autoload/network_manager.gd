@@ -80,6 +80,13 @@ func _on_peer_connected(id: int) -> void:
 func _on_peer_disconnected(id: int) -> void:
 	print("Peer disconnected: ", id)
 	join_state.erase(id)
+	# Handle battle disconnect (PvP forfeit, cleanup)
+	var battle_mgr = get_node_or_null("/root/Main/GameWorld/BattleManager")
+	if battle_mgr:
+		battle_mgr.handle_player_disconnect(id)
+	var encounter_mgr = get_node_or_null("/root/Main/GameWorld/EncounterManager")
+	if encounter_mgr:
+		encounter_mgr.end_encounter(id)
 	# Save player data before removing
 	if id in player_data_store:
 		var data = player_data_store[id]
@@ -148,8 +155,8 @@ func _receive_player_data(data: Dictionary) -> void:
 	_send_ready_when_world_loaded.call_deferred()
 
 func _send_ready_when_world_loaded() -> void:
-	var ready = await _wait_for_spawn_path_ready()
-	if not ready:
+	var spawn_ready = await _wait_for_spawn_path_ready()
+	if not spawn_ready:
 		print("Client world did not become spawn-ready in time; skipping ready ack")
 		return
 	if multiplayer.multiplayer_peer == null:
@@ -198,14 +205,21 @@ func _create_default_player_data(player_name: String) -> Dictionary:
 		"speed": 10,
 		"moves": ["grain_bash", "quick_bite", "bread_wall", "taste_test"],
 		"pp": [15, 25, 10, 5],
-		"types": ["grain"]
+		"types": ["grain"],
+		"xp": 0,
+		"xp_to_next": 100,
+		"ability_id": "crusty_armor",
+		"held_item_id": "",
+		"evs": {},
 	}
 	return {
 		"player_name": player_name,
 		"inventory": {},
 		"party": [starter],
 		"position": {"x": 0.0, "y": 1.0, "z": 3.0},
-		"watering_can_current": 10
+		"watering_can_current": 10,
+		"money": 0,
+		"defeated_trainers": {},
 	}
 
 # === Server-side player data tracking ===
@@ -230,6 +244,21 @@ func server_remove_inventory(peer_id: int, item_id: String, amount: int) -> bool
 	if inv[item_id] <= 0:
 		inv.erase(item_id)
 	player_data_store[peer_id]["inventory"] = inv
+	return true
+
+func server_add_money(peer_id: int, amount: int) -> void:
+	if peer_id not in player_data_store:
+		return
+	var current = int(player_data_store[peer_id].get("money", 0))
+	player_data_store[peer_id]["money"] = current + amount
+
+func server_remove_money(peer_id: int, amount: int) -> bool:
+	if peer_id not in player_data_store:
+		return false
+	var current = int(player_data_store[peer_id].get("money", 0))
+	if current < amount:
+		return false
+	player_data_store[peer_id]["money"] = current - amount
 	return true
 
 func server_update_party(peer_id: int, party_array: Array) -> void:
