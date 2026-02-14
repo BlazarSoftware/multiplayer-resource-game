@@ -2,7 +2,8 @@
 
 ## Project Runtime Defaults
 - Multiplayer default port: `7777` (UDP).
-- Local client connects to `127.0.0.1` on port `7777`.
+- Client defaults to public server at `207.32.216.76` on port `7777` (Connect UI, fallback address, and saved prefs default all use this).
+- For local development, manually enter `127.0.0.1` in the Connect UI IP field.
 - Dedicated server can be run in Docker or Mechanical Turk headless mode.
 
 ## Docker Server Workflow

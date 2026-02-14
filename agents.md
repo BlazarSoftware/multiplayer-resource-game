@@ -1,12 +1,16 @@
 # Agents Guide
 
-## Quick Start (Local)
+## Quick Start (Public Server)
+1. Launch client with Mechanical Turk and open this project.
+2. Click "Join Game" — the Connect UI defaults to `207.32.216.76` (public K8s server).
+
+## Quick Start (Local Dev)
 1. Start server:
    - `./scripts/start-docker-server.sh`
 2. Launch client with Mechanical Turk and open this project.
-3. Join using `127.0.0.1`.
+3. Change the IP field to `127.0.0.1` and click "Join Game".
 
-## Quick Start (Kubernetes)
+## Quick Start (Kubernetes Deploy)
 1. First-time setup:
    - `./scripts/deploy-k8s.sh --setup`
 2. Build, push, and deploy:
@@ -15,6 +19,8 @@
 
 ## Networking Contract
 - Server/client default UDP port is `7777`.
+- Client Connect UI defaults to public server IP `207.32.216.76` (not localhost).
+- For local dev, manually enter `127.0.0.1` in the Connect UI.
 - Any tooling, scripts, docs, and deployment defaults should assume `7777`.
 
 ## Multiplayer-Aware Development (CRITICAL)

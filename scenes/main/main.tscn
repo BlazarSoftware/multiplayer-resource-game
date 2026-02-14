@@ -34,8 +34,8 @@ placeholder_text = "Enter your name..."
 
 [node name="IPInput" type="LineEdit" parent="ConnectUI/VBox"]
 layout_mode = 2
-text = "127.0.0.1"
-placeholder_text = "Server IP (127.0.0.1)"
+text = "207.32.216.76"
+placeholder_text = "Server IP (207.32.216.76)"
 
 [node name="JoinButton" type="Button" parent="ConnectUI/VBox"]
 layout_mode = 2

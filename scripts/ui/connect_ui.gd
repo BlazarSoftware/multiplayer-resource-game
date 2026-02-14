@@ -20,7 +20,7 @@ func _on_join_pressed() -> void:
 		player_name = "Player"
 	var address = ip_input.text.strip_edges()
 	if address == "":
-		address = "127.0.0.1"
+		address = "207.32.216.76"
 	# Save preferences
 	_save_prefs(player_name, address)
 	var error = NetworkManager.join_game(address, player_name)
@@ -47,6 +47,6 @@ func _load_prefs() -> void:
 	var config = ConfigFile.new()
 	if config.load(PREFS_PATH) == OK:
 		var saved_name = config.get_value("connect", "name", "Player")
-		var saved_addr = config.get_value("connect", "address", "127.0.0.1")
+		var saved_addr = config.get_value("connect", "address", "207.32.216.76")
 		name_input.text = saved_name
 		ip_input.text = saved_addr
