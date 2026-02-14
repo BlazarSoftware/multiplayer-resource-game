@@ -13,16 +13,34 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.15, 0.2, 0.15, 1)
 
+[node name="WeatherBar" type="PanelContainer" parent="."]
+anchors_preset = -1
+anchor_left = 0.1
+anchor_top = 0.01
+anchor_right = 0.9
+anchor_bottom = 0.05
+visible = false
+
+[node name="WeatherLabel" type="Label" parent="WeatherBar"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+
 [node name="EnemyPanel" type="VBoxContainer" parent="."]
 anchors_preset = -1
 anchor_left = 0.05
-anchor_top = 0.05
-anchor_right = 0.45
-anchor_bottom = 0.35
+anchor_top = 0.06
+anchor_right = 0.5
+anchor_bottom = 0.4
 
 [node name="EnemyName" type="Label" parent="EnemyPanel"]
 layout_mode = 2
 text = "Wild Chili Drake Lv.5"
+
+[node name="EnemyTypeLabel" type="Label" parent="EnemyPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = ""
 
 [node name="EnemyHPBar" type="ProgressBar" parent="EnemyPanel"]
 layout_mode = 2
@@ -32,12 +50,23 @@ show_percentage = true
 
 [node name="EnemyStatus" type="Label" parent="EnemyPanel"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = ""
+
+[node name="EnemyStatLabel" type="Label" parent="EnemyPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = ""
+
+[node name="EnemyHazardLabel" type="Label" parent="EnemyPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
 text = ""
 
 [node name="EnemyMesh" type="ColorRect" parent="."]
 anchors_preset = -1
 anchor_left = 0.6
-anchor_top = 0.05
+anchor_top = 0.06
 anchor_right = 0.9
 anchor_bottom = 0.4
 color = Color(0.5, 0.5, 0.5, 1)
@@ -45,13 +74,18 @@ color = Color(0.5, 0.5, 0.5, 1)
 [node name="PlayerPanel" type="VBoxContainer" parent="."]
 anchors_preset = -1
 anchor_left = 0.55
-anchor_top = 0.45
+anchor_top = 0.42
 anchor_right = 0.95
-anchor_bottom = 0.6
+anchor_bottom = 0.66
 
 [node name="PlayerCreatureName" type="Label" parent="PlayerPanel"]
 layout_mode = 2
 text = "Rice Ball Lv.5"
+
+[node name="PlayerTypeLabel" type="Label" parent="PlayerPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = ""
 
 [node name="PlayerHPBar" type="ProgressBar" parent="PlayerPanel"]
 layout_mode = 2
@@ -59,16 +93,43 @@ max_value = 100.0
 value = 100.0
 show_percentage = true
 
+[node name="PlayerXPBar" type="ProgressBar" parent="PlayerPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+max_value = 100.0
+show_percentage = false
+
 [node name="PlayerStatus" type="Label" parent="PlayerPanel"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = ""
+
+[node name="PlayerAbilityLabel" type="Label" parent="PlayerPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = ""
+
+[node name="PlayerItemLabel" type="Label" parent="PlayerPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = ""
+
+[node name="PlayerStatLabel" type="Label" parent="PlayerPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = ""
+
+[node name="PlayerHazardLabel" type="Label" parent="PlayerPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
 text = ""
 
 [node name="LogPanel" type="VBoxContainer" parent="."]
 anchors_preset = -1
 anchor_left = 0.05
-anchor_top = 0.45
+anchor_top = 0.42
 anchor_right = 0.5
-anchor_bottom = 0.65
+anchor_bottom = 0.66
 
 [node name="BattleLog" type="RichTextLabel" parent="LogPanel"]
 layout_mode = 2
@@ -82,26 +143,35 @@ anchors_preset = -1
 anchor_left = 0.05
 anchor_top = 0.68
 anchor_right = 0.95
-anchor_bottom = 0.95
+anchor_bottom = 0.97
 
 [node name="MoveGrid" type="GridContainer" parent="ActionPanel"]
 layout_mode = 2
+size_flags_vertical = 3
 columns = 2
 
 [node name="Move1" type="Button" parent="ActionPanel/MoveGrid"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 60)
+size_flags_horizontal = 3
 text = "Move 1"
 
 [node name="Move2" type="Button" parent="ActionPanel/MoveGrid"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 60)
+size_flags_horizontal = 3
 text = "Move 2"
 
 [node name="Move3" type="Button" parent="ActionPanel/MoveGrid"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 60)
+size_flags_horizontal = 3
 text = "Move 3"
 
 [node name="Move4" type="Button" parent="ActionPanel/MoveGrid"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 60)
+size_flags_horizontal = 3
 text = "Move 4"
 
 [node name="BottomButtons" type="HBoxContainer" parent="ActionPanel"]

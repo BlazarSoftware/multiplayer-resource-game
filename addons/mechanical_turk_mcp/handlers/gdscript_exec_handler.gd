@@ -6,7 +6,7 @@ signal exec_ready(result: Dictionary)
 
 
 func handle_execute(params) -> Dictionary:
-	_execute_deferred(params)
+	call_deferred("_execute_deferred", params)
 	return {"_deferred": exec_ready}
 
 

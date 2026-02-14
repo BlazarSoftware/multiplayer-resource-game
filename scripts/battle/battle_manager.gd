@@ -10,6 +10,11 @@ signal move_learn_prompt(creature_idx: int, new_move_id: String)
 signal evolution_occurred(creature_idx: int, new_species_id: String)
 signal pvp_challenge_received(challenger_name: String, challenger_peer: int)
 signal trainer_dialogue(trainer_name: String, text: String, is_before: bool)
+signal battle_state_updated()
+signal battle_rewards_received(drops: Dictionary)
+signal trainer_rewards_received(money: int, ingredients: Dictionary)
+signal pvp_loss_received(lost_items: Dictionary)
+signal defeat_penalty_received(money_lost: int)
 
 # === Battle Mode System ===
 enum BattleMode { WILD, TRAINER, PVP }
@@ -26,6 +31,24 @@ var client_enemy: Dictionary = {}
 var client_active_creature_idx: int = 0
 var awaiting_action: bool = false
 var client_battle_mode: int = 0 # BattleMode enum value
+var client_weather: String = ""
+var client_weather_turns: int = 0
+var client_player_hazards: Array = []
+var client_enemy_hazards: Array = []
+var client_player_stat_stages: Dictionary = {}
+var client_enemy_stat_stages: Dictionary = {}
+var client_player_status_turns: int = 0
+var client_enemy_status_turns: int = 0
+
+# Summary accumulation (client-side)
+var summary_xp_results: Array = []
+var summary_drops: Dictionary = {}
+var summary_trainer_money: int = 0
+var summary_trainer_ingredients: Dictionary = {}
+var summary_defeat_penalty: int = 0
+var summary_pvp_loss: Dictionary = {}
+var summary_evolutions: Array = [] # [{creature_idx, new_species_id}]
+var summary_new_moves: Array = [] # [{creature_idx, move_id, auto}]
 
 # Battle state structure (server-side):
 # {
@@ -110,6 +133,63 @@ func _get_side(battle: Dictionary, peer_id: int) -> String:
 	if battle.side_b_peer == peer_id:
 		return "b"
 	return ""
+
+func _build_battle_state_for_peer(battle: Dictionary, peer_id: int) -> Dictionary:
+	var side = _get_side(battle, peer_id)
+	var my_side = "a" if side == "a" else "b"
+	var opp_side = "b" if side == "a" else "a"
+	var my_creature = battle["side_" + my_side + "_party"][battle["side_" + my_side + "_active_idx"]]
+	var opp_creature = battle["side_" + opp_side + "_party"][battle["side_" + opp_side + "_active_idx"]]
+	var my_hazards_key = "side_" + my_side + "_hazards"
+	var opp_hazards_key = "side_" + opp_side + "_hazards"
+
+	var opp_species = DataRegistry.get_species(opp_creature.get("species_id", ""))
+	var opp_types: Array = []
+	if opp_species:
+		opp_types = Array(opp_species.types)
+
+	return {
+		"weather": battle.get("weather", ""),
+		"weather_turns": battle.get("weather_turns", 0),
+		"player_hazards": battle[my_hazards_key].duplicate(),
+		"enemy_hazards": battle[opp_hazards_key].duplicate(),
+		"player_stat_stages": {
+			"attack": my_creature.get("attack_stage", 0),
+			"defense": my_creature.get("defense_stage", 0),
+			"sp_attack": my_creature.get("sp_attack_stage", 0),
+			"sp_defense": my_creature.get("sp_defense_stage", 0),
+			"speed": my_creature.get("speed_stage", 0),
+			"accuracy": my_creature.get("accuracy_stage", 0),
+			"evasion": my_creature.get("evasion_stage", 0),
+		},
+		"enemy_stat_stages": {
+			"attack": opp_creature.get("attack_stage", 0),
+			"defense": opp_creature.get("defense_stage", 0),
+			"sp_attack": opp_creature.get("sp_attack_stage", 0),
+			"sp_defense": opp_creature.get("sp_defense_stage", 0),
+			"speed": opp_creature.get("speed_stage", 0),
+			"accuracy": opp_creature.get("accuracy_stage", 0),
+			"evasion": opp_creature.get("evasion_stage", 0),
+		},
+		"enemy_creature": {
+			"nickname": opp_creature.get("nickname", "???"),
+			"level": opp_creature.get("level", 1),
+			"hp": opp_creature.get("hp", 0),
+			"max_hp": opp_creature.get("max_hp", 1),
+			"species_id": opp_creature.get("species_id", ""),
+			"types": opp_types,
+			"status": opp_creature.get("status", ""),
+			"status_turns": opp_creature.get("status_turns", 0),
+		},
+		"player_status": my_creature.get("status", ""),
+		"player_status_turns": my_creature.get("status_turns", 0),
+		"enemy_status": opp_creature.get("status", ""),
+		"enemy_status_turns": opp_creature.get("status_turns", 0),
+	}
+
+func _send_state_to_peer(battle: Dictionary, peer_id: int) -> void:
+	var state = _build_battle_state_for_peer(battle, peer_id)
+	_receive_battle_state.rpc_id(peer_id, state)
 
 func _init_creature_battle_state(creature: Dictionary) -> void:
 	creature["attack_stage"] = 0
@@ -266,6 +346,7 @@ func _receive_party_data(party_data: Array) -> void:
 					trainer_name = trainer.display_name
 			print("[BattleManager] Sending _start_battle_client to peer ", sender, " mode=", battle.mode)
 			_start_battle_client.rpc_id(sender, enemy_active, battle.mode, trainer_name)
+			_send_state_to_peer(battle, sender)
 	elif side == "b":
 		battle.side_b_party = party_data
 	# Check if PvP and both parties received
@@ -283,6 +364,8 @@ func _start_pvp_battle(battle: Dictionary) -> void:
 	var b_name = NetworkManager.players.get(battle.side_b_peer, {}).get("name", "Player")
 	_start_battle_client.rpc_id(battle.side_a_peer, b_active, BattleMode.PVP, b_name)
 	_start_battle_client.rpc_id(battle.side_b_peer, a_active, BattleMode.PVP, a_name)
+	_send_state_to_peer(battle, battle.side_a_peer)
+	_send_state_to_peer(battle, battle.side_b_peer)
 
 # === ACTION HANDLING ===
 
@@ -667,18 +750,30 @@ func _check_battle_outcome(battle: Dictionary, turn_log: Array) -> void:
 				turn_log.append({"type": "trainer_switch", "actor": "enemy", "to": next_idx})
 				# Grant XP for the defeated enemy
 				_grant_xp_for_defeat(battle, enemy, turn_log)
+				# Accumulate drops from defeated creature (deferred)
+				var mid_drops = _calculate_drops(enemy)
+				if not battle.has("pending_drops"):
+					battle["pending_drops"] = {}
+				for item_id in mid_drops:
+					battle["pending_drops"][item_id] = battle["pending_drops"].get(item_id, 0) + mid_drops[item_id]
 				_send_turn_result.rpc_id(peer_id, turn_log, player_creature.hp, player_creature.get("pp", []), new_enemy.hp)
+				_send_state_to_peer(battle, peer_id)
 				battle.state = "waiting_action"
 				return
 
 		# Victory!
 		_grant_xp_for_defeat(battle, enemy, turn_log)
-		var drops = _calculate_drops(enemy)
-		turn_log.append({"type": "victory", "drops": drops})
+		# Collect all pending drops + final creature drops
+		var all_drops: Dictionary = battle.get("pending_drops", {}).duplicate()
+		var final_drops = _calculate_drops(enemy)
+		for item_id in final_drops:
+			all_drops[item_id] = all_drops.get(item_id, 0) + final_drops[item_id]
+		turn_log.append({"type": "victory", "drops": all_drops})
 		_send_turn_result.rpc_id(peer_id, turn_log, player_creature.hp, player_creature.get("pp", []), enemy.hp)
-		_grant_battle_rewards.rpc_id(peer_id, drops)
-		for item_id in drops:
-			NetworkManager.server_add_inventory(peer_id, item_id, drops[item_id])
+		_send_state_to_peer(battle, peer_id)
+		_grant_battle_rewards.rpc_id(peer_id, all_drops)
+		for item_id in all_drops:
+			NetworkManager.server_add_inventory(peer_id, item_id, all_drops[item_id])
 
 		# Trainer rewards
 		if battle.mode == BattleMode.TRAINER and battle.trainer_id != "":
@@ -705,15 +800,20 @@ func _check_battle_outcome(battle: Dictionary, turn_log: Array) -> void:
 		if alive_idx == -1:
 			turn_log.append({"type": "defeat"})
 			_send_turn_result.rpc_id(peer_id, turn_log, 0, player_creature.get("pp", []), enemy.hp)
+			_send_state_to_peer(battle, peer_id)
+			# Loss penalty: lose 50% money + teleport to spawn
+			_apply_defeat_penalty(battle, peer_id)
 			_end_battle_for_peer(battle, peer_id, false)
 			return
 		else:
 			turn_log.append({"type": "fainted", "need_switch": true})
 			_send_turn_result.rpc_id(peer_id, turn_log, player_creature.hp, player_creature.get("pp", []), enemy.hp)
+			_send_state_to_peer(battle, peer_id)
 			battle.state = "waiting_action"
 			return
 
 	_send_turn_result.rpc_id(peer_id, turn_log, player_creature.hp, player_creature.get("pp", []), enemy.hp)
+	_send_state_to_peer(battle, peer_id)
 	battle.state = "waiting_action"
 
 # === XP / LEVELING / EVOLUTION ===
@@ -738,30 +838,32 @@ func _grant_xp_for_defeat(battle: Dictionary, defeated_enemy: Dictionary, _turn_
 
 	var xp_amount = int(raw_xp * xp_mult)
 
-	# Grant XP to all participants
+	# Grant XP to all party members (participants=full, bench=50%)
 	var peer_id = battle.side_a_peer
 	var participants = battle.get("participants_a", [0])
 	var xp_results = []
 
-	for idx in participants:
-		if idx >= battle.side_a_party.size():
-			continue
+	for idx in range(battle.side_a_party.size()):
 		var creature = battle.side_a_party[idx]
 		if creature.get("hp", 0) <= 0 and idx != battle.side_a_active_idx:
-			continue # Dead non-active participants don't get XP
+			continue # Dead non-active creatures don't get XP
 
-		# Grant EVs
-		for stat in species.ev_yield:
-			var ev_val = int(species.ev_yield[stat])
-			if not creature.has("evs"):
-				creature["evs"] = {}
-			var total_evs = _count_total_evs(creature.get("evs", {}))
-			if total_evs < 510:
-				creature["evs"][stat] = creature["evs"].get(stat, 0) + ev_val
+		var is_participant = idx in participants
+		var this_xp = xp_amount if is_participant else int(xp_amount * 0.5)
+
+		# Grant EVs (only participants)
+		if is_participant:
+			for stat in species.ev_yield:
+				var ev_val = int(species.ev_yield[stat])
+				if not creature.has("evs"):
+					creature["evs"] = {}
+				var total_evs = _count_total_evs(creature.get("evs", {}))
+				if total_evs < 510:
+					creature["evs"][stat] = creature["evs"].get(stat, 0) + ev_val
 
 		# Grant XP
 		var _old_level = creature.get("level", 1)
-		creature["xp"] = creature.get("xp", 0) + xp_amount
+		creature["xp"] = creature.get("xp", 0) + this_xp
 		var xp_to_next = creature.get("xp_to_next", 100)
 
 		var level_ups = []
@@ -843,7 +945,7 @@ func _grant_xp_for_defeat(battle: Dictionary, defeated_enemy: Dictionary, _turn_
 
 		xp_results.append({
 			"creature_idx": idx,
-			"xp_gained": xp_amount,
+			"xp_gained": this_xp,
 			"level_ups": level_ups,
 			"new_moves": new_moves_learned,
 			"evolved": evolved,
@@ -954,6 +1056,8 @@ func _resolve_pvp_turn(battle: Dictionary) -> void:
 			b_log.append({"type": "defeat"})
 			_send_turn_result.rpc_id(battle.side_a_peer, a_log, a_creature.hp, a_creature.get("pp", []), 0)
 			_send_turn_result.rpc_id(battle.side_b_peer, b_log, b_creature.hp, b_creature.get("pp", []), a_creature.hp)
+			_send_state_to_peer(battle, battle.side_a_peer)
+			_send_state_to_peer(battle, battle.side_b_peer)
 			_handle_pvp_end(battle, "a_wins")
 			return
 
@@ -964,12 +1068,16 @@ func _resolve_pvp_turn(battle: Dictionary) -> void:
 			a_log.append({"type": "defeat"})
 			_send_turn_result.rpc_id(battle.side_a_peer, a_log, 0, a_creature.get("pp", []), b_creature.hp)
 			_send_turn_result.rpc_id(battle.side_b_peer, b_log, b_creature.hp, b_creature.get("pp", []), 0)
+			_send_state_to_peer(battle, battle.side_a_peer)
+			_send_state_to_peer(battle, battle.side_b_peer)
 			_handle_pvp_end(battle, "b_wins")
 			return
 
 	# Send results to both players
 	_send_turn_result.rpc_id(battle.side_a_peer, a_log, a_creature.hp, a_creature.get("pp", []), b_creature.hp)
 	_send_turn_result.rpc_id(battle.side_b_peer, b_log, b_creature.hp, b_creature.get("pp", []), a_creature.hp)
+	_send_state_to_peer(battle, battle.side_a_peer)
+	_send_state_to_peer(battle, battle.side_b_peer)
 	battle.state = "waiting_both"
 	battle.timeout_timer = 30.0
 
@@ -1081,6 +1189,7 @@ func _process_switch(battle: Dictionary, side: String, new_idx: int) -> void:
 		var active = party[battle[active_key]]
 		var opp = battle["side_" + opponent_side + "_party"][battle["side_" + opponent_side + "_active_idx"]]
 		_send_turn_result.rpc_id(peer_id, switch_log, active.hp, active.get("pp", []), opp.hp)
+		_send_state_to_peer(battle, peer_id)
 		battle.state = "waiting_action"
 
 # === FLEE ===
@@ -1110,6 +1219,7 @@ func _process_flee(battle: Dictionary) -> void:
 			var r = _execute_action(enemy, player_creature, enemy_move, "enemy", battle)
 			flee_log.append(r)
 		_send_turn_result.rpc_id(peer_id, flee_log, player_creature.hp, player_creature.get("pp", []), enemy.hp)
+		_send_state_to_peer(battle, peer_id)
 		battle.state = "waiting_action"
 
 # === AI ===
@@ -1209,6 +1319,28 @@ func _end_battle_full(battle: Dictionary, result: String) -> void:
 			if battle.side_b_peer > 0:
 				_battle_ended_client.rpc_id(battle.side_b_peer, false)
 
+func _apply_defeat_penalty(_battle: Dictionary, peer_id: int) -> void:
+	if peer_id not in NetworkManager.player_data_store:
+		return
+	var pdata = NetworkManager.player_data_store[peer_id]
+	var current_money = int(pdata.get("money", 0))
+	var penalty = int(floor(current_money * 0.5))
+	if penalty > 0:
+		NetworkManager.server_remove_money(peer_id, penalty)
+	# Reset position to spawn
+	pdata["position"] = {"x": 0.0, "y": 1.0, "z": 3.0}
+	# Teleport the player node server-side (position syncs via StateSync)
+	var player_node = NetworkManager._get_player_node(peer_id)
+	if player_node:
+		player_node.position = Vector3(0.0, 1.0, 3.0)
+	# Notify client
+	_battle_defeat_penalty.rpc_id(peer_id, penalty)
+
+@rpc("authority", "reliable")
+func _battle_defeat_penalty(money_lost: int) -> void:
+	PlayerData.money = max(0, PlayerData.money - money_lost)
+	defeat_penalty_received.emit(money_lost)
+
 # Called when a player disconnects mid-battle
 func handle_player_disconnect(peer_id: int) -> void:
 	var battle = _get_battle_for_peer(peer_id)
@@ -1241,14 +1373,14 @@ func _send_turn_result(turn_log: Array, player_hp: int, player_pp: Array, enemy_
 func _grant_battle_rewards(drops: Dictionary) -> void:
 	for item_id in drops:
 		PlayerData.add_to_inventory(item_id, drops[item_id])
-	print("Battle rewards: ", drops)
+	battle_rewards_received.emit(drops)
 
 @rpc("authority", "reliable")
 func _grant_trainer_rewards_client(money: int, ingredients: Dictionary) -> void:
 	PlayerData.money += money
 	for item_id in ingredients:
 		PlayerData.add_to_inventory(item_id, ingredients[item_id])
-	print("Trainer rewards: $", money, " + ", ingredients)
+	trainer_rewards_received.emit(money, ingredients)
 
 @rpc("authority", "reliable")
 func _send_xp_result(results: Dictionary) -> void:
@@ -1274,6 +1406,32 @@ func _battle_ended_client(victory: bool) -> void:
 		PlayerData.heal_all_creatures()
 
 @rpc("authority", "reliable")
+func _receive_battle_state(state: Dictionary) -> void:
+	_apply_battle_state(state)
+
+func _apply_battle_state(state: Dictionary) -> void:
+	client_weather = state.get("weather", "")
+	client_weather_turns = state.get("weather_turns", 0)
+	client_player_hazards = state.get("player_hazards", [])
+	client_enemy_hazards = state.get("enemy_hazards", [])
+	client_player_stat_stages = state.get("player_stat_stages", {})
+	client_enemy_stat_stages = state.get("enemy_stat_stages", {})
+	client_player_status_turns = state.get("player_status_turns", 0)
+	client_enemy_status_turns = state.get("enemy_status_turns", 0)
+	# Update enemy creature data from state
+	var ec = state.get("enemy_creature", {})
+	if not ec.is_empty():
+		client_enemy["nickname"] = ec.get("nickname", client_enemy.get("nickname", "???"))
+		client_enemy["level"] = ec.get("level", client_enemy.get("level", 1))
+		client_enemy["hp"] = ec.get("hp", client_enemy.get("hp", 0))
+		client_enemy["max_hp"] = ec.get("max_hp", client_enemy.get("max_hp", 1))
+		client_enemy["species_id"] = ec.get("species_id", client_enemy.get("species_id", ""))
+		client_enemy["types"] = ec.get("types", [])
+		client_enemy["status"] = ec.get("status", "")
+		client_enemy["status_turns"] = ec.get("status_turns", 0)
+	battle_state_updated.emit()
+
+@rpc("authority", "reliable")
 func _pvp_challenge_received(challenger_name: String, challenger_peer: int) -> void:
 	pvp_challenge_received.emit(challenger_name, challenger_peer)
 
@@ -1281,7 +1439,7 @@ func _pvp_challenge_received(challenger_name: String, challenger_peer: int) -> v
 func _pvp_loss_notify(lost_items: Dictionary) -> void:
 	for item_id in lost_items:
 		PlayerData.remove_from_inventory(item_id, lost_items[item_id])
-	print("PvP loss — lost items: ", lost_items)
+	pvp_loss_received.emit(lost_items)
 
 @rpc("authority", "reliable")
 func _trainer_dialogue_client(trainer_name: String, text: String, is_before: bool) -> void:
@@ -1332,6 +1490,24 @@ func start_battle_client(enemy_data: Dictionary, battle_mode: int = BattleMode.W
 	client_active_creature_idx = PlayerData.get_first_alive_creature()
 	awaiting_action = true
 	client_battle_mode = battle_mode
+	# Reset client state
+	client_weather = ""
+	client_weather_turns = 0
+	client_player_hazards = []
+	client_enemy_hazards = []
+	client_player_stat_stages = {}
+	client_enemy_stat_stages = {}
+	client_player_status_turns = 0
+	client_enemy_status_turns = 0
+	# Reset summary accumulators
+	summary_xp_results = []
+	summary_drops = {}
+	summary_trainer_money = 0
+	summary_trainer_ingredients = {}
+	summary_defeat_penalty = 0
+	summary_pvp_loss = {}
+	summary_evolutions = []
+	summary_new_moves = []
 	battle_started.emit()
 
 func send_move(move_id: String) -> void:
