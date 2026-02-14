@@ -17,8 +17,9 @@ func _ready() -> void:
 	# Initialize DataRegistry
 	DataRegistry.ensure_loaded()
 
-	# Setup UI for the local player (clients only)
-	if not multiplayer.is_server() or not (DisplayServer.get_name() == "headless" or OS.has_feature("dedicated_server")):
+	# Setup UI for the local player (clients only, skip for dedicated/--server)
+	var is_dedicated := DisplayServer.get_name() == "headless" or OS.has_feature("dedicated_server") or "--server" in OS.get_cmdline_user_args()
+	if not multiplayer.is_server() or not is_dedicated:
 		_setup_ui()
 
 	if not multiplayer.is_server():

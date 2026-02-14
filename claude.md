@@ -27,14 +27,33 @@
 - **StateSync properties** (5 total): `position`, `velocity` (always), `player_color`, `player_name_display` (spawn-only), `mesh_rotation_y` (always).
 
 ## Battle System
-- **3 battle modes**: Wild, Trainer (7 NPCs), PvP (V key challenge)
+- **3 battle modes**: Wild, Trainer (7 NPCs), PvP (V key challenge within 5 units of another player)
 - **18 creatures** (9 original + 9 new), 4 evolution chains, MAX_PARTY_SIZE = 3
+- **Starter creature**: All new players spawn with Rice Ball (Grain, Lv 5, 45 HP) with moves: grain_bash, quick_bite, bread_wall, taste_test
 - **42 moves** including weather setters, hazards, protection, charging, multi-hit, recoil, drain
 - **18 abilities** with trigger-based dispatch (on_enter/on_attack/on_defend/on_status/end_of_turn/on_weather)
 - **12 held items** (6 type boosters, 6 utility) — all craftable from ingredients
-- **XP/Leveling**: XP from battles, level-up stat recalc, learnset moves, evolution
+- **XP/Leveling**: XP from battles, level-up stat recalc, learnset moves, evolution. Full XP to participants, 50% to bench.
 - **AI**: 3 tiers (easy=random, medium=type-aware, hard=damage-calc + prediction)
-- **PvP**: Both-submit simultaneous turns, 30s timeout, disconnect = forfeit
+- **PvP**: Both-submit simultaneous turns, 30s timeout, disconnect = forfeit. Loser forfeits 25% of each ingredient stack to winner.
+- **Defeat penalty**: 50% money loss, teleport to spawn point, all creatures healed
+
+### Battle UI
+- **Enemy panel**: name, level, types, HP bar, status effect, stat stage labels (e.g. "Stats: DEF+2 SPA+1")
+- **Player panel**: name, level, types, HP bar, XP bar, ability name, held item name
+- **Move buttons**: 3-line format — Name / Type|Category|Power / Accuracy|PP (e.g. "Grain Bash / Grain | Phys | Pwr:65 / Acc:100% | 15/15 PP")
+- **Weather bar**: shown when weather is active, displays weather name + remaining turns
+- **Flee/Switch**: Flee available in wild only, Switch always available (opens creature picker overlay)
+- **Turn log**: scrolling RichTextLabel showing move results, damage, status effects, faints
+- **Summary screen**: shown after battle ends — hides all battle panels, shows Victory!/Defeat, XP per creature (with level-up highlights), item drops, trainer money + bonus ingredients. Continue button dismisses and returns to world.
+- **PvP-specific**: no Flee button, "Waiting for opponent..." label after submitting move, both perspectives actor-swapped
+
+### Battle Manager Server-Side
+- Battle state keyed by `battle_id` (auto-increment), `player_battle_map[peer_id] → battle_id`
+- Wild/Trainer: server picks AI action, resolves turn, sends `_send_turn_result` RPC
+- PvP: both sides submit via `request_battle_action` RPC, server resolves when both received
+- Rewards sent via separate RPCs: `_grant_battle_rewards` (drops), `_send_xp_results` (XP/level-ups), `_grant_trainer_rewards_client` (money+ingredients), `_battle_defeat_penalty` (money loss)
+- Client accumulates reward data in `summary_*` vars, summary screen displays after 0.5s delay
 
 ## Crafting & Farming
 - **25 recipes**: 13 creature recipes + 12 held item recipes
@@ -94,6 +113,7 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 - **DataRegistry .tres/.remap handling**: Godot exports convert `.tres` files to `.tres.remap` (binary format with remap indirection). Any code using `DirAccess` to scan for resources must check `.tres`, `.res`, AND `.remap` extensions — otherwise the exported build loads zero resources while the editor build works fine.
 - **Battle stacking prevention**: All encounter/battle entry points (TallGrass, EncounterManager, TrainerNPC) must check `BattleManager.player_battle_map` before starting a new battle. The `active_encounters` dict in EncounterManager only tracks wild encounters, NOT trainer/PvP battles. Client-side `start_battle_client()` also guards against duplicate `_start_battle_client` RPCs.
 - **stdbuf for Docker logs**: Godot headless buffers stdout, making `docker logs` empty. The Dockerfile uses `stdbuf -oL` in the CMD to force line-buffered output.
+- **CanvasLayer child visibility persistence**: If you hide all children of a CanvasLayer (e.g. for a summary overlay), you MUST restore their visibility when the next screen/battle starts. Setting the CanvasLayer's own `visible` property does not propagate to children. The `_on_battle_started()` handler restores all child visibility and cleans up leftover dynamically-created panels.
 
 ## Kubernetes Deployment
 - **Namespace**: `godot-multiplayer` (shared with other multiplayer game servers)
@@ -115,12 +135,27 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 ```
 
 ## MCP Testing Workflow
-- MCP bridge only communicates with the editor process, NOT the running game
-- `execute_gdscript`, `send_input_event`, `send_action`, and screenshots all target the editor only
+
+### Editor-only bridge (single process)
+- MCP bridge by default communicates with the editor process on port 9080, NOT the running game
 - `batch_scene_operations` creates wrong node types — write .tscn files directly instead
 - **To test server-side logic via MCP**: add temporary test code to `connect_ui.gd` `_ready()`, call `NetworkManager.host_game()`, run tests synchronously (no `await`), then check `get_debug_output`. Revert the test code afterward.
 - **IMPORTANT**: Do NOT call `GameManager.start_game()` before your test code finishes — it frees ConnectUI via `queue_free`, killing any running coroutine. Run all assertions before `start_game()`.
-- **Port conflict**: If `host_game()` returns error 20 (ERR_CANT_CREATE), check `lsof -i :7777` — a Docker container or previous server may be holding the port. Stop it with `docker compose down` first.
+
+### Runtime bridge (multi-instance live testing)
+- The runtime bridge plugin enables `execute_gdscript`, `capture_screenshot`, `send_input_event`, and `send_action` on **running game processes**
+- Each instance uses a different bridge port via `-- --bridge-port=NNNN` CLI arg
+- **Headless server**: `'/Applications/Mechanical Turk.app/Contents/MacOS/Mechanical Turk' --path <project> --headless -- --bridge-port=9082`
+- **Client 1**: launched via `run_project` MCP tool (uses default bridge port 9081)
+- **Client 2**: launched manually with `-- --bridge-port=9083`
+- MCP tools target client 1 via `target: "runtime"` (port 9081). For the server (9082) and client 2 (9083), use direct WebSocket from `mechanical-turk/mcp_server/` dir (has `ws` module): `node -e "const WebSocket=require('ws'); ..."`
+- **GDScript injection caveats**: runtime errors in injected scripts trigger the Godot debugger break, freezing the entire process. All subsequent MCP calls will timeout. Requires killing and restarting the process. GDScript has no try/catch.
+- **Screenshot size**: use small resolutions (400x300) to avoid WebSocket `ERR_OUT_OF_MEMORY` on large images
+- **PvP testing**: players must be within 5 units for challenge flow. Move them on server via `nm._get_player_node(peer_id).position = Vector3(...)`. PvP has 30s turn timeout — act quickly or increase temporarily.
+
+### Port conflicts
+- If `host_game()` returns error 20 (ERR_CANT_CREATE), check `lsof -i :7777` — a Docker container or previous server may be holding the port. Stop it with `docker compose down` first.
+- Check bridge ports: `lsof -i :9081 -i :9082 -i :9083`
 
 ## File Structure Overview
 - `scripts/autoload/` — NetworkManager, GameManager, PlayerData, SaveManager

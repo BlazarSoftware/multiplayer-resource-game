@@ -25,8 +25,9 @@ func _ready() -> void:
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
-	if DisplayServer.get_name() == "headless" or OS.has_feature("dedicated_server"):
-		print("Headless mode detected — auto-starting server...")
+	var is_dedicated := DisplayServer.get_name() == "headless" or OS.has_feature("dedicated_server") or "--server" in OS.get_cmdline_user_args()
+	if is_dedicated:
+		print("Server mode detected — auto-starting server...")
 		host_game("Server")
 		GameManager.start_game()
 

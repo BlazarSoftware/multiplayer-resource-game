@@ -6,6 +6,8 @@ extends Control
 @onready var status_label: Label = $VBox/StatusLabel
 
 const PREFS_PATH = "user://connect_prefs.cfg"
+const PUBLIC_SERVER_IP = "207.32.216.76"
+var DEFAULT_IP: String = "127.0.0.1" if OS.has_feature("editor") else PUBLIC_SERVER_IP
 
 func _ready() -> void:
 	join_button.pressed.connect(_on_join_pressed)
@@ -20,7 +22,7 @@ func _on_join_pressed() -> void:
 		player_name = "Player"
 	var address = ip_input.text.strip_edges()
 	if address == "":
-		address = "207.32.216.76"
+		address = DEFAULT_IP
 	# Save preferences
 	_save_prefs(player_name, address)
 	var error = NetworkManager.join_game(address, player_name)
@@ -46,7 +48,11 @@ func _save_prefs(player_name: String, address: String) -> void:
 func _load_prefs() -> void:
 	var config = ConfigFile.new()
 	if config.load(PREFS_PATH) == OK:
-		var saved_name = config.get_value("connect", "name", "Player")
-		var saved_addr = config.get_value("connect", "address", "207.32.216.76")
-		name_input.text = saved_name
-		ip_input.text = saved_addr
+		name_input.text = config.get_value("connect", "name", "Player")
+		# In editor, always default to localhost; in export, use saved or public IP
+		if OS.has_feature("editor"):
+			ip_input.text = DEFAULT_IP
+		else:
+			ip_input.text = config.get_value("connect", "address", DEFAULT_IP)
+	else:
+		ip_input.text = DEFAULT_IP
