@@ -10,6 +10,8 @@ var step_threshold: int = 10 # physics frames of movement to count as a step
 var encounter_chance: float = 0.15 # 15% per step
 
 func _ready() -> void:
+	# Detect players on collision layer 2 (players don't use layer 1 to avoid pushing each other)
+	collision_mask = 3 # bits 1 + 2
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	# Set visual on grass mesh children

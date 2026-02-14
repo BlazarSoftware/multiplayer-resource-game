@@ -17,12 +17,8 @@ func _ready() -> void:
 	# Initialize DataRegistry
 	DataRegistry.ensure_loaded()
 
-	# Setup UI for the local player (clients only, skip for dedicated/--server)
-	var is_dedicated := DisplayServer.get_name() == "headless" or OS.has_feature("dedicated_server") or "--server" in OS.get_cmdline_user_args()
-	if not multiplayer.is_server() or not is_dedicated:
-		_setup_ui()
-
 	if not multiplayer.is_server():
+		_setup_ui()
 		_ensure_fallback_camera()
 		return
 
@@ -93,9 +89,10 @@ func _ensure_fallback_camera() -> void:
 	rig.add_child(cam)
 
 func _setup_ui() -> void:
-	var ui_node = Node.new()
-	ui_node.name = "UI"
-	add_child(ui_node)
+	# Use the existing UI node from game_world.tscn (contains PvPChallengeUI, TrainerDialogueUI)
+	# Creating a new "UI" node would cause Godot to rename it (e.g. @Node@38),
+	# breaking all path-based lookups like /root/Main/GameWorld/UI/BattleUI
+	var ui_node = $UI
 
 	var hud = hud_scene.instantiate()
 	ui_node.add_child(hud)
@@ -140,9 +137,9 @@ func _spawn_player(peer_id: int) -> void:
 		if not pos_data.is_empty():
 			player.position = Vector3(pos_data.get("x", 0.0), pos_data.get("y", 1.0), pos_data.get("z", 3.0))
 		else:
-			player.position = Vector3(randf_range(-2, 2), 1, randf_range(2, 4))
+			player.position = _get_spread_spawn_position()
 	else:
-		player.position = Vector3(randf_range(-2, 2), 1, randf_range(2, 4))
+		player.position = _get_spread_spawn_position()
 	# Set visual properties from server data
 	if peer_id in NetworkManager.player_data_store:
 		var pdata = NetworkManager.player_data_store[peer_id]
@@ -161,6 +158,13 @@ func _despawn_player(peer_id: int) -> void:
 	if player_node:
 		player_node.queue_free()
 		print("Despawned player: ", peer_id)
+
+func _get_spread_spawn_position() -> Vector3:
+	# Spread new players in a circle using golden angle to avoid overlap/stacking
+	var idx = players_node.get_child_count() # 0-based count of existing children
+	var angle = idx * 2.399 # golden angle in radians
+	var radius = 2.0
+	return Vector3(cos(angle) * radius, 1.0, sin(angle) * radius + 3.0)
 
 func _sync_world_to_client(peer_id: int) -> void:
 	if not multiplayer.is_server():

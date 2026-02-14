@@ -112,6 +112,10 @@ func _on_peer_disconnected(id: int) -> void:
 func _on_connected_to_server() -> void:
 	print("Connected to server!")
 	connection_succeeded.emit()
+	# Load game world FIRST so MultiplayerSpawner exists before any spawn RPCs arrive.
+	# Without this, a late-joining client gets spawn replication for already-connected
+	# players before its scene tree has the spawner path, causing cascading errors.
+	GameManager.start_game()
 	# Send join request with our name
 	request_join.rpc_id(1, player_info.name)
 
@@ -233,7 +237,7 @@ func _create_default_player_data(player_name: String) -> Dictionary:
 		"player_name": player_name,
 		"inventory": {},
 		"party": [starter],
-		"position": {"x": 0.0, "y": 1.0, "z": 3.0},
+		"position": {},
 		"watering_can_current": 10,
 		"money": 0,
 		"defeated_trainers": {},

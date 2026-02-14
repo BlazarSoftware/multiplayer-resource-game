@@ -6,8 +6,8 @@
 - **Dedicated server detection** (3 triggers, checked in `NetworkManager._ready()`):
   1. `DisplayServer.get_name() == "headless"` — Docker/headless export
   2. `OS.has_feature("dedicated_server")` — Godot dedicated server export
-  3. `"--server" in OS.get_cmdline_user_args()` — CLI flag (used by MCP `run_multiplayer_session`)
-- When dedicated mode is detected: auto-calls `host_game("Server")` + `GameManager.start_game()`, skips ConnectUI entirely, skips game world UI setup (HUD, BattleUI, etc.).
+  3. `--server` or `--role=server` in `OS.get_cmdline_user_args()` — CLI flags (MCP `run_multiplayer_session` auto-passes `--role=server`)
+- When dedicated mode is detected: auto-calls `host_game("Server")` + `GameManager.start_game()`, skips ConnectUI entirely, skips game world UI setup (HUD, BattleUI, etc.) and camera creation.
 
 ## Docker Server Workflow
 - Use `./scripts/start-docker-server.sh` to rebuild and start the dedicated server.
@@ -17,14 +17,19 @@
 - Godot's internal log file is also available: `docker exec <container> cat "/root/.local/share/godot/app_userdata/Creature Crafting Demo/logs/godot.log"`
 
 ## Multiplayer Join/Spawn Stabilization
+- **Client pre-loads GameWorld on connect**: `_on_connected_to_server()` calls `GameManager.start_game()` BEFORE `request_join`. This ensures the MultiplayerSpawner exists in the client's scene tree before any spawn replication RPCs arrive from the server. Without this, late-joining clients get cascading errors when the server tries to replicate already-spawned players.
 - Join flow uses a client-ready handshake before server-side spawn.
 - Spawn waits for client world path readiness (`/root/Main/GameWorld/Players/MultiplayerSpawner`).
 - Server tracks temporary join state and times out peers that never become ready.
+- **New player spread spawn**: Players with no saved position spawn in a golden-angle circle (radius 2, center 0,0,3) to avoid overlap. Default player data has empty position `{}` so the spread logic triggers.
 
 ## Player/Camera Notes
 - Player movement uses server authority with replicated input.
 - Camera defaults to over-the-shoulder and captures mouse during world control.
 - Mouse is explicitly made visible during battle UI and recaptured after battle ends.
+- **Server has no camera or UI** — `game_world.gd` `_ready()` skips `_setup_ui()` and `_ensure_fallback_camera()` on the server. Only clients get HUD, BattleUI, etc.
+- **Player collision layers**: Players use `collision_layer=2`, `collision_mask=1` (collide with ground/buildings on layer 1, but NOT with each other). TallGrass and TrainerNPC Area3Ds set `collision_mask=3` (bits 1+2) to detect players on layer 2.
+- **UI node sharing**: `_setup_ui()` adds HUD, BattleUI, CraftingUI, InventoryUI, PartyUI to the **existing** `$UI` node from `game_world.tscn` (which already contains PvPChallengeUI, TrainerDialogueUI). Do NOT create a new "UI" node — Godot will rename it (e.g. `@Node@38`), breaking all path-based lookups.
 - **Player visuals** (color, nameplate): set on the player node server-side **before** `add_child()` in `_spawn_player()`, synced via StateSync spawn-only mode (replication_mode=0). `_apply_visuals()` runs on all peers to apply color to mesh material and set nameplate text.
 - **Mesh rotation**: `mesh_rotation_y` computed server-side in `_physics_process`, synced via StateSync always-mode. All clients apply it in `_process()` to `mesh.rotation.y`.
 - **StateSync properties** (5 total): `position`, `velocity` (always), `player_color`, `player_name_display` (spawn-only), `mesh_rotation_y` (always).
@@ -116,6 +121,7 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 - **DataRegistry .tres/.remap handling**: Godot exports convert `.tres` files to `.tres.remap` (binary format with remap indirection). Any code using `DirAccess` to scan for resources must check `.tres`, `.res`, AND `.remap` extensions — otherwise the exported build loads zero resources while the editor build works fine.
 - **Battle stacking prevention**: All encounter/battle entry points (TallGrass, EncounterManager, TrainerNPC) must check `BattleManager.player_battle_map` before starting a new battle. The `active_encounters` dict in EncounterManager only tracks wild encounters, NOT trainer/PvP battles. Client-side `start_battle_client()` also guards against duplicate `_start_battle_client` RPCs.
 - **stdbuf for Docker logs**: Godot headless buffers stdout, making `docker logs` empty. The Dockerfile uses `stdbuf -oL` in the CMD to force line-buffered output.
+- **Duplicate node name trap**: If a .tscn file already has a child named "X", creating a new `Node("X")` in `_ready()` and calling `add_child()` causes Godot to silently rename it (e.g. `@Node@38`). This breaks all hardcoded path lookups like `/root/Main/GameWorld/UI/BattleUI`. Always use `get_node("X")` to reference existing nodes, don't create duplicates.
 - **CanvasLayer child visibility persistence**: If you hide all children of a CanvasLayer (e.g. for a summary overlay), you MUST restore their visibility when the next screen/battle starts. Setting the CanvasLayer's own `visible` property does not propagate to children. The `_on_battle_started()` handler restores all child visibility and cleans up leftover dynamically-created panels.
 
 ## Kubernetes Deployment
@@ -151,7 +157,7 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 - Pass `numClients: 2` (or more) for client instances.
 - Target instances with `target: "runtime:server"`, `target: "runtime:client_1"`, `target: "runtime:client_2"`, etc.
 - **Lifecycle**: `stop_all_instances` to stop everything, `list_instances` to see running PIDs/ports.
-- **Client join via GDScript**: Use `execute_gdscript` with `target: "runtime:client_N"` to emit the join button's pressed signal rather than mouse click coordinates (viewport coords vary).
+- **Client join via GDScript**: Use `execute_gdscript` with `target: "runtime:client_N"` to call `NetworkManager.join_game("127.0.0.1", "PlayerName")` directly (more reliable than emitting button signals or mouse clicks).
 - **Screenshot caching**: MCP screenshot tool may cache results — use `get_scene_tree` or `execute_gdscript` for reliable state verification.
 
 ### Runtime bridge — manual setup (alternative)

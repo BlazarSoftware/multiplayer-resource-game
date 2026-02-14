@@ -7,6 +7,8 @@ var label_3d: Label3D = null
 var triggered_peers: Dictionary = {} # peer_id -> true (prevent re-triggering)
 
 func _ready() -> void:
+	# Detect players on collision layer 2 (players don't use layer 1 to avoid pushing each other)
+	collision_mask = 3 # bits 1 + 2
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	# Create visual
