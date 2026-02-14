@@ -2,9 +2,12 @@
 
 ## Project Runtime Defaults
 - Multiplayer default port: `7777` (UDP).
-- Client defaults to public server at `207.32.216.76` on port `7777` (Connect UI, fallback address, and saved prefs default all use this).
-- For local development, manually enter `127.0.0.1` in the Connect UI IP field.
-- Dedicated server can be run in Docker or Mechanical Turk headless mode.
+- **Smart IP defaults**: In editor, ConnectUI defaults to `127.0.0.1` (localhost). In exported builds, defaults to `207.32.216.76` (public server). Editor mode ignores saved prefs for IP to prevent stale overrides.
+- **Dedicated server detection** (3 triggers, checked in `NetworkManager._ready()`):
+  1. `DisplayServer.get_name() == "headless"` — Docker/headless export
+  2. `OS.has_feature("dedicated_server")` — Godot dedicated server export
+  3. `"--server" in OS.get_cmdline_user_args()` — CLI flag (used by MCP `run_multiplayer_session`)
+- When dedicated mode is detected: auto-calls `host_game("Server")` + `GameManager.start_game()`, skips ConnectUI entirely, skips game world UI setup (HUD, BattleUI, etc.).
 
 ## Docker Server Workflow
 - Use `./scripts/start-docker-server.sh` to rebuild and start the dedicated server.
@@ -142,13 +145,23 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 - **To test server-side logic via MCP**: add temporary test code to `connect_ui.gd` `_ready()`, call `NetworkManager.host_game()`, run tests synchronously (no `await`), then check `get_debug_output`. Revert the test code afterward.
 - **IMPORTANT**: Do NOT call `GameManager.start_game()` before your test code finishes — it frees ConnectUI via `queue_free`, killing any running coroutine. Run all assertions before `start_game()`.
 
-### Runtime bridge (multi-instance live testing)
+### Runtime bridge — MCP multiplayer session (preferred)
+- **Use `run_multiplayer_session` MCP tool** for multi-instance testing. It launches 1 server + N clients, each with a unique runtime bridge port, all managed by MCP.
+- Pass `serverArgs: ["--server"]` so the server instance auto-starts without ConnectUI.
+- Pass `numClients: 2` (or more) for client instances.
+- Target instances with `target: "runtime:server"`, `target: "runtime:client_1"`, `target: "runtime:client_2"`, etc.
+- **Lifecycle**: `stop_all_instances` to stop everything, `list_instances` to see running PIDs/ports.
+- **Client join via GDScript**: Use `execute_gdscript` with `target: "runtime:client_N"` to emit the join button's pressed signal rather than mouse click coordinates (viewport coords vary).
+- **Screenshot caching**: MCP screenshot tool may cache results — use `get_scene_tree` or `execute_gdscript` for reliable state verification.
+
+### Runtime bridge — manual setup (alternative)
 - The runtime bridge plugin enables `execute_gdscript`, `capture_screenshot`, `send_input_event`, and `send_action` on **running game processes**
 - Each instance uses a different bridge port via `-- --bridge-port=NNNN` CLI arg
 - **Headless server**: `'/Applications/Mechanical Turk.app/Contents/MacOS/Mechanical Turk' --path <project> --headless -- --bridge-port=9082`
 - **Client 1**: launched via `run_project` MCP tool (uses default bridge port 9081)
 - **Client 2**: launched manually with `-- --bridge-port=9083`
-- MCP tools target client 1 via `target: "runtime"` (port 9081). For the server (9082) and client 2 (9083), use direct WebSocket from `mechanical-turk/mcp_server/` dir (has `ws` module): `node -e "const WebSocket=require('ws'); ..."`
+
+### Runtime bridge caveats
 - **GDScript injection caveats**: runtime errors in injected scripts trigger the Godot debugger break, freezing the entire process. All subsequent MCP calls will timeout. Requires killing and restarting the process. GDScript has no try/catch.
 - **Screenshot size**: use small resolutions (400x300) to avoid WebSocket `ERR_OUT_OF_MEMORY` on large images
 - **PvP testing**: players must be within 5 units for challenge flow. Move them on server via `nm._get_player_node(peer_id).position = Vector3(...)`. PvP has 30s turn timeout — act quickly or increase temporarily.

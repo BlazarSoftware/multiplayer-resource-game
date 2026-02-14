@@ -1,27 +1,32 @@
 # Agents Guide
 
+## Quick Start (MCP Editor Session — preferred for local dev)
+1. Use MCP `run_multiplayer_session` with `serverArgs: ["--server"]`, `numClients: 2`
+2. Server auto-starts on port 7777 (no ConnectUI), clients show ConnectUI defaulting to `127.0.0.1`
+3. Join clients via MCP `execute_gdscript` (emit join button pressed signal) or click "Join Game" manually
+
 ## Quick Start (Public Server)
 1. Launch client with Mechanical Turk and open this project.
-2. Click "Join Game" — the Connect UI defaults to `207.32.216.76` (public K8s server).
+2. Click "Join Game" — exported builds default to `207.32.216.76` (public K8s server).
 
-## Quick Start (Local Dev)
-1. Start server:
-   - `./scripts/start-docker-server.sh`
-2. Launch client with Mechanical Turk and open this project.
-3. Change the IP field to `127.0.0.1` and click "Join Game".
+## Quick Start (Docker Local Dev)
+1. Start server: `./scripts/start-docker-server.sh`
+2. Launch client, click "Join Game" — editor defaults to `127.0.0.1`.
 
 ## Quick Start (Kubernetes Deploy)
-1. First-time setup:
-   - `./scripts/deploy-k8s.sh --setup`
-2. Build, push, and deploy:
-   - `./scripts/deploy-k8s.sh`
+1. First-time setup: `./scripts/deploy-k8s.sh --setup`
+2. Build, push, and deploy: `./scripts/deploy-k8s.sh`
 3. Join using `207.32.216.76:7777` (public) or `10.225.0.153:7777` (VPN).
 
 ## Networking Contract
 - Server/client default UDP port is `7777`.
-- Client Connect UI defaults to public server IP `207.32.216.76` (not localhost).
-- For local dev, manually enter `127.0.0.1` in the Connect UI.
-- Any tooling, scripts, docs, and deployment defaults should assume `7777`.
+- **Smart IP defaults**: Editor ConnectUI defaults to `127.0.0.1` (localhost). Exported builds default to `207.32.216.76` (public server). Editor mode ignores saved prefs for IP to prevent stale overrides.
+- **Dedicated server detection** (3 triggers in `NetworkManager._ready()`):
+  1. `DisplayServer.get_name() == "headless"` — Docker/headless export
+  2. `OS.has_feature("dedicated_server")` — Godot dedicated server export
+  3. `"--server" in OS.get_cmdline_user_args()` — CLI flag (used by MCP `run_multiplayer_session`)
+- When dedicated: auto-calls `host_game()` + `start_game()`, skips ConnectUI, skips game world UI (HUD, BattleUI, etc.)
+- Any tooling, scripts, docs, and deployment defaults should assume port `7777`.
 
 ## Multiplayer-Aware Development (CRITICAL)
 
@@ -86,10 +91,22 @@ Never assume a gameplay feature is local-only unless explicitly told so.
 - Deploy script: `scripts/deploy-k8s.sh` (`--setup` for first-time, `--skip-build` to redeploy only).
 
 ## MCP Testing Workflow
-- MCP bridge only talks to the editor, not the running game.
+
+### Preferred: `run_multiplayer_session`
+- Use MCP `run_multiplayer_session` with `serverArgs: ["--server"]`, `numClients: 2`
+- Target instances: `"runtime:server"`, `"runtime:client_1"`, `"runtime:client_2"`
+- Join clients: `execute_gdscript` with `target: "runtime:client_N"` to emit join button pressed signal
+- Verify state: `get_scene_tree`, `execute_gdscript`, `get_debug_output` (per instance)
+- Cleanup: `stop_all_instances`
+- **Screenshot caching**: MCP screenshot tool may cache — use `get_scene_tree` or `execute_gdscript` for reliable verification
+
+### Alternative: Editor bridge test pattern
+- MCP bridge by default talks to the editor process on port 9080, not the running game.
 - **To test server-side logic**: add temp test code to `connect_ui.gd` `_ready()`, call `NetworkManager.host_game()`, run assertions synchronously, then check `get_debug_output`. Revert test code after.
 - **Do NOT** call `GameManager.start_game()` before tests finish — it frees ConnectUI and kills any running coroutine.
-- **Port 7777 conflicts**: If `host_game()` fails with error 20, run `lsof -i :7777` and stop whatever is holding the port (usually Docker: `docker compose down`).
+
+### Port conflicts
+- If `host_game()` fails with error 20, run `lsof -i :7777` and stop whatever is holding the port (usually Docker: `docker compose down`).
 
 ## Operational Notes
 - If local container/server appears stale, rebuild:
