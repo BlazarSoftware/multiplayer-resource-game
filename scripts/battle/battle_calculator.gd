@@ -6,11 +6,14 @@ extends RefCounted
 const TYPE_CHART: Dictionary = {
 	"spicy": {"sweet": 2.0, "herbal": 2.0, "sour": 0.5, "umami": 0.5},
 	"sweet": {"sour": 2.0, "umami": 2.0, "spicy": 0.5, "grain": 0.5},
-	"sour": {"spicy": 2.0, "grain": 2.0, "sweet": 0.5, "herbal": 0.5},
-	"herbal": {"sour": 2.0, "sweet": 2.0, "spicy": 0.5, "umami": 0.5},
+	"sour": {"spicy": 2.0, "grain": 0.0, "sweet": 0.5, "herbal": 0.5},
+	"herbal": {"sour": 2.0, "sweet": 2.0, "spicy": 0.5, "umami": 0.0},
 	"umami": {"herbal": 2.0, "spicy": 2.0, "sweet": 0.5, "grain": 0.5},
 	"grain": {"sweet": 2.0, "umami": 2.0, "sour": 0.5, "herbal": 0.5},
 }
+
+# Crit stage thresholds: stage -> denominator (1/N chance)
+const CRIT_THRESHOLDS: Array = [16, 8, 4, 2]
 
 static func get_type_effectiveness(attack_type: String, defender_types: Array) -> float:
 	if attack_type == "":
@@ -57,10 +60,26 @@ static func calculate_damage(attacker: Dictionary, defender: Dictionary, move, l
 	var random_factor = randf_range(0.85, 1.0)
 	base *= random_factor
 
-	# Critical hit (6.25% chance, 1.5x damage)
-	var critical = randf() < 0.0625
+	# Critical hit (staged system)
+	var critical = check_critical(attacker, move)
 	if critical:
 		base *= 1.5
+
+	# Bond stat modifiers (dynamic nature from affinities)
+	var bond_boost = attacker.get("bond_boost_stat", "")
+	var bond_nerf = attacker.get("bond_nerf_stat", "")
+	if bond_boost != "" or bond_nerf != "":
+		var atk_stat_name = "attack" if move.category == "physical" else "sp_attack"
+		if bond_boost == atk_stat_name:
+			base *= 1.1
+		elif bond_nerf == atk_stat_name:
+			base *= 0.9
+		var def_stat_name = "defense" if move.category == "physical" else "sp_defense"
+		if bond_boost == def_stat_name:
+			# Defender's boost — attacker takes less? No — this is attacker's bond.
+			pass
+		if bond_nerf == def_stat_name:
+			pass
 
 	# STAB (Same Type Attack Bonus)
 	var attacker_types = attacker.get("types", [])
@@ -98,10 +117,42 @@ static func _accuracy_stage_multiplier(stage: int) -> float:
 	else:
 		return 3.0 / (3.0 - stage)
 
+static func check_critical(attacker: Dictionary, move) -> bool:
+	var stage = attacker.get("crit_stage", 0)
+	# Move-specific crit boost
+	if move and move.self_crit_stage_change > 0:
+		stage += move.self_crit_stage_change
+	# Held item crit boost (Precision Grater)
+	var item_id = attacker.get("held_item_id", "")
+	if item_id != "":
+		var item = DataRegistry.get_held_item(item_id)
+		if item and item.effect_type == "crit_boost":
+			stage += 1
+	# Bond level 1+ gives +1 crit stage
+	if attacker.get("bond_level", 0) >= 1:
+		stage += 1
+	stage = clampi(stage, 0, 3)
+	var threshold = CRIT_THRESHOLDS[stage]
+	return randi() % threshold == 0
+
 static func get_speed(creature: Dictionary) -> int:
 	var base_speed = creature.get("speed", 10)
 	var stage = creature.get("speed_stage", 0)
-	return int(float(base_speed) * _stage_multiplier(stage))
+	var spd = float(base_speed) * _stage_multiplier(stage)
+	# Status speed modifier (brined = 0.5x, wilted = 0.75x)
+	spd *= StatusEffects.get_stat_modifier(creature, "speed")
+	# Bond boost/nerf on speed
+	if creature.get("bond_boost_stat", "") == "speed":
+		spd *= 1.1
+	elif creature.get("bond_nerf_stat", "") == "speed":
+		spd *= 0.9
+	# Choice Whisk: +50% speed
+	var item_id = creature.get("held_item_id", "")
+	if item_id != "":
+		var item = DataRegistry.get_held_item(item_id)
+		if item and item.effect_type == "choice_lock" and item.effect_params.get("stat", "") == "speed":
+			spd *= 1.5
+	return int(spd)
 
 static func apply_status_damage(creature: Dictionary, status: String) -> int:
 	var max_hp = creature.get("max_hp", 40)
@@ -124,6 +175,9 @@ static func can_act(creature: Dictionary) -> bool:
 		"drowsy":
 			# 50% chance to skip turn
 			return randf() > 0.5
+		"brined":
+			# 25% chance to skip turn
+			return randf() > 0.25
 		_:
 			return true
 
@@ -139,7 +193,9 @@ static func apply_stat_changes(creature: Dictionary, changes: Dictionary) -> Dic
 	return results
 
 static func get_effectiveness_text(effectiveness: float) -> String:
-	if effectiveness >= 2.0:
+	if effectiveness == 0.0:
+		return "immune"
+	elif effectiveness >= 2.0:
 		return "super_effective"
 	elif effectiveness <= 0.5:
 		return "not_very_effective"

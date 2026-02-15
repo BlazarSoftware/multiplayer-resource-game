@@ -230,9 +230,25 @@ func _backfill_creature_ids(data: Dictionary) -> void:
 	for creature in data.get("party", []):
 		if not creature.has("creature_id") or creature["creature_id"] == "":
 			creature["creature_id"] = _generate_uuid()
+		_backfill_creature_stats(creature)
 	for creature in data.get("creature_storage", []):
 		if not creature.has("creature_id") or creature["creature_id"] == "":
 			creature["creature_id"] = _generate_uuid()
+		_backfill_creature_stats(creature)
+
+func _backfill_creature_stats(creature: Dictionary) -> void:
+	# Backfill IVs for old saves
+	if not creature.has("ivs") or creature["ivs"].is_empty():
+		creature["ivs"] = {}
+		for stat in ["hp", "attack", "defense", "sp_attack", "sp_defense", "speed"]:
+			creature["ivs"][stat] = randi_range(0, 31)
+	# Backfill bond data
+	if not creature.has("bond_points"):
+		creature["bond_points"] = 0
+	if not creature.has("bond_level"):
+		creature["bond_level"] = 0
+	if not creature.has("battle_affinities"):
+		creature["battle_affinities"] = {}
 
 # === Join Flow RPCs ===
 
@@ -969,3 +985,105 @@ func _check_fragment_combine(peer_id: int, fragment_id: String) -> void:
 		_sync_inventory_full.rpc_id(peer_id, player_data_store[peer_id].get("inventory", {}))
 		_notify_recipe_unlocked.rpc_id(peer_id, "", "Assembled " + scroll_def.display_name + "!")
 		print("[Fragment] ", peer_id, " assembled ", scroll_def.display_name, " from ", scroll_def.fragment_count, " fragments")
+
+# === Move Relearner ===
+
+@rpc("any_peer", "reliable")
+func request_relearn_move(creature_idx: int, new_move_id: String, replace_idx: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if not _check_rate_limit(sender):
+		return
+	if sender not in player_data_store:
+		return
+	var party = player_data_store[sender].get("party", [])
+	if creature_idx < 0 or creature_idx >= party.size():
+		return
+	var creature = party[creature_idx]
+	# Validate: move must be in species learnset at level <= creature's level
+	DataRegistry.ensure_loaded()
+	var species = DataRegistry.get_species(creature.get("species_id", ""))
+	if species == null:
+		return
+	var level = creature.get("level", 1)
+	var found_in_learnset = false
+	for lvl in species.learnset:
+		if int(lvl) <= level and species.learnset[lvl] == new_move_id:
+			found_in_learnset = true
+			break
+	if not found_in_learnset:
+		return
+	# Check that new_move_id isn't already known
+	var moves = creature.get("moves", [])
+	if new_move_id in moves:
+		return
+	# Replace
+	if replace_idx < 0 or replace_idx >= moves.size():
+		return
+	if moves is PackedStringArray:
+		moves = Array(moves)
+	moves[replace_idx] = new_move_id
+	creature["moves"] = moves
+	# Reset PP for new move
+	var move_def = DataRegistry.get_move(new_move_id)
+	var pp_arr = creature.get("pp", [])
+	if pp_arr is PackedInt32Array:
+		pp_arr = Array(pp_arr)
+	if replace_idx < pp_arr.size():
+		pp_arr[replace_idx] = move_def.pp if move_def else 10
+	creature["pp"] = pp_arr
+	player_data_store[sender]["party"] = party
+	_sync_party_full.rpc_id(sender, party)
+	print("[Relearn] ", sender, " relearned ", new_move_id, " on creature ", creature_idx)
+
+# === Feed Creature (Bond Points) ===
+
+@rpc("any_peer", "reliable")
+func request_feed_creature(creature_idx: int, food_id: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if not _check_rate_limit(sender):
+		return
+	if sender not in player_data_store:
+		return
+	var party = player_data_store[sender].get("party", [])
+	if creature_idx < 0 or creature_idx >= party.size():
+		return
+	if not server_has_inventory(sender, food_id):
+		return
+	DataRegistry.ensure_loaded()
+	var food = DataRegistry.get_food(food_id)
+	if food == null:
+		return
+	# Consume food and grant bond points
+	server_remove_inventory(sender, food_id, 1)
+	var creature = party[creature_idx]
+	creature["bond_points"] = creature.get("bond_points", 0) + 15
+	creature["bond_level"] = CreatureInstance.compute_bond_level(creature["bond_points"])
+	player_data_store[sender]["party"] = party
+	_sync_party_full.rpc_id(sender, party)
+	_sync_inventory_full.rpc_id(sender, player_data_store[sender].get("inventory", {}))
+	print("[Bond] ", sender, " fed creature ", creature_idx, " with ", food_id, " — bond now ", creature["bond_points"])
+
+# === Bond Points — Battle Win ===
+
+func server_grant_bond_points_battle(peer_id: int) -> void:
+	if peer_id not in player_data_store:
+		return
+	var party = player_data_store[peer_id].get("party", [])
+	for creature in party:
+		if creature.get("hp", 0) > 0:
+			creature["bond_points"] = creature.get("bond_points", 0) + 10
+			creature["bond_level"] = CreatureInstance.compute_bond_level(creature["bond_points"])
+
+# === Bond Points — Time in Party (called from auto-save tick) ===
+
+func server_tick_bond_time(peer_id: int) -> void:
+	if peer_id not in player_data_store:
+		return
+	var party = player_data_store[peer_id].get("party", [])
+	for creature in party:
+		creature["bond_points"] = creature.get("bond_points", 0) + 1
+		creature["bond_level"] = CreatureInstance.compute_bond_level(creature["bond_points"])

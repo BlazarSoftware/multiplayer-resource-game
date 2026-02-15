@@ -25,6 +25,16 @@ static func on_enter(creature: Dictionary, foe: Dictionary, battle: Dictionary) 
 				var stage_key = "defense_stage"
 				creature[stage_key] = clampi(creature.get(stage_key, 0) + 1, -6, 6)
 				messages.append({"message": "Grain Shield raised its Defense!"})
+		"scoville_aura":
+			# Set Spicy weather on entry
+			battle["weather"] = "spicy"
+			battle["weather_turns"] = FieldEffects.WEATHER_DURATION
+			messages.append({"message": "Scoville Aura summoned Sizzle Sun!"})
+		"ferment_cloud":
+			# Set Sour weather on entry
+			battle["weather"] = "sour"
+			battle["weather_turns"] = FieldEffects.WEATHER_DURATION
+			messages.append({"message": "Ferment Cloud summoned Acid Rain!"})
 
 	return messages
 

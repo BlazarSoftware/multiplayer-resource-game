@@ -15,6 +15,14 @@ static func on_damage_calc(item_id: String, move, damage: int) -> Dictionary:
 		var boost_type = item.effect_params.get("type", "")
 		if move.type == boost_type:
 			return {"damage": int(damage * item.effect_params.get("multiplier", 1.0)), "message": "%s boosted the attack!" % item.display_name}
+	elif item.effect_type == "choice_lock":
+		var boosted_stat = item.effect_params.get("stat", "")
+		if (boosted_stat == "attack" and move.category == "physical") or \
+		   (boosted_stat == "sp_attack" and move.category == "special"):
+			return {"damage": int(damage * item.effect_params.get("multiplier", 1.5)), "message": "%s boosted the attack!" % item.display_name}
+	elif item.effect_type == "life_orb":
+		var mult = item.effect_params.get("damage_multiplier", 1.3)
+		return {"damage": int(damage * mult), "message": "%s boosted the attack!" % item.display_name, "life_orb_recoil": true}
 	return {"damage": damage}
 
 static func on_damage_received(item_id: String, move, damage: int) -> Dictionary:
@@ -71,6 +79,10 @@ static func on_hp_threshold(creature: Dictionary) -> Dictionary:
 	var item = DataRegistry.get_held_item(item_id)
 	if item == null:
 		return {}
+
+	# Focus Spatula: survive lethal hit at 1 HP from full
+	if item.effect_type == "focus_sash":
+		return {} # Handled in battle_manager._apply_survival_effects()
 
 	if item.effect_type != "on_hp_threshold":
 		return {}

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_focus_spatula"
+display_name = "Forge Focus Spatula"
+result_item_id = "focus_spatula"
+ingredients = {"grain_core": 3, "umami_extract": 2, "mushroom": 2}
+description = "A resilient spatula that lets the holder survive a KO at 1 HP when at full health. Consumed on use."
+station = "workbench"

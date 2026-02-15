@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_precision_grater"
+display_name = "Forge Precision Grater"
+result_item_id = "precision_grater"
+ingredients = {"sour_essence": 3, "grain_core": 2, "chili_pepper": 1}
+description = "A finely-tuned grater that increases critical hit rate by one stage."
+station = "workbench"

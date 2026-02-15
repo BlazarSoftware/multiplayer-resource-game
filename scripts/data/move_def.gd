@@ -28,3 +28,14 @@ extends Resource
 @export var hazard_type: String = "" # sets entry hazard on opponent's side
 @export var clears_hazards: bool = false # removes hazards from own side
 @export var target_stat_changes: Dictionary = {} # stat changes applied to target
+
+# Battle overhaul mechanics
+@export var switch_after: bool = false # U-turn: user switches after hitting
+@export var force_switch: bool = false # Roar: force opponent to switch
+@export var trick_room: bool = false # toggle Trick Room field effect
+@export var taunt: bool = false # prevent target's status moves
+@export var encore: bool = false # lock target into last move
+@export var substitute: bool = false # create HP decoy
+@export var knock_off: bool = false # remove opponent's held item
+@export var sleep_talk: bool = false # use random move while drowsy
+@export var self_crit_stage_change: int = 0 # Focus Energy: +N crit stage

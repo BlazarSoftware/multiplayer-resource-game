@@ -110,6 +110,16 @@ func _refresh() -> void:
 		var moves_label = Label.new()
 		moves_label.text = moves_text.rstrip(", ")
 		vbox.add_child(moves_label)
+		# IVs (compact)
+		var ivs = creature.get("ivs", {})
+		if ivs.size() > 0:
+			var iv_label = Label.new()
+			iv_label.text = "IVs: HP:%d ATK:%d DEF:%d SPA:%d SPD:%d SPE:%d" % [
+				int(ivs.get("hp", 0)), int(ivs.get("attack", 0)), int(ivs.get("defense", 0)),
+				int(ivs.get("sp_attack", 0)), int(ivs.get("sp_defense", 0)), int(ivs.get("speed", 0))]
+			iv_label.add_theme_font_size_override("font_size", 12)
+			iv_label.add_theme_color_override("font_color", Color(0.6, 0.8, 1.0))
+			vbox.add_child(iv_label)
 		# EVs (compact)
 		var evs = creature.get("evs", {})
 		if evs.size() > 0:
@@ -121,6 +131,35 @@ func _refresh() -> void:
 			ev_label.text = ev_text
 			ev_label.add_theme_font_size_override("font_size", 12)
 			vbox.add_child(ev_label)
+		# Bond display
+		var bond_pts = int(creature.get("bond_points", 0))
+		var bond_lvl = int(creature.get("bond_level", 0))
+		var bond_label = Label.new()
+		var personality_text = ""
+		var affinities = creature.get("battle_affinities", {})
+		if affinities.size() > 0:
+			var highest_stat = ""
+			var highest_val = -1.0
+			for aff_stat in affinities:
+				if float(affinities[aff_stat]) > highest_val:
+					highest_val = float(affinities[aff_stat])
+					highest_stat = aff_stat
+			if highest_stat != "":
+				var aff_names = {"attack": "Physical Attacker", "sp_attack": "Special Attacker",
+					"defense": "Defender", "sp_defense": "Special Defender",
+					"speed": "Speedster", "hp": "Endurance"}
+				personality_text = " - %s" % aff_names.get(highest_stat, highest_stat.capitalize())
+		bond_label.text = "Bond: Level %d (%d pts)%s" % [bond_lvl, bond_pts, personality_text]
+		bond_label.add_theme_font_size_override("font_size", 12)
+		bond_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+		vbox.add_child(bond_label)
+		# Relearn Move button
+		var relearn_btn = Button.new()
+		relearn_btn.text = "Relearn Move"
+		relearn_btn.custom_minimum_size.y = 28
+		var cidx_relearn = i
+		relearn_btn.pressed.connect(func(): _show_relearn_overlay(cidx_relearn))
+		vbox.add_child(relearn_btn)
 
 func _unequip_item(creature_idx: int) -> void:
 	# Send to server instead of modifying locally
@@ -139,3 +178,123 @@ func _show_equip_options(creature_idx: int) -> void:
 	# Equip the first available item via server RPC
 	var item_id = available_items[0]
 	NetworkManager.request_equip_held_item.rpc_id(1, creature_idx, item_id)
+
+var _relearn_panel: PanelContainer = null
+
+func _show_relearn_overlay(creature_idx: int) -> void:
+	if _relearn_panel:
+		_relearn_panel.queue_free()
+	if creature_idx >= PlayerData.party.size():
+		return
+	DataRegistry.ensure_loaded()
+	var creature = PlayerData.party[creature_idx]
+	var species_id = creature.get("species_id", "")
+	var species = DataRegistry.get_species(species_id)
+	if species == null:
+		return
+	var current_level = int(creature.get("level", 1))
+	var current_moves = creature.get("moves", [])
+	if current_moves is PackedStringArray:
+		current_moves = Array(current_moves)
+
+	# Gather all learnable moves up to current level
+	var learnable: Array = []
+	var learnset = species.learnset if species else {}
+	for level_str in learnset:
+		var lvl = int(level_str)
+		if lvl <= current_level:
+			var move_id = learnset[level_str]
+			if move_id not in current_moves and move_id not in learnable:
+				learnable.append(move_id)
+	if learnable.size() == 0:
+		return
+
+	_relearn_panel = PanelContainer.new()
+	_relearn_panel.anchors_preset = Control.PRESET_CENTER
+	_relearn_panel.custom_minimum_size = Vector2(450, 0)
+	var vbox = VBoxContainer.new()
+	_relearn_panel.add_child(vbox)
+
+	var title = Label.new()
+	title.text = "Relearn Move for %s" % creature.get("nickname", "???")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	var sub = Label.new()
+	sub.text = "Select a move to learn, then pick a slot to replace."
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.add_theme_font_size_override("font_size", 12)
+	vbox.add_child(sub)
+
+	for move_id in learnable:
+		var move = DataRegistry.get_move(move_id)
+		if move == null:
+			continue
+		var btn = Button.new()
+		var power_text = "Pwr:%d" % move.power if move.power > 0 else "Status"
+		btn.text = "%s — %s | %s | %s" % [move.display_name, move.type.capitalize(), move.category.capitalize(), power_text]
+		btn.custom_minimum_size.y = 32
+		var mid = move_id
+		var cidx = creature_idx
+		btn.pressed.connect(func(): _show_relearn_replace(cidx, mid))
+		vbox.add_child(btn)
+
+	var cancel = Button.new()
+	cancel.text = "Cancel"
+	cancel.pressed.connect(func():
+		_relearn_panel.queue_free()
+		_relearn_panel = null
+	)
+	vbox.add_child(cancel)
+	add_child(_relearn_panel)
+
+func _show_relearn_replace(creature_idx: int, new_move_id: String) -> void:
+	if _relearn_panel:
+		_relearn_panel.queue_free()
+		_relearn_panel = null
+	if creature_idx >= PlayerData.party.size():
+		return
+	DataRegistry.ensure_loaded()
+	var creature = PlayerData.party[creature_idx]
+	var current_moves = creature.get("moves", [])
+	var new_move = DataRegistry.get_move(new_move_id)
+	if new_move == null:
+		return
+
+	_relearn_panel = PanelContainer.new()
+	_relearn_panel.anchors_preset = Control.PRESET_CENTER
+	_relearn_panel.custom_minimum_size = Vector2(450, 0)
+	var vbox = VBoxContainer.new()
+	_relearn_panel.add_child(vbox)
+
+	var title = Label.new()
+	title.text = "Replace which move with %s?" % new_move.display_name
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	for i in range(current_moves.size()):
+		var old_move = DataRegistry.get_move(current_moves[i])
+		if old_move == null:
+			continue
+		var btn = Button.new()
+		var old_power = "Pwr:%d" % old_move.power if old_move.power > 0 else "Status"
+		btn.text = "%s — %s | %s" % [old_move.display_name, old_move.type.capitalize(), old_power]
+		btn.custom_minimum_size.y = 32
+		var replace_idx = i
+		var mid = new_move_id
+		var cidx = creature_idx
+		btn.pressed.connect(func():
+			NetworkManager.request_relearn_move.rpc_id(1, cidx, mid, replace_idx)
+			_relearn_panel.queue_free()
+			_relearn_panel = null
+		)
+		vbox.add_child(btn)
+
+	var cancel = Button.new()
+	cancel.text = "Cancel"
+	cancel.pressed.connect(func():
+		_relearn_panel.queue_free()
+		_relearn_panel = null
+	)
+	vbox.add_child(cancel)
+	add_child(_relearn_panel)

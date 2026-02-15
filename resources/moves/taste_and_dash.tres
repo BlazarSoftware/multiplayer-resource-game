@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "taste_and_dash"
+display_name = "Taste & Dash"
+type = "grain"
+category = "physical"
+power = 70
+accuracy = 100
+pp = 20
+priority = 0
+description = "Hits the foe then switches out."
+is_contact = true
+switch_after = true

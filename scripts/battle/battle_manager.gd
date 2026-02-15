@@ -39,6 +39,17 @@ var client_player_stat_stages: Dictionary = {}
 var client_enemy_stat_stages: Dictionary = {}
 var client_player_status_turns: int = 0
 var client_enemy_status_turns: int = 0
+# Battle overhaul client state
+var client_trick_room_turns: int = 0
+var client_player_taunt_turns: int = 0
+var client_player_encore_turns: int = 0
+var client_player_encore_move: String = ""
+var client_player_substitute_hp: int = 0
+var client_player_crit_stage: int = 0
+var client_player_choice_locked: String = ""
+var client_enemy_taunt_turns: int = 0
+var client_enemy_encore_turns: int = 0
+var client_enemy_substitute_hp: int = 0
 
 # Summary accumulation (client-side)
 var summary_xp_results: Array = []
@@ -115,6 +126,7 @@ func _create_battle(mode: int, side_a_peer: int, side_b_peer: int = 0, trainer_i
 		"participants_a": [0],
 		"participants_b": [0],
 		"timeout_timer": 30.0,
+		"trick_room_turns": 0,
 	}
 	player_battle_map[side_a_peer] = battle_id
 	if side_b_peer > 0:
@@ -185,6 +197,17 @@ func _build_battle_state_for_peer(battle: Dictionary, peer_id: int) -> Dictionar
 		"player_status_turns": my_creature.get("status_turns", 0),
 		"enemy_status": opp_creature.get("status", ""),
 		"enemy_status_turns": opp_creature.get("status_turns", 0),
+		# Battle overhaul fields
+		"trick_room_turns": battle.get("trick_room_turns", 0),
+		"player_taunt_turns": my_creature.get("taunt_turns", 0),
+		"player_encore_turns": my_creature.get("encore_turns", 0),
+		"player_encore_move": my_creature.get("last_move_used", ""),
+		"player_substitute_hp": my_creature.get("substitute_hp", 0),
+		"player_crit_stage": my_creature.get("crit_stage", 0),
+		"player_choice_locked": my_creature.get("choice_locked_move", ""),
+		"enemy_taunt_turns": opp_creature.get("taunt_turns", 0),
+		"enemy_encore_turns": opp_creature.get("encore_turns", 0),
+		"enemy_substitute_hp": opp_creature.get("substitute_hp", 0),
 	}
 
 func _send_state_to_peer(battle: Dictionary, peer_id: int) -> void:
@@ -205,6 +228,37 @@ func _init_creature_battle_state(creature: Dictionary) -> void:
 	creature["protect_count"] = 0
 	creature["is_charging"] = false
 	creature["charged_move_id"] = ""
+	# Battle overhaul fields
+	creature["crit_stage"] = 0
+	creature["taunt_turns"] = 0
+	creature["encore_turns"] = 0
+	creature["last_move_used"] = ""
+	creature["substitute_hp"] = 0
+	creature["choice_locked_move"] = ""
+	creature["bond_endure_used"] = false
+	# Compute bond modifiers from affinities
+	var affinities = creature.get("battle_affinities", {})
+	var total_aff = 0.0
+	for stat in affinities:
+		total_aff += float(affinities[stat])
+	if total_aff >= 5.0:
+		var highest_stat = ""
+		var highest_val = -1.0
+		var lowest_stat = ""
+		var lowest_val = 999999.0
+		for stat in affinities:
+			var val = float(affinities[stat])
+			if val > highest_val:
+				highest_val = val
+				highest_stat = stat
+			if val < lowest_val:
+				lowest_val = val
+				lowest_stat = stat
+		creature["bond_boost_stat"] = highest_stat
+		creature["bond_nerf_stat"] = lowest_stat
+	else:
+		creature["bond_boost_stat"] = ""
+		creature["bond_nerf_stat"] = ""
 
 # === SERVER SIDE — Build party from authoritative store ===
 
@@ -420,6 +474,27 @@ func request_battle_action(action_type: String, action_data: String) -> void:
 		if action_data not in creature_moves:
 			print("[BattleManager] Rejected move '", action_data, "' — not in creature's moveset for peer ", sender)
 			return
+		# Encore override: force locked move
+		if creature.get("encore_turns", 0) > 0 and creature.get("last_move_used", "") != "":
+			action_data = creature["last_move_used"]
+		# Choice lock enforcement
+		var choice_locked = creature.get("choice_locked_move", "")
+		if choice_locked != "" and action_data != choice_locked:
+			action_data = choice_locked
+		# Taunt enforcement: reject status moves
+		if creature.get("taunt_turns", 0) > 0:
+			var submitted_move = DataRegistry.get_move(action_data)
+			if submitted_move and submitted_move.category == "status":
+				# Auto-select first non-status move
+				var found_alt = false
+				for m_id in creature_moves:
+					var m = DataRegistry.get_move(m_id)
+					if m and m.category != "status":
+						action_data = m_id
+						found_alt = true
+						break
+				if not found_alt:
+					action_data = "quick_bite" # Struggle equivalent
 	elif action_type == "switch":
 		var party_key = "side_" + side + "_party"
 		var switch_idx = action_data.to_int()
@@ -524,7 +599,8 @@ func _process_move_turn(battle: Dictionary, _action_type: String, move_id: Strin
 	var enemy_priority = enemy_move.priority if enemy_move else 0
 	var player_speed = BattleCalculator.get_speed(player_creature)
 	var enemy_speed = BattleCalculator.get_speed(enemy)
-	var player_first = _determine_order(player_priority, enemy_priority, player_speed, enemy_speed)
+	var trick_room_active = battle.get("trick_room_turns", 0) > 0
+	var player_first = _determine_order(player_priority, enemy_priority, player_speed, enemy_speed, trick_room_active)
 
 	# Execute turns
 	if player_first:
@@ -540,17 +616,46 @@ func _process_move_turn(battle: Dictionary, _action_type: String, move_id: Strin
 			var r2 = _execute_action(player_creature, enemy, player_move, "player", battle)
 			turn_log.append(r2)
 
+	# Handle force_switch on enemy (Wild/Trainer only)
+	for entry in turn_log:
+		if entry.get("force_switch", false) and entry.get("actor", "") == "player":
+			# Force enemy to switch
+			var alive_idx = _find_alive_creature(battle.side_b_party, battle.side_b_active_idx)
+			if alive_idx != -1:
+				var old_b_idx = battle.side_b_active_idx
+				battle.side_b_active_idx = alive_idx
+				var new_enemy = battle.side_b_party[alive_idx]
+				var hazard_results = FieldEffects.apply_hazards_on_switch(new_enemy, battle.side_b_hazards)
+				turn_log.append({"type": "forced_switch", "actor": "enemy", "from": old_b_idx, "to": alive_idx})
+				for hr in hazard_results:
+					hr["actor"] = "enemy"
+					turn_log.append(hr)
+			else:
+				turn_log.append({"type": "force_switch_failed", "actor": "enemy", "message": "But it failed!"})
+
 	# End of turn effects
 	_apply_end_of_turn(battle, turn_log)
 	battle.turn += 1
 
+	# Handle switch_after for player (U-turn): after turn processing, prompt switch
+	var needs_switch_after = false
+	for entry in turn_log:
+		if entry.get("switch_after", false) and entry.get("actor", "") == "player":
+			if player_creature.get("hp", 0) > 0:
+				var has_switch_target = _find_alive_creature(battle.side_a_party, battle.side_a_active_idx) != -1
+				if has_switch_target:
+					needs_switch_after = true
+
 	# Check outcomes
 	_check_battle_outcome(battle, turn_log)
+	# Note: if switch_after is needed, the client UI handles it via the result flag
 
-func _determine_order(pri_a: int, pri_b: int, spd_a: int, spd_b: int) -> bool:
+func _determine_order(pri_a: int, pri_b: int, spd_a: int, spd_b: int, trick_room: bool = false) -> bool:
 	if pri_a != pri_b:
 		return pri_a > pri_b
 	if spd_a != spd_b:
+		if trick_room:
+			return spd_a < spd_b # Trick Room: slower goes first
 		return spd_a > spd_b
 	return randf() > 0.5
 
@@ -566,6 +671,35 @@ func _execute_action(attacker: Dictionary, defender: Dictionary, move, actor: St
 
 	if move == null:
 		return result
+
+	# Bond level 2: 10% chance to self-cure status at start of action
+	if attacker.get("bond_level", 0) >= 2 and attacker.get("status", "") != "":
+		if randf() < 0.1:
+			result["bond_cured"] = attacker["status"]
+			attacker["status"] = ""
+			attacker["status_turns"] = 0
+
+	# Sleep Talk: if drowsy and using sleep_talk move, pick random other move
+	if move.sleep_talk:
+		if attacker.get("status", "") == "drowsy":
+			var other_moves = []
+			var amoves = attacker.get("moves", [])
+			var app = attacker.get("pp", [])
+			for i in range(amoves.size()):
+				if amoves[i] != move.move_id and (i >= app.size() or app[i] > 0):
+					other_moves.append(amoves[i])
+			if other_moves.size() > 0:
+				var random_move_id = other_moves[randi() % other_moves.size()]
+				var random_move = DataRegistry.get_move(random_move_id)
+				if random_move:
+					move = random_move
+					result["sleep_talk_move"] = random_move.display_name
+			else:
+				result["message"] = "has no moves to use!"
+				return result
+		else:
+			result["message"] = "can only use this while drowsy!"
+			return result
 
 	# Check if can act (status effects)
 	if not BattleCalculator.can_act(attacker):
@@ -588,6 +722,65 @@ func _execute_action(attacker: Dictionary, defender: Dictionary, move, actor: St
 
 	# Reset protect count when using non-protect move
 	attacker["protect_count"] = 0
+
+	# Track last move used (for Encore)
+	attacker["last_move_used"] = move.move_id
+
+	# Crit stage change (Sharpen Knife)
+	if move.self_crit_stage_change != 0:
+		attacker["crit_stage"] = clampi(attacker.get("crit_stage", 0) + move.self_crit_stage_change, 0, 3)
+		result["crit_stage_change"] = move.self_crit_stage_change
+		if move.power == 0 and move.status_effect == "" and not move.trick_room and not move.taunt and not move.encore and not move.substitute:
+			result["message"] = "is getting pumped!"
+			return result
+
+	# Substitute creation
+	if move.substitute:
+		var max_hp = attacker.get("max_hp", 40)
+		var current_hp = attacker.get("hp", 0)
+		var sub_cost = int(max_hp / 4.0)
+		if attacker.get("substitute_hp", 0) > 0:
+			result["message"] = "already has a substitute!"
+			return result
+		if current_hp <= sub_cost:
+			result["message"] = "doesn't have enough HP for a substitute!"
+			return result
+		attacker["hp"] = current_hp - sub_cost
+		attacker["substitute_hp"] = sub_cost
+		result["substitute_created"] = true
+		result["substitute_cost"] = sub_cost
+		result["message"] = "created a substitute!"
+		return result
+
+	# Trick Room toggle
+	if move.trick_room:
+		if battle.get("trick_room_turns", 0) > 0:
+			battle["trick_room_turns"] = 0
+			result["trick_room_ended"] = true
+			result["message"] = "Trick Room ended!"
+		else:
+			battle["trick_room_turns"] = 5
+			result["trick_room_set"] = true
+			result["message"] = "Trick Room twisted dimensions!"
+		return result
+
+	# Taunt
+	if move.taunt and defender.get("hp", 0) > 0:
+		defender["taunt_turns"] = 3
+		result["taunt_applied"] = true
+		result["message"] = "fell for the taunt!"
+		return result
+
+	# Encore
+	if move.encore and defender.get("hp", 0) > 0:
+		if defender.get("last_move_used", "") != "":
+			defender["encore_turns"] = 3
+			result["encore_applied"] = true
+			result["encore_move"] = defender["last_move_used"]
+			result["message"] = "must keep using " + defender["last_move_used"] + "!"
+		else:
+			result["message"] = "But it failed!"
+		return result
 
 	# Charging move — first turn sets charge, second turn executes
 	if move.is_charging and not attacker.get("_executing_charge", false):
@@ -626,10 +819,23 @@ func _execute_action(attacker: Dictionary, defender: Dictionary, move, actor: St
 	var total_damage = 0
 	var weather = battle.get("weather", "")
 
+	# Check type effectiveness for immunity (0.0)
+	var defender_types = defender.get("types", [])
+	if defender_types is PackedStringArray:
+		defender_types = Array(defender_types)
+	if move.power > 0:
+		var pre_eff = BattleCalculator.get_type_effectiveness(move.type, defender_types)
+		if pre_eff == 0.0:
+			result["effectiveness"] = "immune"
+			result["damage"] = 0
+			result["message"] = "It doesn't affect the target..."
+			return result
+
 	# For each hit
+	var has_life_orb_recoil := false
 	if move.power > 0:
 		for _hit in range(hit_count):
-			if defender.get("hp", 0) <= 0:
+			if defender.get("hp", 0) <= 0 and defender.get("substitute_hp", 0) <= 0:
 				break
 			var dmg_result = BattleCalculator.calculate_damage(attacker, defender, move, attacker.get("level", 5), weather)
 
@@ -654,6 +860,8 @@ func _execute_action(attacker: Dictionary, defender: Dictionary, move, actor: St
 			# Held item hooks — on_damage_calc and on_damage_received
 			var atk_item_result = HeldItemEffects.on_damage_calc(attacker.get("held_item_id", ""), move, dmg)
 			dmg = atk_item_result.damage
+			if atk_item_result.get("life_orb_recoil", false):
+				has_life_orb_recoil = true
 			if atk_item_result.has("message"):
 				if not result.has("item_messages"):
 					result["item_messages"] = []
@@ -666,14 +874,55 @@ func _execute_action(attacker: Dictionary, defender: Dictionary, move, actor: St
 					result["item_messages"] = []
 				result["item_messages"].append(def_item_result.message)
 
-			defender["hp"] = max(0, defender.get("hp", 0) - dmg)
-			total_damage += dmg
+			# Substitute absorbs damage
+			var sub_hp = defender.get("substitute_hp", 0)
+			if sub_hp > 0:
+				if dmg >= sub_hp:
+					defender["substitute_hp"] = 0
+					result["substitute_broken"] = true
+					# Excess damage is lost (Pokemon behavior)
+				else:
+					defender["substitute_hp"] = sub_hp - dmg
+				total_damage += dmg
+			else:
+				# Focus Spatula: survive OHKO from full HP
+				var pre_hp = defender.get("hp", 0)
+				var would_kill = pre_hp - dmg <= 0
+				var at_full = pre_hp >= defender.get("max_hp", 40)
+				var has_focus_sash = false
+				var def_item_id = defender.get("held_item_id", "")
+				if def_item_id != "":
+					var def_item = DataRegistry.get_held_item(def_item_id)
+					if def_item and def_item.effect_type == "focus_sash":
+						has_focus_sash = true
+				if would_kill and at_full and has_focus_sash:
+					defender["hp"] = 1
+					defender["held_item_id"] = ""
+					if not result.has("item_messages"):
+						result["item_messages"] = []
+					result["item_messages"].append("Focus Spatula kept it at 1 HP!")
+				# Bond level 4 endure: survive one lethal hit per battle
+				elif would_kill and not defender.get("bond_endure_used", false) and defender.get("bond_level", 0) >= 4:
+					defender["hp"] = 1
+					defender["bond_endure_used"] = true
+					result["bond_endure"] = true
+				else:
+					defender["hp"] = max(0, pre_hp - dmg)
+				total_damage += dmg
 
 			if _hit == 0:
 				result["effectiveness"] = BattleCalculator.get_effectiveness_text(dmg_result.effectiveness)
 				result["critical"] = dmg_result.critical
 
 		result["damage"] = total_damage
+
+		# Life Orb recoil (Flavor Crystal)
+		if has_life_orb_recoil and total_damage > 0:
+			var item = DataRegistry.get_held_item(attacker.get("held_item_id", ""))
+			if item:
+				var lo_recoil = max(1, int(attacker.get("max_hp", 40) * item.effect_params.get("recoil_percent", 0.1)))
+				attacker["hp"] = max(0, attacker.get("hp", 0) - lo_recoil)
+				result["life_orb_recoil"] = lo_recoil
 
 		# Recoil
 		if move.recoil_percent > 0 and total_damage > 0:
@@ -687,14 +936,20 @@ func _execute_action(attacker: Dictionary, defender: Dictionary, move, actor: St
 			attacker["hp"] = min(attacker.get("max_hp", 40), attacker.get("hp", 0) + heal)
 			result["drain_heal"] = heal
 
+		# Knock Off: remove defender's held item
+		if move.knock_off and defender.get("held_item_id", "") != "" and defender.get("hp", 0) > 0:
+			var knocked_item = defender["held_item_id"]
+			defender["held_item_id"] = ""
+			result["knocked_off_item"] = knocked_item
+
 	# Healing
 	if move.heal_percent > 0:
 		var heal = int(attacker.get("max_hp", 40) * move.heal_percent)
 		attacker["hp"] = min(attacker.get("max_hp", 40), attacker.get("hp", 0) + heal)
 		result["heal"] = heal
 
-	# Status effect on defender
-	if move.status_effect != "" and defender.get("hp", 0) > 0:
+	# Status effect on defender (substitute blocks status from damaging moves)
+	if move.status_effect != "" and defender.get("hp", 0) > 0 and defender.get("substitute_hp", 0) <= 0:
 		var status_block = AbilityEffects.on_status_attempt(defender, move.status_effect)
 		if not status_block.blocked:
 			var applied = StatusEffects.try_apply_status(defender, move.status_effect, move.status_chance)
@@ -748,6 +1003,21 @@ func _execute_action(attacker: Dictionary, defender: Dictionary, move, actor: St
 		if cleared.size() > 0:
 			result["hazards_cleared"] = cleared
 
+	# Force switch (Kitchen Fire / Roar)
+	if move.force_switch and defender.get("hp", 0) > 0:
+		result["force_switch"] = true
+
+	# Switch after (Taste & Dash / U-turn)
+	if move.switch_after and attacker.get("hp", 0) > 0:
+		result["switch_after"] = true
+
+	# Choice lock: set lock on first move used
+	var atk_item_id = attacker.get("held_item_id", "")
+	if atk_item_id != "" and move.power > 0:
+		var atk_item = DataRegistry.get_held_item(atk_item_id)
+		if atk_item and atk_item.effect_type == "choice_lock" and attacker.get("choice_locked_move", "") == "":
+			attacker["choice_locked_move"] = move.move_id
+
 	# Check held item HP thresholds after damage
 	if defender.get("hp", 0) > 0:
 		var item_result = HeldItemEffects.on_hp_threshold(defender)
@@ -800,6 +1070,28 @@ func _apply_end_of_turn(battle: Dictionary, turn_log: Array) -> void:
 		if heal > 0:
 			turn_log.append({"actor": "enemy", "type": "item_heal", "heal": heal, "message": "healed by its held item!"})
 
+	# Taunt / Encore decrement
+	for creature in [a_creature, b_creature]:
+		if creature.get("taunt_turns", 0) > 0:
+			creature["taunt_turns"] -= 1
+			if creature["taunt_turns"] <= 0:
+				var c_actor = "player" if creature == a_creature else "enemy"
+				turn_log.append({"type": "taunt_ended", "actor": c_actor, "message": "'s taunt wore off!"})
+		if creature.get("encore_turns", 0) > 0:
+			creature["encore_turns"] -= 1
+			# End encore early if locked move has 0 PP
+			if creature["encore_turns"] > 0:
+				var locked_move = creature.get("last_move_used", "")
+				if locked_move != "":
+					var midx = _find_move_index(creature, locked_move)
+					if midx >= 0:
+						var pp_arr = creature.get("pp", [])
+						if midx < pp_arr.size() and pp_arr[midx] <= 0:
+							creature["encore_turns"] = 0
+			if creature["encore_turns"] <= 0:
+				var c_actor = "player" if creature == a_creature else "enemy"
+				turn_log.append({"type": "encore_ended", "actor": c_actor, "message": "'s encore ended!"})
+
 	# Weather countdown
 	if battle.weather != "":
 		battle.weather_turns -= 1
@@ -807,6 +1099,12 @@ func _apply_end_of_turn(battle: Dictionary, turn_log: Array) -> void:
 			turn_log.append({"type": "weather_cleared", "weather": battle.weather})
 			battle.weather = ""
 			battle.weather_turns = 0
+
+	# Trick Room countdown
+	if battle.get("trick_room_turns", 0) > 0:
+		battle["trick_room_turns"] -= 1
+		if battle["trick_room_turns"] <= 0:
+			turn_log.append({"type": "trick_room_ended", "message": "Trick Room ended!"})
 
 # === OUTCOME CHECKING ===
 
@@ -1073,13 +1371,14 @@ func _recalc_stats(creature: Dictionary) -> void:
 	var lvl = creature.get("level", 1)
 	var mult = 1.0 + (lvl - 1) * 0.1
 	var evs = creature.get("evs", {})
+	var ivs = creature.get("ivs", {})
 	var old_max_hp = creature.get("max_hp", 1)
-	creature["max_hp"] = int(species.base_hp * mult) + int(evs.get("hp", 0) / 4.0)
-	creature["attack"] = int(species.base_attack * mult) + int(evs.get("attack", 0) / 4.0)
-	creature["defense"] = int(species.base_defense * mult) + int(evs.get("defense", 0) / 4.0)
-	creature["sp_attack"] = int(species.base_sp_attack * mult) + int(evs.get("sp_attack", 0) / 4.0)
-	creature["sp_defense"] = int(species.base_sp_defense * mult) + int(evs.get("sp_defense", 0) / 4.0)
-	creature["speed"] = int(species.base_speed * mult) + int(evs.get("speed", 0) / 4.0)
+	creature["max_hp"] = int(species.base_hp * mult) + ivs.get("hp", 0) + int(evs.get("hp", 0) / 4.0)
+	creature["attack"] = int(species.base_attack * mult) + ivs.get("attack", 0) + int(evs.get("attack", 0) / 4.0)
+	creature["defense"] = int(species.base_defense * mult) + ivs.get("defense", 0) + int(evs.get("defense", 0) / 4.0)
+	creature["sp_attack"] = int(species.base_sp_attack * mult) + ivs.get("sp_attack", 0) + int(evs.get("sp_attack", 0) / 4.0)
+	creature["sp_defense"] = int(species.base_sp_defense * mult) + ivs.get("sp_defense", 0) + int(evs.get("sp_defense", 0) / 4.0)
+	creature["speed"] = int(species.base_speed * mult) + ivs.get("speed", 0) + int(evs.get("speed", 0) / 4.0)
 	# Heal the difference in max HP
 	var hp_gain = creature["max_hp"] - old_max_hp
 	if hp_gain > 0:
@@ -1126,7 +1425,8 @@ func _resolve_pvp_turn(battle: Dictionary) -> void:
 		var b_pri = b_move.priority if b_move else 0
 		var a_spd = BattleCalculator.get_speed(a_creature)
 		var b_spd = BattleCalculator.get_speed(b_creature)
-		var a_first = _determine_order(a_pri, b_pri, a_spd, b_spd)
+		var pvp_trick_room = battle.get("trick_room_turns", 0) > 0
+		var a_first = _determine_order(a_pri, b_pri, a_spd, b_spd, pvp_trick_room)
 
 		if a_first:
 			var r1 = _execute_action(a_creature, b_creature, a_move, "player", battle)
@@ -1263,6 +1563,9 @@ func _process_switch(battle: Dictionary, side: String, new_idx: int) -> void:
 	var old_idx = battle[active_key]
 	battle[active_key] = new_idx
 
+	# Clear choice lock on switch-out
+	party[old_idx]["choice_locked_move"] = ""
+
 	# Track participant
 	var participants_key = "participants_" + side
 	if new_idx not in battle[participants_key]:
@@ -1357,6 +1660,14 @@ func _pick_enemy_move(enemy: Dictionary) -> String:
 		pp[idx] -= 1
 	return moves[idx]
 
+# === BOND AFFINITY TRACKING ===
+
+func _track_bond_affinity(creature: Dictionary, event: String, _value: float = 1.0) -> void:
+	if not creature.has("battle_affinities"):
+		creature["battle_affinities"] = {}
+	var affinities = creature["battle_affinities"]
+	affinities[event] = affinities.get(event, 0.0) + _value
+
 # === UTILITY ===
 
 func _find_alive_creature(party: Array, exclude_idx: int) -> int:
@@ -1396,6 +1707,9 @@ func _end_battle_for_peer(battle: Dictionary, peer_id: int, victory: bool) -> vo
 		NetworkManager.server_update_party(peer_id, battle.side_a_party)
 	elif peer_id == battle.side_b_peer and battle.side_b_party.size() > 0:
 		NetworkManager.server_update_party(peer_id, battle.side_b_party)
+	# Grant bond points on victory
+	if victory:
+		NetworkManager.server_grant_bond_points_battle(peer_id)
 
 	# Clean up maps
 	player_battle_map.erase(peer_id)
@@ -1540,6 +1854,17 @@ func _apply_battle_state(state: Dictionary) -> void:
 	client_enemy_stat_stages = state.get("enemy_stat_stages", {})
 	client_player_status_turns = state.get("player_status_turns", 0)
 	client_enemy_status_turns = state.get("enemy_status_turns", 0)
+	# Battle overhaul fields
+	client_trick_room_turns = state.get("trick_room_turns", 0)
+	client_player_taunt_turns = state.get("player_taunt_turns", 0)
+	client_player_encore_turns = state.get("player_encore_turns", 0)
+	client_player_encore_move = state.get("player_encore_move", "")
+	client_player_substitute_hp = state.get("player_substitute_hp", 0)
+	client_player_crit_stage = state.get("player_crit_stage", 0)
+	client_player_choice_locked = state.get("player_choice_locked", "")
+	client_enemy_taunt_turns = state.get("enemy_taunt_turns", 0)
+	client_enemy_encore_turns = state.get("enemy_encore_turns", 0)
+	client_enemy_substitute_hp = state.get("enemy_substitute_hp", 0)
 	# Update enemy creature data from state
 	var ec = state.get("enemy_creature", {})
 	if not ec.is_empty():
@@ -1621,6 +1946,17 @@ func start_battle_client(enemy_data: Dictionary, battle_mode: int = BattleMode.W
 	client_enemy_stat_stages = {}
 	client_player_status_turns = 0
 	client_enemy_status_turns = 0
+	# Battle overhaul resets
+	client_trick_room_turns = 0
+	client_player_taunt_turns = 0
+	client_player_encore_turns = 0
+	client_player_encore_move = ""
+	client_player_substitute_hp = 0
+	client_player_crit_stage = 0
+	client_player_choice_locked = ""
+	client_enemy_taunt_turns = 0
+	client_enemy_encore_turns = 0
+	client_enemy_substitute_hp = 0
 	# Reset summary accumulators
 	summary_xp_results = []
 	summary_drops = {}

@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "onigiri_knight"
+display_name = "Onigiri Knight"
+types = PackedStringArray("grain")
+base_hp = 60
+base_attack = 18
+base_defense = 20
+base_sp_attack = 12
+base_sp_defense = 18
+base_speed = 12
+moves = PackedStringArray("grain_bash", "taste_and_dash", "bread_wall", "sharpen_knife")
+mesh_type = "capsule"
+mesh_color = Color(0.9, 0.9, 0.8, 1)
+mesh_scale = Vector3(0.9, 1.0, 0.9)
+rarity = "uncommon"
+evolves_from = "rice_ball"
+evolves_to = "sushi_samurai"
+evolution_level = 30
+evolution_move = "disarm"
+drop_ingredient_ids = PackedStringArray("grain_core")
+drop_min = 2
+drop_max = 3
+learnset = {3: "grain_bash", 5: "quick_bite", 8: "bread_wall", 11: "taste_test", 13: "sharpen_knife", 14: "taste_and_dash", 18: "decoy_dish", 22: "grain_slam", 26: "bread_wall"}
+ability_ids = PackedStringArray("crusty_armor", "firm_press")
+ev_yield = {"attack": 1, "defense": 1}
+base_xp_yield = 120

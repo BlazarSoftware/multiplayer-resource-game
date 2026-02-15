@@ -72,6 +72,17 @@ const STATUS_MAX_TURNS = {
 	"wilted": 3,
 	"soured": 3,
 	"poisoned": 0, # escalating, no fixed end
+	"brined": 4,
+}
+
+const STATUS_COLORS = {
+	"burned": Color(0.9, 0.4, 0.1),
+	"frozen": Color(0.3, 0.7, 1.0),
+	"poisoned": Color(0.6, 0.2, 0.8),
+	"drowsy": Color(0.7, 0.6, 0.9),
+	"wilted": Color(0.5, 0.6, 0.3),
+	"soured": Color(0.8, 0.8, 0.2),
+	"brined": Color(0.2, 0.8, 0.8),
 }
 
 func _ready() -> void:
@@ -239,16 +250,22 @@ func _update_weather_display() -> void:
 	if battle_mgr == null:
 		return
 	var w = battle_mgr.client_weather
-	if w == "":
+	var trick_room = battle_mgr.client_trick_room_turns if battle_mgr else 0
+	if w == "" and trick_room <= 0:
 		weather_bar.visible = false
 		return
 	weather_bar.visible = true
-	var wdata = FieldEffects.WEATHER_DATA.get(w, {})
-	var wname = wdata.get("name", WEATHER_NAMES.get(w, w))
-	var boost = wdata.get("boost_type", "").capitalize()
-	var weaken = wdata.get("weaken_type", "").capitalize()
-	var turns = battle_mgr.client_weather_turns
-	weather_label.text = "%s (%d turns) — %s +50%%, %s -50%%" % [wname, turns, boost, weaken]
+	var parts: Array = []
+	if w != "":
+		var wdata = FieldEffects.WEATHER_DATA.get(w, {})
+		var wname = wdata.get("name", WEATHER_NAMES.get(w, w))
+		var boost = wdata.get("boost_type", "").capitalize()
+		var weaken = wdata.get("weaken_type", "").capitalize()
+		var turns = battle_mgr.client_weather_turns
+		parts.append("%s (%d turns) — %s +50%%, %s -50%%" % [wname, turns, boost, weaken])
+	if trick_room > 0:
+		parts.append("Trick Room (%d turns)" % trick_room)
+	weather_label.text = " | ".join(parts)
 
 func _update_hazard_display() -> void:
 	if battle_mgr == null:
@@ -276,16 +293,40 @@ func _on_battle_state_updated() -> void:
 func _refresh_status_display() -> void:
 	if battle_mgr == null:
 		return
-	# Player status with turns
+	# Player status with turns + field effect badges
 	var active_idx = battle_mgr.client_active_creature_idx
 	if active_idx < PlayerData.party.size():
 		var creature = PlayerData.party[active_idx]
 		var s = creature.get("status", "")
-		player_status.text = _format_status_with_turns(s, battle_mgr.client_player_status_turns)
-	# Enemy status with turns
+		var parts: Array = []
+		var status_text = _format_status_with_turns(s, battle_mgr.client_player_status_turns)
+		if status_text != "":
+			parts.append(status_text)
+		if battle_mgr.client_player_taunt_turns > 0:
+			parts.append("Taunted(%d)" % battle_mgr.client_player_taunt_turns)
+		if battle_mgr.client_player_encore_turns > 0:
+			parts.append("Encored(%d)" % battle_mgr.client_player_encore_turns)
+		if battle_mgr.client_player_substitute_hp > 0:
+			parts.append("Sub(%d HP)" % battle_mgr.client_player_substitute_hp)
+		if battle_mgr.client_player_choice_locked != "":
+			var locked_move = DataRegistry.get_move(battle_mgr.client_player_choice_locked)
+			var locked_name = locked_move.display_name if locked_move else battle_mgr.client_player_choice_locked
+			parts.append("Locked: %s" % locked_name)
+		player_status.text = " | ".join(parts)
+	# Enemy status with turns + field effect badges
 	var enemy = battle_mgr.client_enemy
 	var es = enemy.get("status", "")
-	enemy_status.text = _format_status_with_turns(es, battle_mgr.client_enemy_status_turns)
+	var eparts: Array = []
+	var estatus_text = _format_status_with_turns(es, battle_mgr.client_enemy_status_turns)
+	if estatus_text != "":
+		eparts.append(estatus_text)
+	if battle_mgr.client_enemy_taunt_turns > 0:
+		eparts.append("Taunted(%d)" % battle_mgr.client_enemy_taunt_turns)
+	if battle_mgr.client_enemy_encore_turns > 0:
+		eparts.append("Encored(%d)" % battle_mgr.client_enemy_encore_turns)
+	if battle_mgr.client_enemy_substitute_hp > 0:
+		eparts.append("Sub(%d HP)" % battle_mgr.client_enemy_substitute_hp)
+	enemy_status.text = " | ".join(eparts)
 
 # === HP BAR TWEEN ===
 
@@ -866,7 +907,7 @@ func _animate_turn_log(turn_log: Array) -> void:
 				_screen_shake()
 
 		# Tween HP bars after each entry with damage/heal
-		if entry_type == "move" or entry_type == "status_damage" or entry_type == "ability_heal" or entry_type == "item_heal" or entry_type == "hazard_damage":
+		if entry_type in ["move", "status_damage", "ability_heal", "item_heal", "hazard_damage", "substitute_created", "substitute_broken"]:
 			if battle_mgr:
 				var enemy = battle_mgr.client_enemy
 				_tween_hp_bar(enemy_hp_bar, enemy.get("hp", 0))
@@ -949,6 +990,8 @@ func _format_log_entry(entry: Dictionary) -> String:
 				return "%s %s" % [actor_name, entry.get("message", "protected itself!")]
 			if entry.get("blocked", false):
 				return "%s's attack %s" % [actor_name, entry.get("message", "was blocked!")]
+			if entry.get("immune", false):
+				return text + " [color=gray]It doesn't affect the target...[/color]"
 			if entry.has("damage"):
 				text += " Dealt %d damage." % entry.damage
 			if entry.get("hit_count", 1) > 1:
@@ -957,6 +1000,8 @@ func _format_log_entry(entry: Dictionary) -> String:
 				text += " [color=green]Super effective![/color]"
 			elif entry.get("effectiveness") == "not_very_effective":
 				text += " [color=yellow]Not very effective...[/color]"
+			elif entry.get("effectiveness") == "immune":
+				text += " [color=gray]No effect![/color]"
 			if entry.get("critical", false):
 				text += " Critical hit!"
 			if entry.has("recoil"):
@@ -987,6 +1032,24 @@ func _format_log_entry(entry: Dictionary) -> String:
 				text += " Set %s!" % entry.hazard_set
 			if entry.has("hazards_cleared"):
 				text += " Cleared hazards!"
+			if entry.get("substitute_created", false):
+				text += " Created a substitute!"
+			if entry.get("substitute_broke", false):
+				text += " The substitute broke!"
+			if entry.get("substitute_blocked", false):
+				text += " The substitute took the hit!"
+			if entry.has("knocked_off_item"):
+				text += " Knocked off %s!" % entry.knocked_off_item
+			if entry.get("focus_sash_triggered", false):
+				text += " [color=cyan]Held on with Focus Spatula![/color]"
+			if entry.get("bond_endure_triggered", false):
+				text += " [color=yellow]Toughed it out from the bond with its trainer![/color]"
+			if entry.has("life_orb_recoil"):
+				text += " Lost %d HP from Flavor Crystal!" % entry.life_orb_recoil
+			if entry.get("switch_after", false):
+				text += " Dashed back!"
+			if entry.get("force_switch_failed", false):
+				text += " But it failed!"
 			if entry.has("defender_item_trigger"):
 				var msg = entry.defender_item_trigger.get("message", "")
 				if msg != "":
@@ -1025,6 +1088,39 @@ func _format_log_entry(entry: Dictionary) -> String:
 		"hazard_effect":
 			var actor_name = "Your creature" if entry.get("actor") == "player" else "Enemy"
 			return "%s was affected by %s!" % [actor_name, entry.get("hazard", "hazards")]
+		"trick_room_set":
+			return "[color=purple]Trick Room distorted the dimensions![/color]"
+		"trick_room_ended":
+			return "[color=purple]Trick Room wore off.[/color]"
+		"taunt_applied":
+			var target_name = "Your creature" if entry.get("actor") == "enemy" else "Enemy"
+			return "%s was taunted!" % target_name
+		"taunt_ended":
+			var actor_name2 = "Your creature" if entry.get("actor") == "player" else "Enemy"
+			return "%s's taunt wore off." % actor_name2
+		"encore_applied":
+			var target_name = "Your creature" if entry.get("actor") == "enemy" else "Enemy"
+			return "%s got an encore!" % target_name
+		"encore_ended":
+			var actor_name2 = "Your creature" if entry.get("actor") == "player" else "Enemy"
+			return "%s's encore ended." % actor_name2
+		"substitute_created":
+			var actor_name2 = "Your creature" if entry.get("actor") == "player" else "Enemy"
+			return "%s put up a substitute!" % actor_name2
+		"substitute_broken":
+			var actor_name2 = "Your creature" if entry.get("actor") == "player" else "Enemy"
+			return "%s's substitute broke!" % actor_name2
+		"forced_switch":
+			var actor_name2 = "Your creature" if entry.get("actor") == "player" else "Enemy"
+			return "%s was forced out!" % actor_name2
+		"force_switch_failed":
+			return "But it failed!"
+		"bond_cured":
+			var actor_name2 = "Your creature" if entry.get("actor") == "player" else "Enemy"
+			return "[color=yellow]%s's bond cured its %s![/color]" % [actor_name2, entry.get("status", "status")]
+		"sleep_talk_move":
+			var actor_name2 = "Your creature" if entry.get("actor") == "player" else "Enemy"
+			return "%s used a move in its sleep!" % actor_name2
 		"trainer_switch":
 			return "Trainer sent out the next creature!"
 		"victory":
@@ -1042,9 +1138,45 @@ func _format_log_entry(entry: Dictionary) -> String:
 	return ""
 
 func _set_buttons_enabled(enabled: bool) -> void:
-	for btn in move_buttons:
-		btn.disabled = not enabled
 	var mode = battle_mgr.client_battle_mode if battle_mgr else 0
 	flee_button.disabled = not enabled
 	flee_button.visible = (mode == 0) # Only show flee for wild
 	switch_button.disabled = not enabled
+	if not enabled:
+		for btn in move_buttons:
+			btn.disabled = true
+		return
+	# Enable moves but respect taunt/choice lock/encore restrictions
+	if battle_mgr == null:
+		for btn in move_buttons:
+			btn.disabled = false
+		return
+	var active_idx = battle_mgr.client_active_creature_idx
+	if active_idx >= PlayerData.party.size():
+		return
+	var creature = PlayerData.party[active_idx]
+	var moves = creature.get("moves", [])
+	var pp = creature.get("pp", [])
+	var is_taunted = battle_mgr.client_player_taunt_turns > 0
+	var choice_locked = battle_mgr.client_player_choice_locked
+	var encore_turns = battle_mgr.client_player_encore_turns
+	var encore_move = battle_mgr.client_player_encore_move
+	for i in range(move_buttons.size()):
+		if i >= moves.size() or not move_buttons[i].visible:
+			continue
+		var is_disabled = false
+		# Out of PP
+		if i < pp.size() and pp[i] <= 0:
+			is_disabled = true
+		# Taunted: disable status moves
+		if is_taunted and not is_disabled:
+			var move = DataRegistry.get_move(moves[i])
+			if move and move.category == "status":
+				is_disabled = true
+		# Choice locked: disable non-locked moves
+		if choice_locked != "" and moves[i] != choice_locked:
+			is_disabled = true
+		# Encored: disable non-encore moves
+		if encore_turns > 0 and encore_move != "" and moves[i] != encore_move:
+			is_disabled = true
+		move_buttons[i].disabled = is_disabled

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "slow_cook"
+display_name = "Slow Cook"
+type = "spicy"
+category = "status"
+power = 0
+accuracy = 0
+pp = 5
+priority = -7
+description = "Reverses speed order for 5 turns. Slower creatures move first."
+trick_room = true

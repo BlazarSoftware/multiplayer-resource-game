@@ -8,6 +8,7 @@ extends RefCounted
 # drowsy (Food Coma): 50% skip turn
 # wilted: -50% Sp.Attack, -25% Speed for 3 turns
 # soured: -50% Defense for 3 turns
+# brined: -50% Speed, 25% skip turn for 4 turns
 
 static func apply_end_of_turn(creature: Dictionary) -> Dictionary:
 	var result = {"damage": 0, "message": "", "cured": false}
@@ -64,6 +65,13 @@ static func apply_end_of_turn(creature: Dictionary) -> Dictionary:
 				creature["status_turns"] = 0
 				result.cured = true
 				result.message = "recovered from sourness!"
+		"brined":
+			result.message = "is stiff from brine!"
+			if turns >= 4:
+				creature["status"] = ""
+				creature["status_turns"] = 0
+				result.cured = true
+				result.message = "shook off the brine!"
 	return result
 
 static func get_stat_modifier(creature: Dictionary, stat: String) -> float:
@@ -79,6 +87,9 @@ static func get_stat_modifier(creature: Dictionary, stat: String) -> float:
 				return 0.75
 		"soured":
 			if stat == "defense":
+				return 0.5
+		"brined":
+			if stat == "speed":
 				return 0.5
 	return 1.0
 
@@ -101,4 +112,5 @@ static func get_status_display_name(status: String) -> String:
 		"drowsy": return "Food Coma"
 		"wilted": return "Wilted"
 		"soured": return "Soured"
+		"brined": return "Brined"
 		_: return ""

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "herb_guardian"
+display_name = "Herb Guardian"
+types = PackedStringArray("herbal", "grain")
+base_hp = 50
+base_attack = 12
+base_defense = 16
+base_sp_attack = 22
+base_sp_defense = 18
+base_speed = 16
+moves = PackedStringArray("herb_reversal", "vine_whip", "pollen_cloud", "decoy_dish")
+mesh_type = "capsule"
+mesh_color = Color(0.2, 0.75, 0.2, 1)
+mesh_scale = Vector3(0.8, 1.0, 0.8)
+rarity = "uncommon"
+evolves_from = "basil_sprite"
+drop_ingredient_ids = PackedStringArray("herbal_dew", "grain_core")
+drop_min = 2
+drop_max = 3
+learnset = {3: "vine_whip", 5: "pollen_cloud", 8: "zest_shield", 11: "taste_test", 13: "herb_reversal", 14: "bitter_pill", 18: "decoy_dish", 22: "encore_flavor"}
+ability_ids = PackedStringArray("herbivore", "photosynthesis")
+ev_yield = {"sp_attack": 2}
+base_xp_yield = 145

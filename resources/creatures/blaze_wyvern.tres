@@ -23,6 +23,6 @@ drop_min = 1
 drop_max = 2
 evolves_from = "chili_drake"
 learnset = {3: "quick_bite", 6: "pepper_blast", 9: "flame_sear", 12: "simmer", 14: "inferno_fang", 18: "sizzle_sun"}
-ability_ids = PackedStringArray("flash_fry", "scoville_boost")
+ability_ids = PackedStringArray("flash_fry", "scoville_boost", "scoville_aura")
 ev_yield = {"attack": 2}
 base_xp_yield = 90

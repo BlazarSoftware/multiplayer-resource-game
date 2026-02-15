@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "pickle_press"
+display_name = "Pickle Press"
+type = "sour"
+category = "physical"
+power = 75
+accuracy = 95
+pp = 15
+priority = 0
+status_effect = "brined"
+status_chance = 20
+description = "Crushes the foe with briny force. May leave the target brined."
+is_contact = true

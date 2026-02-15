@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="HeldItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/held_item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_id = "precision_grater"
+display_name = "Precision Grater"
+description = "Raises the holder's critical hit ratio by one stage."
+effect_type = "crit_boost"
+effect_params = {}
+consumable = false

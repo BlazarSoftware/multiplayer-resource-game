@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_flavor_crystal"
+display_name = "Forge Flavor Crystal"
+result_item_id = "flavor_crystal"
+ingredients = {"sweet_crystal": 2, "spicy_essence": 2, "sour_essence": 2}
+description = "A potent crystal that boosts all damage by 30% but causes 10% max HP recoil."
+station = "workbench"

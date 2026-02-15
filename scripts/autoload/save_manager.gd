@@ -87,6 +87,9 @@ func auto_save_all() -> void:
 		return
 	var nm = get_node_or_null("/root/NetworkManager")
 	if nm and nm.get("player_data_store"):
+		# Tick bond points for time-in-party
+		for peer_id in nm.player_data_store:
+			nm.server_tick_bond_time(peer_id)
 		for peer_id in nm.player_data_store:
 			var data: Dictionary = nm.player_data_store[peer_id]
 			# Update position from player node (use overworld position if in restaurant)

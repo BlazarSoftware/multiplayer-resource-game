@@ -22,20 +22,33 @@ extends Resource
 @export var held_item_id: String = ""
 @export var evs: Dictionary = {} # e.g. {"attack": 4, "speed": 8}
 
+# Bond & IV system
+@export var ivs: Dictionary = {} # {"hp": 0-31, "attack": 0-31, ...}
+@export var battle_affinities: Dictionary = {} # {"attack": 5.2, "speed": 3.1, ...}
+@export var bond_points: int = 0
+@export var bond_level: int = 0 # 0-4, computed from bond_points thresholds
+
+const BOND_THRESHOLDS: Array = [0, 50, 150, 300, 500]
+const IV_STATS: Array = ["hp", "attack", "defense", "sp_attack", "sp_defense", "speed"]
+
 static func create_from_species(species, lvl: int = 1) -> CreatureInstance:
 	var inst = CreatureInstance.new()
 	inst.species_id = species.species_id
 	inst.nickname = species.display_name
 	inst.level = lvl
-	# Scale stats by level (+ EVs if any)
+	# Roll random IVs (0-31 per stat)
+	inst.ivs = {}
+	for stat in IV_STATS:
+		inst.ivs[stat] = randi_range(0, 31)
+	# Scale stats by level (+ EVs + IVs)
 	var mult = 1.0 + (lvl - 1) * 0.1
-	inst.max_hp = int(species.base_hp * mult)
+	inst.max_hp = int(species.base_hp * mult) + inst.ivs.get("hp", 0)
 	inst.hp = inst.max_hp
-	inst.attack = int(species.base_attack * mult)
-	inst.defense = int(species.base_defense * mult)
-	inst.sp_attack = int(species.base_sp_attack * mult)
-	inst.sp_defense = int(species.base_sp_defense * mult)
-	inst.speed = int(species.base_speed * mult)
+	inst.attack = int(species.base_attack * mult) + inst.ivs.get("attack", 0)
+	inst.defense = int(species.base_defense * mult) + inst.ivs.get("defense", 0)
+	inst.sp_attack = int(species.base_sp_attack * mult) + inst.ivs.get("sp_attack", 0)
+	inst.sp_defense = int(species.base_sp_defense * mult) + inst.ivs.get("sp_defense", 0)
+	inst.speed = int(species.base_speed * mult) + inst.ivs.get("speed", 0)
 	inst.moves = species.moves.duplicate()
 	inst.types = species.types.duplicate()
 	# Set PP from move defs
@@ -53,7 +66,16 @@ static func create_from_species(species, lvl: int = 1) -> CreatureInstance:
 	if species.ability_ids.size() > 0:
 		inst.ability_id = species.ability_ids[randi() % species.ability_ids.size()]
 	inst.evs = {}
+	inst.battle_affinities = {}
+	inst.bond_points = 0
+	inst.bond_level = 0
 	return inst
+
+static func compute_bond_level(points: int) -> int:
+	for i in range(BOND_THRESHOLDS.size() - 1, -1, -1):
+		if points >= BOND_THRESHOLDS[i]:
+			return i
+	return 0
 
 static func _calc_xp_to_next(lvl: int) -> int:
 	# Simple cubic curve: XP needed grows with level
@@ -79,6 +101,10 @@ func to_dict() -> Dictionary:
 		"ability_id": ability_id,
 		"held_item_id": held_item_id,
 		"evs": evs.duplicate(),
+		"ivs": ivs.duplicate(),
+		"battle_affinities": battle_affinities.duplicate(),
+		"bond_points": bond_points,
+		"bond_level": bond_level,
 	}
 
 static func from_dict(data: Dictionary) -> CreatureInstance:
@@ -101,4 +127,12 @@ static func from_dict(data: Dictionary) -> CreatureInstance:
 	inst.ability_id = data.get("ability_id", "")
 	inst.held_item_id = data.get("held_item_id", "")
 	inst.evs = data.get("evs", {})
+	# Bond & IV system — auto-backfill IVs for old saves (like UUID backfill)
+	inst.ivs = data.get("ivs", {})
+	if inst.ivs.is_empty():
+		for stat in IV_STATS:
+			inst.ivs[stat] = randi_range(0, 31)
+	inst.battle_affinities = data.get("battle_affinities", {})
+	inst.bond_points = data.get("bond_points", 0)
+	inst.bond_level = compute_bond_level(inst.bond_points)
 	return inst
