@@ -63,6 +63,27 @@ func _on_tool_changed(tool_slot: String) -> void:
 		var display = PlayerData.get_tool_display_name(tool_slot)
 		tool_label.text = "Tool: %s" % display
 
+func show_pickup_notification(item_name: String, amount: int) -> void:
+	var pickup_label = Label.new()
+	if amount > 1:
+		pickup_label.text = "Picked up %s x%d" % [item_name, amount]
+	else:
+		pickup_label.text = "Picked up %s" % item_name
+	pickup_label.add_theme_font_size_override("font_size", 18)
+	pickup_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.6))
+	pickup_label.add_theme_constant_override("shadow_offset_x", 1)
+	pickup_label.add_theme_constant_override("shadow_offset_y", 1)
+	pickup_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
+	pickup_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pickup_label.anchor_left = 0.3
+	pickup_label.anchor_right = 0.7
+	pickup_label.anchor_top = 0.7
+	pickup_label.anchor_bottom = 0.75
+	add_child(pickup_label)
+	var tween = create_tween()
+	tween.tween_property(pickup_label, "modulate:a", 0.0, 2.0).set_delay(0.5)
+	tween.tween_callback(pickup_label.queue_free)
+
 func show_grass_indicator(visible_state: bool) -> void:
 	grass_indicator.visible = visible_state
 	grass_hint_label.visible = visible_state

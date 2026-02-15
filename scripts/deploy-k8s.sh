@@ -69,6 +69,16 @@ if [ "$SETUP" = true ]; then
 	exit 0
 fi
 
+# --- Ensure engine binaries exist ---
+if [ "$SKIP_BUILD" = false ]; then
+	if [ ! -f "$PROJECT_ROOT/engine-builds/linux/godot-editor" ] || [ ! -f "$PROJECT_ROOT/engine-builds/linux/godot-template" ]; then
+		echo "==> Engine binaries not found. Building MT engine for Linux..."
+		"$SCRIPT_DIR/build-engine-templates.sh"
+	else
+		echo "==> Engine binaries found (use scripts/build-engine-templates.sh --force to rebuild)."
+	fi
+fi
+
 # --- Build ---
 if [ "$SKIP_BUILD" = false ]; then
 	echo "==> Building Docker image ($IMAGE)..."

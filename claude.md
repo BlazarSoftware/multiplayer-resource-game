@@ -10,11 +10,25 @@
 - When dedicated mode is detected: auto-calls `host_game("Server")` + `GameManager.start_game()`, skips ConnectUI entirely, skips game world UI setup (HUD, BattleUI, etc.) and camera creation.
 
 ## Docker Server Workflow
-- Use `./scripts/start-docker-server.sh` to rebuild and start the dedicated server.
+
+### Two-Phase Build (Engine + Game)
+The server Docker image requires matching the Mechanical Turk engine (Godot 4.7 fork) — stock Godot will cause RPC checksum mismatches and clients won't connect. The build is split into two phases:
+
+1. **Engine build** (`Dockerfile.engine` + `scripts/build-engine-templates.sh`): Compiles MT engine from C++ source for Linux x86_64, producing `engine-builds/linux/godot-editor` (149MB) and `engine-builds/linux/godot-template` (82MB). Results are cached — subsequent runs are instant unless `--force` is passed. Requires the `mechanical-turk` engine repo at `../mechanical-turk/`.
+2. **Game build** (`Dockerfile`): Uses the pre-built MT engine binaries to export the server. Templates go in `/root/.local/share/mechanical_turk/export_templates/4.7.dev/` (MT uses `mechanical_turk` as its data dir, NOT `godot`).
+
+### Engine Build Details
+- SCons flags: `platform=linuxbsd target=editor arch=x86_64 module_mono_enabled=no accesskit=no dev_mode=no lto=none`
+- **LTO is disabled** (`lto=none`) because Docker's memory limit (~8GB) is insufficient for LTO linking (requires 16+ GB)
+- Both `editor` (for `--export-release`) and `template_release` (embedded in exported binary) targets are built
+- Build script: `./scripts/build-engine-templates.sh` (or `--force` to rebuild)
+
+### Local Dev
+- Use `./scripts/start-docker-server.sh` to rebuild and start the dedicated server locally.
 - The script runs `docker compose up --build -d` from the project root and prints service status.
 - Docker mapping is `7777:7777/udp`.
 - Docker logs work in real-time via `docker logs -f multiplayer-resource-game-game-server-1` (uses `stdbuf -oL` for line-buffered output).
-- Godot's internal log file is also available: `docker exec <container> cat "/root/.local/share/godot/app_userdata/Creature Crafting Demo/logs/godot.log"`
+- Godot's internal log file is also available: `docker exec <container> cat "/root/.local/share/mechanical_turk/app_userdata/Creature Crafting Demo/logs/godot.log"`
 
 ## Multiplayer Join/Spawn Stabilization
 - **Client pre-loads GameWorld on connect**: `_on_connected_to_server()` calls `GameManager.start_game()` BEFORE `request_join`. This ensures the MultiplayerSpawner exists in the client's scene tree before any spawn replication RPCs arrive from the server. Without this, late-joining clients get cascading errors when the server tries to replicate already-spawned players.
@@ -91,6 +105,20 @@
 - `known_recipes: Array` tracks unlocked recipe IDs
 - `active_buffs: Array` of `{buff_type, buff_value, expires_at}` dicts
 
+## World Item Drop & Pickup System
+- **WorldItemManager** (`scripts/world/world_item_manager.gd`): Server-authoritative manager node in `game_world.tscn`, sibling of BattleManager/EncounterManager
+- **WorldItem** (`scripts/world/world_item.gd`): Area3D pickup node with colored BoxMesh (0.4³), billboard Label3D, bobbing animation, walk-over auto-pickup
+- **WorldItems** container: Node3D in `game_world.tscn` holds all spawned WorldItem nodes
+- **Pickup flow**: Area3D `body_entered` (server-only) → `WorldItemManager.try_pickup()` → `server_add_inventory()` + `_sync_inventory_full` RPC → `_notify_pickup` RPC (HUD toast) → `_remove_world_item()` (despawn RPC to all)
+- **Drop sources**: Random world forage spawns (every 120s, 10 spawn points, weighted table), farm plot clearing (wild plots drop mushroom/herb_basil/grain_core)
+- **Random spawn table**: mushroom (20), herb_basil (20), grain_core (20), herbal_dew (15), sour_essence (15), sweet_crystal (10) — max 10 simultaneous random items
+- **Despawn**: Configurable timeout per item (default 300s for random, 120s for farm drops), checked every physics frame
+- **Late-joiner sync**: `sync_all_to_client(peer_id)` sends bulk `_spawn_world_item_client` RPCs, called from `_sync_world_to_client()`
+- **Persistence**: `get_save_data()` / `load_save_data()` integrated into `game_world.gd` save/load flow. Despawn times recalculated relative to current time on load.
+- **Node naming**: `"WorldItem_" + str(uid)` with monotonic auto-increment UIDs to avoid duplicate name trap
+- **Collision**: Area3D with `collision_layer=0`, `collision_mask=3` (detects players on layer 2). SphereShape3D radius=1.2 for pickup range.
+- **HUD notification**: `hud.gd` `show_pickup_notification()` shows "Picked up [item] x[amount]" toast that fades out after 2.5s
+
 ## Wild Encounter Zones
 - 6 zones total: Herb Garden, Flame Kitchen, Frost Pantry, Harvest Field, Sour Springs, Fusion Kitchen
 - Represented by glowing colored grass patches with floating in-world labels
@@ -129,6 +157,7 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 | Held item equip | Server (`request_equip/unequip_held_item`) | `_sync_party_full` RPC to client |
 | Recipe unlocks | Server (`request_use_recipe_scroll`) | `_sync_known_recipes` + `_notify_recipe_unlocked` RPCs |
 | Selling | Server (`request_sell_item`) | Inventory + money sync RPCs |
+| World item spawn/pickup | Server (WorldItemManager) | `_spawn/_despawn_world_item_client` RPCs to all |
 | Save/load | Server only (SaveManager) | Data sent to client via `_receive_player_data` |
 
 ### Never do this
@@ -148,6 +177,8 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 - **stdbuf for Docker logs**: Godot headless buffers stdout, making `docker logs` empty. The Dockerfile uses `stdbuf -oL` in the CMD to force line-buffered output.
 - **Duplicate node name trap**: If a .tscn file already has a child named "X", creating a new `Node("X")` in `_ready()` and calling `add_child()` causes Godot to silently rename it (e.g. `@Node@38`). This breaks all hardcoded path lookups like `/root/Main/GameWorld/UI/BattleUI`. Always use `get_node("X")` to reference existing nodes, don't create duplicates.
 - **CanvasLayer child visibility persistence**: If you hide all children of a CanvasLayer (e.g. for a summary overlay), you MUST restore their visibility when the next screen/battle starts. Setting the CanvasLayer's own `visible` property does not propagate to children. The `_on_battle_started()` handler restores all child visibility and cleans up leftover dynamically-created panels.
+- **MCP addon excluded from server export**: `export_presets.cfg` has `exclude_filter="addons/mechanical_turk_mcp/*"` on the Linux Server preset. The runtime bridge autoload entry in `project.godot` still exists (needed for editor), so server logs show a non-fatal "File not found" error for `runtime_bridge.gd` on startup — this is expected.
+- **Connection timeout**: ConnectUI has a 10-second timeout. If ENet connects at transport layer but the Godot multiplayer layer rejects the peer (e.g. engine version mismatch), the client shows "Connection timed out" instead of hanging forever.
 
 ## Kubernetes Deployment
 - **Namespace**: `godot-multiplayer` (shared with other multiplayer game servers)
@@ -164,8 +195,10 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 ### K8s Deploy Workflow
 ```bash
 ./scripts/deploy-k8s.sh --setup      # first-time: namespace + ghcr-secret + RBAC
-./scripts/deploy-k8s.sh              # full build + push + deploy
+./scripts/deploy-k8s.sh              # full build + push + deploy (auto-builds engine if missing)
 ./scripts/deploy-k8s.sh --skip-build # redeploy without rebuilding image
+./scripts/build-engine-templates.sh          # build engine only (cached)
+./scripts/build-engine-templates.sh --force  # rebuild engine from scratch
 ```
 
 ## MCP Testing Workflow
@@ -205,7 +238,7 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 - `scripts/autoload/` — NetworkManager, GameManager, PlayerData, SaveManager
 - `scripts/data/` — 13 Resource class definitions (+ food_def, tool_def, recipe_scroll_def)
 - `scripts/battle/` — BattleManager, BattleCalculator, StatusEffects, FieldEffects, AbilityEffects, HeldItemEffects, BattleAI
-- `scripts/world/` — FarmPlot, FarmManager, SeasonManager, TallGrass, EncounterManager, GameWorld, TrainerNPC, CraftingStation, RecipePickup
+- `scripts/world/` — FarmPlot, FarmManager, SeasonManager, TallGrass, EncounterManager, GameWorld, TrainerNPC, CraftingStation, RecipePickup, WorldItem, WorldItemManager
 - `scripts/crafting/` — CraftingSystem
 - `scripts/player/` — PlayerController, PlayerInteraction
 - `scripts/ui/` — ConnectUI, HUD, BattleUI, CraftingUI (station-filtered), InventoryUI (tabbed), PartyUI (networked equip), PvPChallengeUI, TrainerDialogueUI

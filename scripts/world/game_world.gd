@@ -65,6 +65,10 @@ func _load_world_state() -> void:
 	for pickup in get_tree().get_nodes_in_group("recipe_pickup"):
 		if pickup.has_method("load_claimed_data") and pickup.pickup_id in pickup_data:
 			pickup.load_claimed_data(pickup_data[pickup.pickup_id])
+	# Load world items
+	var item_mgr = get_node_or_null("WorldItemManager")
+	if item_mgr and world_data.has("world_items"):
+		item_mgr.load_save_data(world_data.get("world_items", []))
 
 func get_save_data() -> Dictionary:
 	var data = {}
@@ -84,6 +88,10 @@ func get_save_data() -> Dictionary:
 			pickup_data[pickup.pickup_id] = pickup.get_claimed_data()
 	if not pickup_data.is_empty():
 		data["recipe_pickups"] = pickup_data
+	# Save world items
+	var item_mgr = get_node_or_null("WorldItemManager")
+	if item_mgr:
+		data["world_items"] = item_mgr.get_save_data()
 	return data
 
 func _ensure_fallback_camera() -> void:
@@ -194,3 +202,7 @@ func _sync_world_to_client(peer_id: int) -> void:
 	if farm_mgr:
 		for plot in farm_mgr.plots:
 			plot._sync_state.rpc_id(peer_id, plot.plot_state, plot.planted_seed_id, plot.growth_progress, plot.water_level, plot.owner_peer_id)
+	# Sync world items
+	var item_mgr = get_node_or_null("WorldItemManager")
+	if item_mgr:
+		item_mgr.sync_all_to_client(peer_id)

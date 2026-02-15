@@ -1,0 +1,71 @@
+# Dockerfile.engine — Compile Mechanical Turk engine (Godot 4.7 fork) for Linux x86_64
+#
+# Builds two binaries:
+#   1. Editor binary (used for --export-release during game Docker build)
+#   2. Export template (embedded in exported server binary)
+#
+# Usage:
+#   docker build --platform linux/amd64 -f Dockerfile.engine -t mt-engine-linux \
+#     --build-context engine-src=../mechanical-turk .
+#   docker cp $(docker create mt-engine-linux):/out/ ./engine-builds/linux/
+
+FROM ubuntu:22.04 AS builder
+
+# Avoid interactive prompts during package install
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install build dependencies (mirrors Godot CI linux_builds.yml)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    scons \
+    pkg-config \
+    python3 \
+    python3-pip \
+    libx11-dev \
+    libxcursor-dev \
+    libxinerama-dev \
+    libxrandr-dev \
+    libxi-dev \
+    libgl1-mesa-dev \
+    libglu1-mesa-dev \
+    libasound2-dev \
+    libpulse-dev \
+    libdbus-1-dev \
+    libudev-dev \
+    libwayland-dev \
+    libwayland-bin \
+    libxkbcommon-dev \
+    libspeechd-dev \
+    libfontconfig1-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy engine source
+WORKDIR /engine
+COPY --from=engine-src . .
+
+# Build editor binary (needed for --export-release)
+# No Mono, no AccessKit, no LTO — minimal build for headless server export.
+# LTO is disabled because it requires too much memory for Docker builds.
+RUN scons platform=linuxbsd target=editor arch=x86_64 \
+    module_mono_enabled=no \
+    accesskit=no \
+    dev_mode=no \
+    lto=none \
+    -j$(nproc) \
+    && strip bin/godot.linuxbsd.editor.x86_64 \
+    && chmod +x bin/godot.linuxbsd.editor.x86_64
+
+# Build export template (release)
+RUN scons platform=linuxbsd target=template_release arch=x86_64 \
+    module_mono_enabled=no \
+    accesskit=no \
+    dev_mode=no \
+    lto=none \
+    -j$(nproc) \
+    && strip bin/godot.linuxbsd.template_release.x86_64 \
+    && chmod +x bin/godot.linuxbsd.template_release.x86_64
+
+# Output stage — just the binaries
+FROM scratch AS output
+COPY --from=builder /engine/bin/godot.linuxbsd.editor.x86_64 /godot-editor
+COPY --from=builder /engine/bin/godot.linuxbsd.template_release.x86_64 /godot-template

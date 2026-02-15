@@ -73,7 +73,14 @@ func request_farm_action(plot_index: int, action: String, extra: String) -> void
 	var result = {}
 	match action:
 		"clear":
+			var was_wild = (plot.plot_state == plot.PlotState.WILD)
 			success = plot.try_clear(sender)
+			if success and was_wild:
+				var item_mgr = get_node_or_null("/root/Main/GameWorld/WorldItemManager")
+				if item_mgr:
+					var drop_pos = plot.global_position + Vector3(randf_range(-0.5, 0.5), 0.5, randf_range(-0.5, 0.5))
+					var drops = ["mushroom", "herb_basil", "grain_core"]
+					item_mgr.spawn_world_item(drops[randi() % drops.size()], 1, drop_pos, 120.0, "farm")
 		"till":
 			success = plot.try_till(sender)
 		"plant":

@@ -1,33 +1,28 @@
 # Creature Crafting Demo - Dedicated Server
-# Builds a headless Godot 4.6 server in a Docker container
-
-ARG GODOT_VERSION=4.6
-ARG GODOT_RELEASE=stable
+# Exports the game using pre-built Mechanical Turk engine binaries (Godot 4.7 fork)
+#
+# Prerequisites:
+#   Run ./scripts/build-engine-templates.sh first to compile the MT engine for Linux.
 
 # --- Build stage: export the server binary ---
 FROM ubuntu:22.04 AS builder
 
-ARG GODOT_VERSION
-ARG GODOT_RELEASE
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget unzip ca-certificates \
+    ca-certificates libfontconfig1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Download Godot headless and export templates
-RUN wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip \
-    -O /tmp/godot.zip \
-    && unzip /tmp/godot.zip -d /tmp \
-    && mv /tmp/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64 /usr/local/bin/godot \
-    && chmod +x /usr/local/bin/godot \
-    && rm /tmp/godot.zip
+# Copy pre-built MT engine binaries (built by build-engine-templates.sh)
+COPY engine-builds/linux/godot-editor /usr/local/bin/godot
+COPY engine-builds/linux/godot-template /tmp/godot-template
+RUN chmod +x /usr/local/bin/godot
 
-RUN wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz \
-    -O /tmp/templates.tpz \
-    && mkdir -p /root/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE} \
-    && unzip /tmp/templates.tpz -d /tmp/templates \
-    && mv /tmp/templates/templates/* /root/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}/ \
-    && rm -rf /tmp/templates /tmp/templates.tpz
+# Install export template in the location MT engine expects
+# MT uses "mechanical_turk" as its data dir (from version.py short_name)
+# Version string: 4.7.dev (major.minor.status from engine's version.py)
+RUN mkdir -p "/root/.local/share/mechanical_turk/export_templates/4.7.dev" \
+    && cp /tmp/godot-template "/root/.local/share/mechanical_turk/export_templates/4.7.dev/linux_release.x86_64" \
+    && cp /tmp/godot-template "/root/.local/share/mechanical_turk/export_templates/4.7.dev/linux_debug.x86_64" \
+    && rm /tmp/godot-template
 
 # Copy project files
 WORKDIR /project

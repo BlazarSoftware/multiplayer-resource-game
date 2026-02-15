@@ -10,13 +10,26 @@
 2. Click "Join Game" — exported builds default to `207.32.216.76` (public K8s server).
 
 ## Quick Start (Docker Local Dev)
-1. Start server: `./scripts/start-docker-server.sh`
-2. Launch client, click "Join Game" — editor defaults to `127.0.0.1`.
+1. Build engine (first time only): `./scripts/build-engine-templates.sh`
+2. Start server: `./scripts/start-docker-server.sh`
+3. Launch client, click "Join Game" — editor defaults to `127.0.0.1`.
 
 ## Quick Start (Kubernetes Deploy)
 1. First-time setup: `./scripts/deploy-k8s.sh --setup`
-2. Build, push, and deploy: `./scripts/deploy-k8s.sh`
+2. Build, push, and deploy: `./scripts/deploy-k8s.sh` (auto-builds engine if missing)
 3. Join using `207.32.216.76:7777` (public) or `10.225.0.153:7777` (VPN).
+
+## Engine Build (Two-Phase Docker)
+The server must use the Mechanical Turk engine (Godot 4.7 fork) — stock Godot causes RPC checksum mismatches. The build is split:
+1. **Engine phase** (`Dockerfile.engine`): Compiles MT engine from C++ source for Linux x86_64. Output cached in `engine-builds/linux/`. Requires `../mechanical-turk/` engine repo.
+2. **Game phase** (`Dockerfile`): Uses pre-built MT binaries to export the server. Templates at `/root/.local/share/mechanical_turk/export_templates/4.7.dev/`.
+
+```bash
+./scripts/build-engine-templates.sh          # build engine (cached)
+./scripts/build-engine-templates.sh --force  # force rebuild
+```
+
+**Key constraints**: LTO disabled (`lto=none`) due to Docker memory limits. Engine data dir is `mechanical_turk` (not `godot`).
 
 ## Networking Contract
 - Server/client default UDP port is `7777`.
@@ -53,6 +66,7 @@ Never assume a gameplay feature is local-only unless explicitly told so.
 | Farm actions | Server (`request_farm_action` RPC) | Server validates, RPCs result |
 | Battle state | Server (BattleManager) | RPCs to involved clients |
 | Crafting | Server (CraftingSystem) | RPC results to client |
+| World item spawn/pickup | Server (WorldItemManager) | `_spawn/_despawn_world_item_client` RPCs to all |
 | Save/load | Server only (SaveManager) | `_receive_player_data` RPC on join |
 
 ### Data Flow Rules
@@ -83,12 +97,14 @@ Never assume a gameplay feature is local-only unless explicitly told so.
 ## Kubernetes Deployment
 - Namespace: `godot-multiplayer` (shared with sheep-tag and other game servers).
 - Image: `ghcr.io/crankymagician/mt-creature-crafting-server:latest`.
+- **Engine**: Mechanical Turk v4.7.dev (compiled from source via `Dockerfile.engine`). Must match client engine version or RPC checksums will mismatch.
 - NodePort `7777` → container `7777/UDP`. Public IP: `207.32.216.76`. Internal/VPN: `10.225.0.153`.
 - **Node SSH access**: `ssh jayhawk@10.225.0.153` (password: `fir3W0rks!`). User has sudo. k3s config at `/etc/rancher/k3s/config.yaml`.
 - Player/world saves persist on a 1Gi PVC (`creature-crafting-data`) at `/app/data`.
 - Deploy strategy is `Recreate` (RWO PVC constraint).
 - Manifests live in `k8s/deployment.yaml` and `k8s/service.yaml`.
 - Deploy script: `scripts/deploy-k8s.sh` (`--setup` for first-time, `--skip-build` to redeploy only).
+- **MCP addon excluded** from server export (`export_presets.cfg` exclude filter). Non-fatal autoload error for `runtime_bridge.gd` on startup is expected.
 
 ## MCP Testing Workflow
 
@@ -114,6 +130,9 @@ Never assume a gameplay feature is local-only unless explicitly told so.
 - If needed, force rebuild without cache:
   - `docker compose build --no-cache`
   - `docker compose up -d`
+- If engine source changed and server needs rebuilding:
+  - `./scripts/build-engine-templates.sh --force` then rebuild Docker image
 - If K8s pod appears stale, redeploy:
   - `./scripts/deploy-k8s.sh`
   - Or restart without rebuild: `./scripts/deploy-k8s.sh --skip-build`
+- **Connection timeout**: ConnectUI shows "Connection timed out" after 10s if server is unreachable or engine version mismatches. No more silent hangs.
