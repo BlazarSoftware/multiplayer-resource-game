@@ -9,3 +9,5 @@ display_name = "Cook Mushroom Cap"
 result_species_id = "mushroom_cap"
 ingredients = {"mushroom": 2, "umami_extract": 2}
 description = "Stew mushrooms with umami extract to create a Mushroom Cap."
+station = "cauldron"
+unlockable = true

@@ -9,3 +9,5 @@ display_name = "Cook Sourdough Sentinel"
 result_species_id = "sourdough_sentinel"
 ingredients = {"sour_essence": 2, "grain_core": 2, "pickle_brine": 1}
 description = "Combine sour essence, grain cores, and pickle brine to create a Sourdough Sentinel."
+station = "cauldron"
+unlockable = true

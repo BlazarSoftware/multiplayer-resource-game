@@ -10,6 +10,9 @@ static var recipes: Dictionary = {} # id -> RecipeDef
 static var abilities: Dictionary = {} # id -> AbilityDef
 static var held_items: Dictionary = {} # id -> HeldItemDef
 static var trainers: Dictionary = {} # id -> TrainerDef
+static var foods: Dictionary = {} # id -> FoodDef
+static var tools: Dictionary = {} # id -> ToolDef
+static var recipe_scrolls: Dictionary = {} # id -> RecipeScrollDef
 
 static var _loaded: bool = false
 
@@ -25,7 +28,10 @@ static func ensure_loaded() -> void:
 	_load_all("res://resources/abilities/", abilities, "ability_id")
 	_load_all("res://resources/held_items/", held_items, "item_id")
 	_load_all("res://resources/trainers/", trainers, "trainer_id")
-	print("DataRegistry loaded: ", ingredients.size(), " ingredients, ", species.size(), " species, ", moves.size(), " moves, ", encounter_tables.size(), " encounter tables, ", recipes.size(), " recipes, ", abilities.size(), " abilities, ", held_items.size(), " held items, ", trainers.size(), " trainers")
+	_load_all("res://resources/foods/", foods, "food_id")
+	_load_all("res://resources/tools/", tools, "tool_id")
+	_load_all("res://resources/recipe_scrolls/", recipe_scrolls, "scroll_id")
+	print("DataRegistry loaded: ", ingredients.size(), " ingredients, ", species.size(), " species, ", moves.size(), " moves, ", encounter_tables.size(), " encounter tables, ", recipes.size(), " recipes, ", abilities.size(), " abilities, ", held_items.size(), " held items, ", trainers.size(), " trainers, ", foods.size(), " foods, ", tools.size(), " tools, ", recipe_scrolls.size(), " recipe scrolls")
 
 static func _load_all(path: String, registry: Dictionary, id_field: String) -> void:
 	var dir = DirAccess.open(path)
@@ -81,3 +87,47 @@ static func get_held_item(id: String):
 static func get_trainer(id: String):
 	ensure_loaded()
 	return trainers.get(id)
+
+static func get_food(id: String):
+	ensure_loaded()
+	return foods.get(id)
+
+static func get_tool(id: String):
+	ensure_loaded()
+	return tools.get(id)
+
+static func get_recipe_scroll(id: String):
+	ensure_loaded()
+	return recipe_scrolls.get(id)
+
+static func get_item_display_info(item_id: String) -> Dictionary:
+	ensure_loaded()
+	# Check ingredients
+	if item_id in ingredients:
+		var ing = ingredients[item_id]
+		return {"display_name": ing.display_name, "category": "ingredient", "icon_color": ing.icon_color}
+	# Check held items
+	if item_id in held_items:
+		var hi = held_items[item_id]
+		return {"display_name": hi.display_name, "category": "held_item", "icon_color": Color.MEDIUM_PURPLE}
+	# Check foods
+	if item_id in foods:
+		var f = foods[item_id]
+		return {"display_name": f.display_name, "category": "food", "icon_color": f.icon_color}
+	# Check tools
+	if item_id in tools:
+		var t = tools[item_id]
+		return {"display_name": t.display_name, "category": "tool", "icon_color": t.icon_color}
+	# Check recipe scrolls
+	if item_id in recipe_scrolls:
+		var rs = recipe_scrolls[item_id]
+		return {"display_name": rs.display_name, "category": "recipe_scroll", "icon_color": rs.icon_color}
+	# Check for fragment pattern (fragment_<scroll_id>)
+	if item_id.begins_with("fragment_"):
+		var scroll_id = item_id.substr(9) # Remove "fragment_" prefix
+		if scroll_id in recipe_scrolls:
+			var rs = recipe_scrolls[scroll_id]
+			return {"display_name": rs.display_name + " Fragment", "category": "fragment", "icon_color": Color(0.7, 0.6, 0.2)}
+		return {"display_name": item_id.replace("_", " ").capitalize(), "category": "fragment", "icon_color": Color(0.7, 0.6, 0.2)}
+	# Unknown item
+	return {"display_name": item_id.replace("_", " ").capitalize(), "category": "unknown", "icon_color": Color.GRAY}

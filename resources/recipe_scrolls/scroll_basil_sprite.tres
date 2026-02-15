@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeScrollDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_scroll_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+scroll_id = "scroll_basil_sprite"
+display_name = "Basil Sprite Recipe"
+description = "A recipe scroll that reveals how to craft a Basil Sprite."
+unlocks_recipe_id = "recipe_basil_sprite"
+icon_color = Color(0.3, 0.8, 0.3, 1)
+fragment_count = 0

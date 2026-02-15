@@ -3,8 +3,11 @@ extends Node
 signal inventory_changed()
 signal party_changed()
 signal tool_changed(tool_name: String)
+signal known_recipes_changed()
+signal buffs_changed()
+signal storage_changed()
 
-# Inventory: ingredient_id -> count
+# Inventory: item_id -> count (all item types share this namespace)
 var inventory: Dictionary = {}
 
 # Party: array of CreatureInstance data (dictionaries for now)
@@ -17,14 +20,29 @@ var money: int = 0
 # Defeated trainers: trainer_id -> unix timestamp of last defeat
 var defeated_trainers: Dictionary = {}
 
-# Current tool
-enum Tool { HANDS, HOE, AXE, WATERING_CAN, SEEDS }
-var current_tool: Tool = Tool.HANDS
+# Current tool slot
+var current_tool_slot: String = "" # "hoe", "axe", "watering_can", "seeds", "" for hands
 var selected_seed_id: String = ""
 
-# Watering can
-var watering_can_capacity: int = 10
+# Equipped tools: slot -> tool_id
+var equipped_tools: Dictionary = {
+	"hoe": "tool_hoe_basic",
+	"axe": "tool_axe_basic",
+	"watering_can": "tool_watering_can_basic",
+}
+
+# Watering can state (synced from server)
 var watering_can_current: int = 10
+
+# Recipe unlock system
+var known_recipes: Array = [] # list of unlocked recipe_id strings
+
+# Active buffs
+var active_buffs: Array = [] # [{buff_type, buff_value, expires_at}]
+
+# Creature storage
+var creature_storage: Array = [] # Array of creature dicts (same format as party)
+var storage_capacity: int = 10 # Current max storage slots
 
 # Player state
 var player_name: String = "Player"
@@ -53,6 +71,48 @@ func _ready() -> void:
 		}
 		party.append(starter)
 
+func get_watering_can_capacity() -> int:
+	DataRegistry.ensure_loaded()
+	var tool_id = equipped_tools.get("watering_can", "tool_watering_can_basic")
+	var tool_def = DataRegistry.get_tool(tool_id)
+	if tool_def:
+		return int(tool_def.effectiveness.get("capacity", 10))
+	return 10
+
+func get_tool_effectiveness(tool_type: String) -> Dictionary:
+	DataRegistry.ensure_loaded()
+	var tool_id = equipped_tools.get(tool_type, "")
+	if tool_id == "":
+		return {}
+	var tool_def = DataRegistry.get_tool(tool_id)
+	if tool_def:
+		return tool_def.effectiveness
+	return {}
+
+func get_tool_display_name(tool_type: String) -> String:
+	DataRegistry.ensure_loaded()
+	var tool_id = equipped_tools.get(tool_type, "")
+	if tool_id == "":
+		return tool_type.capitalize()
+	var tool_def = DataRegistry.get_tool(tool_id)
+	if tool_def:
+		return tool_def.display_name
+	return tool_type.capitalize()
+
+func has_active_buff(buff_type: String) -> bool:
+	var now = Time.get_unix_time_from_system()
+	for buff in active_buffs:
+		if buff.get("buff_type", "") == buff_type and float(buff.get("expires_at", 0)) > now:
+			return true
+	return false
+
+func get_buff_value(buff_type: String) -> float:
+	var now = Time.get_unix_time_from_system()
+	for buff in active_buffs:
+		if buff.get("buff_type", "") == buff_type and float(buff.get("expires_at", 0)) > now:
+			return float(buff.get("buff_value", 0.0))
+	return 0.0
+
 func load_from_server(data: Dictionary) -> void:
 	player_name = data.get("player_name", "Player")
 	# Load inventory
@@ -66,7 +126,7 @@ func load_from_server(data: Dictionary) -> void:
 	for creature in party_data:
 		party.append(creature)
 	# Load watering can
-	watering_can_current = int(data.get("watering_can_current", watering_can_capacity))
+	watering_can_current = int(data.get("watering_can_current", 10))
 	# Load money and trainer defeats
 	money = int(data.get("money", 0))
 	defeated_trainers = data.get("defeated_trainers", {})
@@ -74,11 +134,25 @@ func load_from_server(data: Dictionary) -> void:
 	var cd = data.get("player_color", {})
 	if cd is Dictionary and not cd.is_empty():
 		player_color = Color(cd.get("r", 0.2), cd.get("g", 0.5), cd.get("b", 0.9))
+	# Load equipped tools
+	var et = data.get("equipped_tools", {})
+	if et is Dictionary and not et.is_empty():
+		equipped_tools = et.duplicate()
+	# Load known recipes
+	known_recipes = data.get("known_recipes", []).duplicate()
+	# Load active buffs
+	active_buffs = data.get("active_buffs", []).duplicate()
+	# Load creature storage
+	creature_storage = data.get("creature_storage", []).duplicate(true)
+	storage_capacity = int(data.get("storage_capacity", 10))
 	# Reset tool
-	current_tool = Tool.HANDS
+	current_tool_slot = ""
 	selected_seed_id = ""
 	inventory_changed.emit()
 	party_changed.emit()
+	known_recipes_changed.emit()
+	buffs_changed.emit()
+	storage_changed.emit()
 
 func to_dict() -> Dictionary:
 	return {
@@ -89,20 +163,37 @@ func to_dict() -> Dictionary:
 		"money": money,
 		"defeated_trainers": defeated_trainers.duplicate(),
 		"player_color": {"r": player_color.r, "g": player_color.g, "b": player_color.b},
+		"equipped_tools": equipped_tools.duplicate(),
+		"known_recipes": known_recipes.duplicate(),
+		"active_buffs": active_buffs.duplicate(),
+		"creature_storage": creature_storage.duplicate(true),
+		"storage_capacity": storage_capacity,
 	}
 
 func reset() -> void:
 	inventory.clear()
 	party.clear()
-	current_tool = Tool.HANDS
+	current_tool_slot = ""
 	selected_seed_id = ""
-	watering_can_current = watering_can_capacity
+	equipped_tools = {
+		"hoe": "tool_hoe_basic",
+		"axe": "tool_axe_basic",
+		"watering_can": "tool_watering_can_basic",
+	}
+	watering_can_current = 10
 	player_name = "Player"
 	player_color = Color(0.2, 0.5, 0.9)
 	money = 0
 	defeated_trainers.clear()
+	known_recipes.clear()
+	active_buffs.clear()
+	creature_storage.clear()
+	storage_capacity = 10
 	inventory_changed.emit()
 	party_changed.emit()
+	known_recipes_changed.emit()
+	buffs_changed.emit()
+	storage_changed.emit()
 
 func add_to_inventory(item_id: String, amount: int = 1) -> void:
 	if item_id in inventory:
@@ -150,12 +241,12 @@ func heal_all_creatures() -> void:
 		pass
 	party_changed.emit()
 
-func set_tool(tool_type: Tool) -> void:
-	current_tool = tool_type
-	tool_changed.emit(Tool.keys()[tool_type])
+func set_tool(tool_slot: String) -> void:
+	current_tool_slot = tool_slot
+	tool_changed.emit(tool_slot)
 
 func refill_watering_can() -> void:
-	watering_can_current = watering_can_capacity
+	watering_can_current = get_watering_can_capacity()
 
 func use_watering_can() -> bool:
 	if watering_can_current > 0:

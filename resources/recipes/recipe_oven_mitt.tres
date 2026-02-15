@@ -9,3 +9,4 @@ display_name = "Craft Oven Mitt"
 result_item_id = "oven_mitt"
 ingredients = {"wheat": 2, "sweet_crystal": 2}
 description = "A thick oven mitt. Reduces special damage taken by 15%."
+station = "workbench"

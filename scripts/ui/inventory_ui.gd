@@ -4,9 +4,23 @@ extends CanvasLayer
 @onready var seed_label: Label = $Panel/VBox/SeedSelect/SeedLabel
 @onready var close_button: Button = $Panel/VBox/CloseButton
 
+var tab_bar: TabBar = null
+var current_tab: int = 0
+
+const TAB_NAMES = ["All", "Ingredients", "Held Items", "Food", "Tools", "Scrolls"]
+const TAB_CATEGORIES = ["all", "ingredient", "held_item", "food", "tool", "recipe_scroll"]
+
 func _ready() -> void:
 	close_button.pressed.connect(func(): visible = false)
 	PlayerData.inventory_changed.connect(_refresh)
+	# Create tab bar dynamically
+	tab_bar = TabBar.new()
+	for tab_name in TAB_NAMES:
+		tab_bar.add_tab(tab_name)
+	tab_bar.tab_changed.connect(_on_tab_changed)
+	var vbox = $Panel/VBox
+	vbox.add_child(tab_bar)
+	vbox.move_child(tab_bar, 0) # Move to top
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("open_inventory"):
@@ -14,32 +28,91 @@ func _input(event: InputEvent) -> void:
 		if visible:
 			_refresh()
 
+func _on_tab_changed(tab_idx: int) -> void:
+	current_tab = tab_idx
+	_refresh()
+
 func _refresh() -> void:
 	for child in item_list.get_children():
 		child.queue_free()
 	DataRegistry.ensure_loaded()
+	var filter_category = TAB_CATEGORIES[current_tab] if current_tab < TAB_CATEGORIES.size() else "all"
+
 	for item_id in PlayerData.inventory:
 		var count = PlayerData.inventory[item_id]
-		var ingredient = DataRegistry.get_ingredient(item_id)
+		if count <= 0:
+			continue
+		var info = DataRegistry.get_item_display_info(item_id)
+		# Filter by category
+		if filter_category != "all":
+			var cat = info.get("category", "unknown")
+			# Include fragments under "recipe_scroll" tab
+			if filter_category == "recipe_scroll" and cat == "fragment":
+				pass # show fragments in scrolls tab
+			elif cat != filter_category:
+				continue
+
 		var hbox = HBoxContainer.new()
 		item_list.add_child(hbox)
 		# Color indicator
 		var color_rect = ColorRect.new()
 		color_rect.custom_minimum_size = Vector2(20, 20)
-		color_rect.color = ingredient.icon_color if ingredient else Color.GRAY
+		color_rect.color = info.get("icon_color", Color.GRAY)
 		hbox.add_child(color_rect)
 		# Name and count
 		var label = Label.new()
-		label.text = "  %s x%d" % [ingredient.display_name if ingredient else item_id, count]
+		label.text = "  %s x%d" % [info.get("display_name", item_id), count]
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		hbox.add_child(label)
-		# Select as seed button (for farm crops)
-		if ingredient and ingredient.category == "farm_crop":
-			var btn = Button.new()
-			btn.text = "Select Seed"
-			var sid = item_id
-			btn.pressed.connect(func(): _select_seed(sid))
-			hbox.add_child(btn)
+		# Context action button based on category
+		var category = info.get("category", "unknown")
+		match category:
+			"ingredient":
+				var ingredient = DataRegistry.get_ingredient(item_id)
+				if ingredient and ingredient.category == "farm_crop":
+					var btn = Button.new()
+					btn.text = "Select Seed"
+					var sid = item_id
+					btn.pressed.connect(func(): _select_seed(sid))
+					hbox.add_child(btn)
+			"food":
+				var food = DataRegistry.get_food(item_id)
+				if food:
+					if food.buff_type != "" and food.buff_type != "none":
+						var btn = Button.new()
+						btn.text = "Eat"
+						var fid = item_id
+						btn.pressed.connect(func(): _use_food(fid))
+						hbox.add_child(btn)
+					if food.sell_price > 0:
+						var sell_btn = Button.new()
+						sell_btn.text = "Sell ($%d)" % food.sell_price
+						var sid = item_id
+						sell_btn.pressed.connect(func(): _sell_item(sid))
+						hbox.add_child(sell_btn)
+			"recipe_scroll":
+				var btn = Button.new()
+				btn.text = "Use"
+				var sid = item_id
+				btn.pressed.connect(func(): _use_scroll(sid))
+				hbox.add_child(btn)
+			"tool":
+				var tool_def = DataRegistry.get_tool(item_id)
+				if tool_def:
+					# Show equip button if not already equipped
+					var equipped_id = PlayerData.equipped_tools.get(tool_def.tool_type, "")
+					if equipped_id != item_id:
+						var btn = Button.new()
+						btn.text = "Equip"
+						var tid = item_id
+						btn.pressed.connect(func(): _equip_tool(tid))
+						hbox.add_child(btn)
+					else:
+						var lbl = Label.new()
+						lbl.text = "[Equipped]"
+						lbl.add_theme_color_override("font_color", Color.GREEN)
+						hbox.add_child(lbl)
+
 	# Show selected seed
 	if PlayerData.selected_seed_id != "":
 		var ingredient = DataRegistry.get_ingredient(PlayerData.selected_seed_id)
@@ -49,5 +122,17 @@ func _refresh() -> void:
 
 func _select_seed(seed_id: String) -> void:
 	PlayerData.selected_seed_id = seed_id
-	PlayerData.set_tool(PlayerData.Tool.SEEDS)
+	PlayerData.set_tool("seeds")
 	_refresh()
+
+func _use_food(food_id: String) -> void:
+	NetworkManager.request_use_food.rpc_id(1, food_id)
+
+func _sell_item(item_id: String) -> void:
+	NetworkManager.request_sell_item.rpc_id(1, item_id, 1)
+
+func _use_scroll(scroll_id: String) -> void:
+	NetworkManager.request_use_recipe_scroll.rpc_id(1, scroll_id)
+
+func _equip_tool(tool_id: String) -> void:
+	NetworkManager.request_equip_tool.rpc_id(1, tool_id)

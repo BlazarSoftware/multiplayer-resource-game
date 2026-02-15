@@ -13,3 +13,4 @@ ai_difficulty = "medium"
 rematch_cooldown_sec = 600
 reward_money = 300
 reward_ingredients = {"sweet_crystal": 3}
+reward_recipe_scroll_id = "scroll_taffy_serpent"

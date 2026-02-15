@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "watering_can_iron"
+display_name = "Forge Iron Watering Can"
+result_tool_id = "tool_watering_can_iron"
+requires_tool_ingredient = "tool_watering_can_bronze"
+ingredients = {"umami_extract": 5}
+description = "Upgrade your watering can with iron."
+station = "workbench"

@@ -9,3 +9,5 @@ display_name = "Cook Wheat Golem"
 result_species_id = "wheat_golem"
 ingredients = {"wheat": 3, "grain_core": 1}
 description = "Knead wheat with a grain core to create a Wheat Golem."
+station = "cauldron"
+unlockable = true

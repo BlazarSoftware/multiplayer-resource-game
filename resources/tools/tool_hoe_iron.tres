@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ToolDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/tool_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tool_id = "hoe_iron"
+display_name = "Iron Hoe"
+description = "A sturdy iron hoe. Tills 60% faster."
+tool_type = "hoe"
+tier = 2
+icon_color = Color(0.7, 0.7, 0.7, 1)
+effectiveness = {"speed_mult": 1.6}

@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene load_steps=42 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/game_world.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/world/season_manager.gd" id="2"]
@@ -11,6 +11,9 @@
 [ext_resource type="Script" path="res://scripts/world/trainer_npc.gd" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pvp_challenge_ui.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/ui/trainer_dialogue_ui.tscn" id="11"]
+[ext_resource type="Script" path="res://scripts/world/crafting_station.gd" id="12"]
+[ext_resource type="Script" path="res://scripts/world/storage_station.gd" id="14"]
+[ext_resource type="Script" path="res://scripts/world/recipe_pickup.gd" id="13"]
 
 [sub_resource type="BoxShape3D" id="ground_shape"]
 size = Vector3(200, 0.2, 200)
@@ -87,6 +90,33 @@ transparency = 1
 albedo_color = Color(0.6, 0.3, 0.6, 0.7)
 transparency = 1
 
+[sub_resource type="BoxMesh" id="storage_mesh"]
+size = Vector3(1.5, 1.8, 1.0)
+
+[sub_resource type="StandardMaterial3D" id="storage_mat"]
+albedo_color = Color(0.55, 0.55, 0.6, 1)
+
+[sub_resource type="BoxShape3D" id="storage_interact_shape"]
+size = Vector3(3, 2, 2.5)
+
+[sub_resource type="BoxMesh" id="workbench_mesh"]
+size = Vector3(2, 1.2, 1.2)
+
+[sub_resource type="StandardMaterial3D" id="workbench_mat"]
+albedo_color = Color(0.35, 0.22, 0.1, 1)
+
+[sub_resource type="BoxShape3D" id="station_interact_shape"]
+size = Vector3(3.5, 2, 2.5)
+
+[sub_resource type="BoxMesh" id="cauldron_mesh"]
+size = Vector3(1.5, 1.2, 1.5)
+
+[sub_resource type="StandardMaterial3D" id="cauldron_mat"]
+albedo_color = Color(0.25, 0.15, 0.3, 1)
+
+[sub_resource type="SphereShape3D" id="pickup_shape"]
+radius = 2.0
+
 [sub_resource type="BoxShape3D" id="grass_area_shape"]
 size = Vector3(8, 2, 8)
 
@@ -149,10 +179,40 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.5, 0)
 mesh = SubResource("table_mesh")
 material_override = SubResource("table_mat")
 
-[node name="InteractArea" type="Area3D" parent="Zones/RestaurantZone/CraftingTable" groups=["crafting_table"]]
+[node name="InteractArea" type="Area3D" parent="Zones/RestaurantZone/CraftingTable"]
+script = ExtResource("12")
+station_type = "kitchen"
 
 [node name="InteractShape" type="CollisionShape3D" parent="Zones/RestaurantZone/CraftingTable/InteractArea"]
 shape = SubResource("table_interact_shape")
+
+[node name="StationLabel" type="Label3D" parent="Zones/RestaurantZone/CraftingTable"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+text = "Kitchen"
+font_size = 48
+outline_size = 8
+modulate = Color(1, 0.8, 0.3, 1)
+
+; === PANTRY (creature storage station, near kitchen) ===
+[node name="Pantry" type="StaticBody3D" parent="Zones/RestaurantZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.9, -3)
+
+[node name="PantryMesh" type="MeshInstance3D" parent="Zones/RestaurantZone/Pantry"]
+mesh = SubResource("storage_mesh")
+material_override = SubResource("storage_mat")
+
+[node name="InteractArea" type="Area3D" parent="Zones/RestaurantZone/Pantry"]
+script = ExtResource("14")
+
+[node name="InteractShape" type="CollisionShape3D" parent="Zones/RestaurantZone/Pantry/InteractArea"]
+shape = SubResource("storage_interact_shape")
+
+[node name="StationLabel" type="Label3D" parent="Zones/RestaurantZone/Pantry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+text = "Pantry"
+font_size = 48
+outline_size = 8
+modulate = Color(0.5, 0.7, 0.9, 1)
 
 [node name="SpawnPoint" type="Marker3D" parent="Zones/RestaurantZone"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
@@ -195,6 +255,28 @@ material_override = SubResource("water_mat")
 
 [node name="WaterShape" type="CollisionShape3D" parent="Zones/FarmZone/WaterSource/WaterArea"]
 shape = SubResource("water_interact_shape")
+
+; === WORKBENCH (near spawn, between restaurant and farm) ===
+[node name="Workbench" type="StaticBody3D" parent="Zones/RestaurantZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.6, 5)
+
+[node name="WorkbenchMesh" type="MeshInstance3D" parent="Zones/RestaurantZone/Workbench"]
+mesh = SubResource("workbench_mesh")
+material_override = SubResource("workbench_mat")
+
+[node name="InteractArea" type="Area3D" parent="Zones/RestaurantZone/Workbench"]
+script = ExtResource("12")
+station_type = "workbench"
+
+[node name="InteractShape" type="CollisionShape3D" parent="Zones/RestaurantZone/Workbench/InteractArea"]
+shape = SubResource("station_interact_shape")
+
+[node name="StationLabel" type="Label3D" parent="Zones/RestaurantZone/Workbench"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+text = "Workbench"
+font_size = 48
+outline_size = 8
+modulate = Color(0.8, 0.5, 0.2, 1)
 
 ; === WILD ZONE (-20, 0, 0) ===
 [node name="WildZone" type="Node3D" parent="Zones"]
@@ -410,6 +492,71 @@ material_override = SubResource("grass_purple_mat")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.65, 2)
 mesh = SubResource("grass_blade_mesh")
 material_override = SubResource("grass_purple_mat")
+
+; === CAULDRON (deep in wild zone, between encounter areas) ===
+[node name="Cauldron" type="StaticBody3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+
+[node name="CauldronMesh" type="MeshInstance3D" parent="Zones/WildZone/Cauldron"]
+mesh = SubResource("cauldron_mesh")
+material_override = SubResource("cauldron_mat")
+
+[node name="InteractArea" type="Area3D" parent="Zones/WildZone/Cauldron"]
+script = ExtResource("12")
+station_type = "cauldron"
+
+[node name="InteractShape" type="CollisionShape3D" parent="Zones/WildZone/Cauldron/InteractArea"]
+shape = SubResource("station_interact_shape")
+
+[node name="StationLabel" type="Label3D" parent="Zones/WildZone/Cauldron"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+text = "Cauldron"
+font_size = 48
+outline_size = 8
+modulate = Color(0.6, 0.3, 0.8, 1)
+
+; === RECIPE PICKUPS (hidden throughout the world) ===
+[node name="RecipePickups" type="Node3D" parent="Zones/WildZone"]
+
+; Hidden behind Herb Garden
+[node name="PickupHerbGarden" type="Area3D" parent="Zones/WildZone/RecipePickups"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, -12)
+script = ExtResource("13")
+scroll_id = "scroll_basil_sprite"
+pickup_id = "pickup_herb_garden_1"
+
+[node name="PickupShape" type="CollisionShape3D" parent="Zones/WildZone/RecipePickups/PickupHerbGarden"]
+shape = SubResource("pickup_shape")
+
+; Hidden near Frost Pantry
+[node name="PickupFrostPantry" type="Area3D" parent="Zones/WildZone/RecipePickups"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 12)
+script = ExtResource("13")
+scroll_id = "scroll_frost_berry"
+pickup_id = "pickup_frost_pantry_1"
+
+[node name="PickupShape" type="CollisionShape3D" parent="Zones/WildZone/RecipePickups/PickupFrostPantry"]
+shape = SubResource("pickup_shape")
+
+; Hidden deep in Sour Springs area
+[node name="PickupSourSprings" type="Area3D" parent="Zones/WildZone/RecipePickups"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, -20)
+script = ExtResource("13")
+scroll_id = "scroll_lemon_imp"
+pickup_id = "pickup_sour_springs_1"
+
+[node name="PickupShape" type="CollisionShape3D" parent="Zones/WildZone/RecipePickups/PickupSourSprings"]
+shape = SubResource("pickup_shape")
+
+; Hidden near Fusion Kitchen
+[node name="PickupFusionKitchen" type="Area3D" parent="Zones/WildZone/RecipePickups"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, 20)
+script = ExtResource("13")
+scroll_id = "scroll_pickle_toad"
+pickup_id = "pickup_fusion_kitchen_1"
+
+[node name="PickupShape" type="CollisionShape3D" parent="Zones/WildZone/RecipePickups/PickupFusionKitchen"]
+shape = SubResource("pickup_shape")
 
 ; === TRAINER NPCs ===
 [node name="Trainers" type="Node3D" parent="Zones"]

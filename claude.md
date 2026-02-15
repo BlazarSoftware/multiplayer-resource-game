@@ -37,7 +37,7 @@
 ## Battle System
 - **3 battle modes**: Wild, Trainer (7 NPCs), PvP (V key challenge within 5 units of another player)
 - **18 creatures** (9 original + 9 new), 4 evolution chains, MAX_PARTY_SIZE = 3
-- **Starter creature**: All new players spawn with Rice Ball (Grain, Lv 5, 45 HP) with moves: grain_bash, quick_bite, bread_wall, taste_test
+- **Starter creature**: All new players spawn with Rice Ball (Grain, Lv 5, 45 HP) with moves: grain_bash, quick_bite, bread_wall, syrup_trap
 - **42 moves** including weather setters, hazards, protection, charging, multi-hit, recoil, drain
 - **18 abilities** with trigger-based dispatch (on_enter/on_attack/on_defend/on_status/end_of_turn/on_weather)
 - **12 held items** (6 type boosters, 6 utility) — all craftable from ingredients
@@ -52,24 +52,44 @@
 - **Move buttons**: 3-line format — Name / Type|Category|Power / Accuracy|PP (e.g. "Grain Bash / Grain | Phys | Pwr:65 / Acc:100% | 15/15 PP")
 - **Weather bar**: shown when weather is active, displays weather name + remaining turns
 - **Flee/Switch**: Flee available in wild only, Switch always available (opens creature picker overlay)
-- **Turn log**: scrolling RichTextLabel showing move results, damage, status effects, faints
+- **Turn log**: scrolling RichTextLabel with staggered entry animation (~0.3s apart). Ability messages in `[color=purple]`, item messages in `[color=cyan]`, effectiveness in green/yellow.
+- **Visual polish**: HP bar tweens (0.5s smooth decrease, green→yellow→red color shift), hit flash on enemy mesh, damage number popups, fade-to-black battle transitions (via HUD CanvasLayer), summary panel slide-in + fade animation, XP bar fill animation (0.8s).
 - **Summary screen**: shown after battle ends — hides all battle panels, shows Victory!/Defeat, XP per creature (with level-up highlights), item drops, trainer money + bonus ingredients. Continue button dismisses and returns to world.
-- **PvP-specific**: no Flee button, "Waiting for opponent..." label after submitting move, both perspectives actor-swapped
+- **PvP-specific**: no Flee button, "Waiting for opponent..." label after submitting move, both perspectives actor-swapped. PvP challenge UI auto-hides when battle starts.
 
 ### Battle Manager Server-Side
 - Battle state keyed by `battle_id` (auto-increment), `player_battle_map[peer_id] → battle_id`
 - Wild/Trainer: server picks AI action, resolves turn, sends `_send_turn_result` RPC
-- PvP: both sides submit via `request_battle_action` RPC, server resolves when both received
+- PvP: both sides submit via `request_battle_action` RPC, server resolves when both received. End-of-turn effects (status, abilities, items, weather) are collected into a temp array and appended to both player logs with perspective-swapped actors.
+- PvP perspective swap: `_swap_actor()` flips top-level `actor` field ("player"↔"enemy"). Ability/item messages are plain strings embedded in the move result — no separate actor field needed.
 - Rewards sent via separate RPCs: `_grant_battle_rewards` (drops), `_send_xp_results` (XP/level-ups), `_grant_trainer_rewards_client` (money+ingredients), `_battle_defeat_penalty` (money loss)
 - Client accumulates reward data in `summary_*` vars, summary screen displays after 0.5s delay
 
-## Crafting & Farming
-- **25 recipes**: 13 creature recipes + 12 held item recipes
+## Crafting & Item System (Unified Overhaul)
+- **46 recipes**: 13 creature (cauldron, unlockable), 12 held item (workbench), 12 food (kitchen), 9 tool upgrade (workbench)
+- **5 item types**: ingredients (16), held items (12), foods (12), tools (12), recipe scrolls (13) — all share single inventory namespace
+- **3 crafting stations**: Kitchen (restaurant zone), Workbench (near spawn), Cauldron (deep wild zone) — each filters recipes by `station` field
+- **Recipe unlock system**: Creature recipes require recipe scrolls to unlock. Scrolls come from trainer first-defeat rewards, world pickups, or fragment collection (3-5 fragments auto-combine)
+- **Food & buffs**: 4 buff foods (speed_boost, xp_multiplier, encounter_rate, creature_heal) + 8 trade goods for selling. Buffs are timed, server-side expiry checked every 5s
+- **Tool upgrades**: 3 tool types (hoe, axe, watering_can) x 4 tiers (basic→bronze→iron→gold). Upgrade recipes consume old tool + ingredients. Dynamic stats from ToolDef (capacity, speed_mult)
+- **Crafting security**: Single-phase server-authoritative — `request_craft(recipe_id)` RPC validates everything server-side, deducts, produces result, syncs to client. No client-side deduction.
+- **Selling**: `request_sell_item(item_id, qty)` RPC for food trade goods with sell_price
 - **16 ingredients**: farm crops (season-locked) + battle drops
-- Crafting UI splits into "Creature Recipes" and "Held Item Recipes" sections
 - New plantable crops: lemon (summer), pickle_brine (autumn)
 - **Planting flow** (server-authoritative): Client sends `request_farm_action(plot_idx, "plant", seed_id)` RPC to server. Server removes seed from `player_data_store` inventory, attempts plant, rolls back on failure. No client-side inventory deduction.
 - **Watering flow** (server-authoritative): Client sends `request_farm_action(plot_idx, "water", "")` RPC. Server calls `server_use_watering_can()` to decrement, then syncs remaining charges to client via `_sync_watering_can` RPC. Refill via `_request_refill` RPC at water sources.
+
+### Buff Application Points
+- **Speed boost**: `player_controller.gd` `_physics_process()` — multiplies move speed
+- **XP multiplier**: `battle_manager.gd` `_grant_xp_for_defeat()` — multiplies XP
+- **Encounter rate**: `encounter_manager.gd` `get_encounter_rate_multiplier()` — multiplies probability
+
+### PlayerData Tool System
+- **No Tool enum** — replaced with string-based `current_tool_slot` ("", "hoe", "axe", "watering_can", "seeds")
+- `equipped_tools: Dictionary` maps tool_type → tool_id (e.g. `{"hoe": "tool_hoe_basic", ...}`)
+- `get_watering_can_capacity()` reads from equipped ToolDef's effectiveness dict
+- `known_recipes: Array` tracks unlocked recipe IDs
+- `active_buffs: Array` of `{buff_type, buff_value, expires_at}` dicts
 
 ## Wild Encounter Zones
 - 6 zones total: Herb Garden, Flame Kitchen, Frost Pantry, Harvest Field, Sour Springs, Fusion Kitchen
@@ -103,7 +123,12 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 | Watering can | Server (`server_use/refill_watering_can`) | RPC to client (`_sync_watering_can`, `_receive_refill`) |
 | Farm actions (plant/water/harvest/till) | Server (`request_farm_action` RPC) | Server validates, then RPC result to client |
 | Battle state | Server (BattleManager) | RPCs to involved clients |
-| Crafting | Server (CraftingSystem validates) | RPC results to client |
+| Crafting | Server (`request_craft` single-phase) | RPC results + inventory sync to client |
+| Food/buffs | Server (`request_use_food`) | `_sync_active_buffs` RPC to client |
+| Tool equip | Server (`request_equip_tool`) | `_sync_equipped_tools` RPC to client |
+| Held item equip | Server (`request_equip/unequip_held_item`) | `_sync_party_full` RPC to client |
+| Recipe unlocks | Server (`request_use_recipe_scroll`) | `_sync_known_recipes` + `_notify_recipe_unlocked` RPCs |
+| Selling | Server (`request_sell_item`) | Inventory + money sync RPCs |
 | Save/load | Server only (SaveManager) | Data sent to client via `_receive_player_data` |
 
 ### Never do this
@@ -178,10 +203,10 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 
 ## File Structure Overview
 - `scripts/autoload/` — NetworkManager, GameManager, PlayerData, SaveManager
-- `scripts/data/` — 10 Resource class definitions
+- `scripts/data/` — 13 Resource class definitions (+ food_def, tool_def, recipe_scroll_def)
 - `scripts/battle/` — BattleManager, BattleCalculator, StatusEffects, FieldEffects, AbilityEffects, HeldItemEffects, BattleAI
-- `scripts/world/` — FarmPlot, FarmManager, SeasonManager, TallGrass, EncounterManager, GameWorld, TrainerNPC
+- `scripts/world/` — FarmPlot, FarmManager, SeasonManager, TallGrass, EncounterManager, GameWorld, TrainerNPC, CraftingStation, RecipePickup
 - `scripts/crafting/` — CraftingSystem
 - `scripts/player/` — PlayerController, PlayerInteraction
-- `scripts/ui/` — ConnectUI, HUD, BattleUI, CraftingUI, InventoryUI, PartyUI, PvPChallengeUI, TrainerDialogueUI
-- `resources/` — ingredients/ (16), creatures/ (18), moves/ (42), encounters/ (6), recipes/ (25), abilities/ (18), held_items/ (12), trainers/ (7)
+- `scripts/ui/` — ConnectUI, HUD, BattleUI, CraftingUI (station-filtered), InventoryUI (tabbed), PartyUI (networked equip), PvPChallengeUI, TrainerDialogueUI
+- `resources/` — ingredients/ (16), creatures/ (18), moves/ (42), encounters/ (6), recipes/ (46), abilities/ (18), held_items/ (12), trainers/ (7), foods/ (12), tools/ (12), recipe_scrolls/ (13)

@@ -9,3 +9,5 @@ display_name = "Cook Taffy Serpent"
 result_species_id = "taffy_serpent"
 ingredients = {"sweet_crystal": 2, "sour_essence": 1}
 description = "Combine sweet crystals with sour essence to create a Taffy Serpent."
+station = "cauldron"
+unlockable = true

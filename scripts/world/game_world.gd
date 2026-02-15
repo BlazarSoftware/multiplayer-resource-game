@@ -12,6 +12,7 @@ var battle_ui_scene = preload("res://scenes/ui/battle_ui.tscn")
 var crafting_ui_scene = preload("res://scenes/ui/crafting_ui.tscn")
 var inventory_ui_scene = preload("res://scenes/ui/inventory_ui.tscn")
 var party_ui_scene = preload("res://scenes/ui/party_ui.tscn")
+var storage_ui_scene = preload("res://scenes/ui/storage_ui.tscn")
 
 func _ready() -> void:
 	# Initialize DataRegistry
@@ -59,6 +60,11 @@ func _load_world_state() -> void:
 	var farm_mgr = get_node_or_null(FARM_MANAGER_PATH)
 	if farm_mgr and world_data.has("farm_plots"):
 		farm_mgr.load_save_data(world_data.get("farm_plots", []))
+	# Load recipe pickup claimed data
+	var pickup_data = world_data.get("recipe_pickups", {})
+	for pickup in get_tree().get_nodes_in_group("recipe_pickup"):
+		if pickup.has_method("load_claimed_data") and pickup.pickup_id in pickup_data:
+			pickup.load_claimed_data(pickup_data[pickup.pickup_id])
 
 func get_save_data() -> Dictionary:
 	var data = {}
@@ -71,6 +77,13 @@ func get_save_data() -> Dictionary:
 	var farm_mgr = get_node_or_null(FARM_MANAGER_PATH)
 	if farm_mgr:
 		data["farm_plots"] = farm_mgr.get_save_data()
+	# Save recipe pickup claimed data
+	var pickup_data = {}
+	for pickup in get_tree().get_nodes_in_group("recipe_pickup"):
+		if pickup.has_method("get_claimed_data") and pickup.pickup_id != "":
+			pickup_data[pickup.pickup_id] = pickup.get_claimed_data()
+	if not pickup_data.is_empty():
+		data["recipe_pickups"] = pickup_data
 	return data
 
 func _ensure_fallback_camera() -> void:
@@ -110,6 +123,9 @@ func _setup_ui() -> void:
 
 	var party_ui = party_ui_scene.instantiate()
 	ui_node.add_child(party_ui)
+
+	var storage_ui = storage_ui_scene.instantiate()
+	ui_node.add_child(storage_ui)
 
 func _on_player_connected(peer_id: int, _info: Dictionary) -> void:
 	_spawn_player(peer_id)

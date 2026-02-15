@@ -9,3 +9,5 @@ display_name = "Cook Chili Drake"
 result_species_id = "chili_drake"
 ingredients = {"chili_pepper": 2, "spicy_essence": 2}
 description = "Combine chili peppers with spicy essence to create a Chili Drake."
+station = "cauldron"
+unlockable = true

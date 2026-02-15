@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeScrollDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_scroll_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+scroll_id = "scroll_lemon_imp"
+display_name = "Lemon Imp Recipe"
+description = "A recipe that requires 5 fragments to complete. Reveals how to craft a Lemon Imp."
+unlocks_recipe_id = "recipe_lemon_imp"
+icon_color = Color(0.9, 0.9, 0.3, 1)
+fragment_count = 5

@@ -4,31 +4,31 @@ extends RefCounted
 # Dispatches held item effects at various trigger points in battle.
 # All functions are static and operate on creature dictionaries.
 
-static func on_damage_calc(item_id: String, move, damage: int) -> int:
+static func on_damage_calc(item_id: String, move, damage: int) -> Dictionary:
 	if item_id == "" or damage <= 0:
-		return damage
+		return {"damage": damage}
 	var item = DataRegistry.get_held_item(item_id)
 	if item == null:
-		return damage
+		return {"damage": damage}
 
 	if item.effect_type == "type_boost":
 		var boost_type = item.effect_params.get("type", "")
 		if move.type == boost_type:
-			return int(damage * item.effect_params.get("multiplier", 1.0))
-	return damage
+			return {"damage": int(damage * item.effect_params.get("multiplier", 1.0)), "message": "%s boosted the attack!" % item.display_name}
+	return {"damage": damage}
 
-static func on_damage_received(item_id: String, move, damage: int) -> int:
+static func on_damage_received(item_id: String, move, damage: int) -> Dictionary:
 	if item_id == "" or damage <= 0:
-		return damage
+		return {"damage": damage}
 	var item = DataRegistry.get_held_item(item_id)
 	if item == null:
-		return damage
+		return {"damage": damage}
 
 	if item.effect_type == "damage_reduction":
 		var category = item.effect_params.get("category", "")
 		if move.category == category:
-			return int(damage * item.effect_params.get("multiplier", 1.0))
-	return damage
+			return {"damage": int(damage * item.effect_params.get("multiplier", 1.0)), "message": "%s reduced the damage!" % item.display_name}
+	return {"damage": damage}
 
 static func end_of_turn(creature: Dictionary) -> int:
 	var item_id = creature.get("held_item_id", "")
@@ -46,13 +46,13 @@ static func end_of_turn(creature: Dictionary) -> int:
 			return heal
 	return 0
 
-static func on_status_applied(creature: Dictionary) -> void:
+static func on_status_applied(creature: Dictionary) -> Dictionary:
 	var item_id = creature.get("held_item_id", "")
 	if item_id == "":
-		return
+		return {}
 	var item = DataRegistry.get_held_item(item_id)
 	if item == null:
-		return
+		return {}
 
 	if item.effect_type == "on_status" and item.effect_params.get("cure_status", false):
 		# Ginger Root: cure status and consume
@@ -60,6 +60,9 @@ static func on_status_applied(creature: Dictionary) -> void:
 		creature["status_turns"] = 0
 		if item.consumable:
 			creature["held_item_id"] = ""
+		return {"cured": true, "message": "%s cured the status!" % item.display_name}
+
+	return {}
 
 static func on_hp_threshold(creature: Dictionary) -> Dictionary:
 	var item_id = creature.get("held_item_id", "")

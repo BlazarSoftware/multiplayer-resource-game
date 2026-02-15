@@ -10,3 +10,4 @@ extends Resource
 @export var rematch_cooldown_sec: int = 300
 @export var reward_money: int = 100
 @export var reward_ingredients: Dictionary = {} # {ingredient_id: amount}
+@export var reward_recipe_scroll_id: String = "" # one-time recipe scroll on first defeat

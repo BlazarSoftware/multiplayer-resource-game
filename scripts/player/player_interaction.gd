@@ -21,28 +21,38 @@ func _process(_delta: float) -> void:
 		_try_pvp_challenge()
 	# Number keys for tool select
 	if Input.is_action_just_pressed("tool_1"):
-		PlayerData.set_tool(PlayerData.Tool.HANDS)
+		PlayerData.set_tool("")
 	elif Input.is_action_just_pressed("tool_2"):
-		PlayerData.set_tool(PlayerData.Tool.HOE)
+		PlayerData.set_tool("hoe")
 	elif Input.is_action_just_pressed("tool_3"):
-		PlayerData.set_tool(PlayerData.Tool.AXE)
+		PlayerData.set_tool("axe")
 	elif Input.is_action_just_pressed("tool_4"):
-		PlayerData.set_tool(PlayerData.Tool.WATERING_CAN)
+		PlayerData.set_tool("watering_can")
 	elif Input.is_action_just_pressed("tool_5"):
-		PlayerData.set_tool(PlayerData.Tool.SEEDS)
+		PlayerData.set_tool("seeds")
+
+const TOOL_SLOTS = ["", "hoe", "axe", "watering_can", "seeds"]
 
 func _cycle_tool() -> void:
-	var next = (PlayerData.current_tool + 1) % PlayerData.Tool.size()
-	PlayerData.set_tool(next as PlayerData.Tool)
+	var idx = TOOL_SLOTS.find(PlayerData.current_tool_slot)
+	if idx < 0:
+		idx = 0
+	var next = (idx + 1) % TOOL_SLOTS.size()
+	PlayerData.set_tool(TOOL_SLOTS[next])
 
 func _try_interact() -> void:
 	if parent_body == null:
 		return
 	var pos = parent_body.global_position
-	# Check for crafting table proximity
-	var crafting_table = _find_nearest_area("crafting_table", pos, 3.0)
-	if crafting_table:
-		_open_crafting_ui()
+	# Check for storage station proximity
+	var storage = _find_nearest_area("storage_station", pos, 3.0)
+	if storage:
+		_open_storage_ui()
+		return
+	# Check for crafting station proximity
+	var station = _find_nearest_crafting_station(pos, 3.0)
+	if station:
+		_open_crafting_ui(station)
 		return
 	# Check for water source
 	var water_source = _find_nearest_area("water_source", pos, 3.0)
@@ -62,20 +72,20 @@ func _try_interact() -> void:
 func _interact_with_plot(farm_mgr: Node, plot_idx: int) -> void:
 	var action = ""
 	var extra = ""
-	match PlayerData.current_tool:
-		PlayerData.Tool.AXE:
+	match PlayerData.current_tool_slot:
+		"axe":
 			action = "clear"
-		PlayerData.Tool.HOE:
+		"hoe":
 			action = "till"
-		PlayerData.Tool.WATERING_CAN:
+		"watering_can":
 			action = "water"
-		PlayerData.Tool.SEEDS:
+		"seeds":
 			action = "plant"
 			extra = PlayerData.selected_seed_id
 			if extra == "":
 				print("No seed selected!")
 				return
-		PlayerData.Tool.HANDS:
+		"":
 			action = "harvest"
 	if action != "":
 		farm_mgr.request_farm_action.rpc_id(1, plot_idx, action, extra)
@@ -117,9 +127,33 @@ func _find_nearest_area(meta_tag: String, pos: Vector3, max_dist: float) -> Area
 				closest = area
 	return closest
 
-func _open_crafting_ui() -> void:
+func _find_nearest_crafting_station(pos: Vector3, max_dist: float) -> Area3D:
+	# Check for station-typed crafting areas
+	for station_type in ["kitchen", "workbench", "cauldron"]:
+		var area = _find_nearest_area("crafting_" + station_type, pos, max_dist)
+		if area:
+			return area
+	# Fallback: check old "crafting_table" group (generic station)
+	return _find_nearest_area("crafting_table", pos, max_dist)
+
+func _open_storage_ui() -> void:
+	var ui = get_node_or_null("/root/Main/GameWorld/UI/StorageUI")
+	if ui and ui.has_method("open"):
+		ui.open()
+
+func _open_crafting_ui(station: Area3D = null) -> void:
 	var ui = get_node_or_null("/root/Main/GameWorld/UI/CraftingUI")
 	if ui:
-		ui.visible = !ui.visible
-		if ui.visible and ui.has_method("refresh"):
-			ui.refresh()
+		# Determine station type from group membership
+		var station_type = ""
+		if station:
+			for stype in ["kitchen", "workbench", "cauldron"]:
+				if station.is_in_group("crafting_" + stype):
+					station_type = stype
+					break
+		if ui.has_method("open_for_station"):
+			ui.open_for_station(station_type)
+		else:
+			ui.visible = !ui.visible
+			if ui.visible and ui.has_method("refresh"):
+				ui.refresh()

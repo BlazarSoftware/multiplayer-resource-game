@@ -34,3 +34,7 @@ extends Resource
 # Training yields
 @export var ev_yield: Dictionary = {} # e.g. {"attack": 1, "speed": 1}
 @export var base_xp_yield: int = 50
+
+# Recipe fragment drops
+@export var drop_fragment_id: String = "" # recipe scroll fragment id
+@export var drop_fragment_chance: float = 0.0 # probability 0.0 - 1.0

@@ -9,3 +9,4 @@ display_name = "Craft Herb Sachet"
 result_item_id = "herb_sachet"
 ingredients = {"herb_basil": 3, "herbal_dew": 1}
 description = "A fragrant sachet of herbs. Boosts Herbal moves by 20%."
+station = "workbench"

@@ -13,3 +13,4 @@ ai_difficulty = "hard"
 rematch_cooldown_sec = 1200
 reward_money = 1000
 reward_ingredients = {"sweet_crystal": 3, "sour_essence": 3, "grain_core": 3}
+reward_recipe_scroll_id = "scroll_sourdough_sentinel"

@@ -9,3 +9,4 @@ display_name = "Craft Dashi Bead"
 result_item_id = "dashi_bead"
 ingredients = {"umami_extract": 3, "mushroom": 1}
 description = "A bead of concentrated dashi. Boosts Umami moves by 20%."
+station = "workbench"

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ToolDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/tool_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tool_id = "axe_gold"
+display_name = "Gold Axe"
+description = "A masterwork gold axe. Chops twice as fast."
+tool_type = "axe"
+tier = 3
+icon_color = Color(1.0, 0.84, 0.0, 1)
+effectiveness = {"speed_mult": 2.0}

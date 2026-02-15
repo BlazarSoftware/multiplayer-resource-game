@@ -9,3 +9,4 @@ display_name = "Craft Leftovers Pouch"
 result_item_id = "leftovers_pouch"
 ingredients = {"tomato": 2, "herb_basil": 2}
 description = "A pouch of leftovers. Heals 6.25% HP each turn."
+station = "workbench"

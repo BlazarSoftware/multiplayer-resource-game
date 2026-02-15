@@ -43,6 +43,10 @@ var battle_mgr: Node = null
 var _summary_victory: bool = false
 var _summary_ready: bool = false
 
+# Animation state
+var _is_animating_log: bool = false
+var _initial_setup: bool = false
+
 const TYPE_COLORS = {
 	"spicy": Color(0.9, 0.2, 0.1),
 	"sweet": Color(0.9, 0.5, 0.7),
@@ -74,6 +78,8 @@ func _ready() -> void:
 	for i in range(move_buttons.size()):
 		var idx = i
 		move_buttons[i].pressed.connect(func(): _on_move_pressed(idx))
+		move_buttons[i].mouse_entered.connect(func(): _on_move_hover(idx, true))
+		move_buttons[i].mouse_exited.connect(func(): _on_move_hover(idx, false))
 	flee_button.pressed.connect(_on_flee_pressed)
 	switch_button.pressed.connect(_on_switch_pressed)
 	_create_dynamic_ui()
@@ -102,6 +108,19 @@ func setup(battle_manager: Node) -> void:
 	battle_mgr.defeat_penalty_received.connect(_on_defeat_penalty)
 
 func _on_battle_started() -> void:
+	_initial_setup = true
+	_is_animating_log = false
+
+	# Hide PvP challenge UI if still showing (e.g. acceptor's dialog)
+	var pvp_ui = get_node_or_null("/root/Main/GameWorld/UI/PvPChallengeUI")
+	if pvp_ui:
+		pvp_ui.visible = false
+
+	# Fade to black via HUD, then show battle UI
+	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
+	if hud and hud.has_method("play_battle_transition"):
+		await hud.play_battle_transition()
+
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	battle_log.clear()
@@ -139,6 +158,11 @@ func _on_battle_started() -> void:
 	flee_button.visible = (mode == 0)
 
 	_refresh_ui()
+	_initial_setup = false
+
+	# Clear the fade
+	if hud and hud.has_method("clear_battle_transition"):
+		await hud.clear_battle_transition()
 
 func _on_battle_ended(victory: bool) -> void:
 	_summary_victory = victory
@@ -147,6 +171,11 @@ func _on_battle_ended(victory: bool) -> void:
 	_show_summary_screen()
 
 func _dismiss_summary() -> void:
+	# Fade to black, hide UI, then clear
+	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
+	if hud and hud.has_method("play_battle_transition"):
+		await hud.play_battle_transition()
+
 	if summary_panel:
 		summary_panel.queue_free()
 		summary_panel = null
@@ -161,6 +190,9 @@ func _dismiss_summary() -> void:
 		move_replace_panel.queue_free()
 		move_replace_panel = null
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+	if hud and hud.has_method("clear_battle_transition"):
+		await hud.clear_battle_transition()
 
 # === DISPLAY HELPERS ===
 
@@ -255,6 +287,107 @@ func _refresh_status_display() -> void:
 	var es = enemy.get("status", "")
 	enemy_status.text = _format_status_with_turns(es, battle_mgr.client_enemy_status_turns)
 
+# === HP BAR TWEEN ===
+
+func _tween_hp_bar(bar: ProgressBar, new_value: float, duration: float = 0.5) -> void:
+	var tween = create_tween()
+	tween.tween_property(bar, "value", new_value, duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	# Color tint based on percentage
+	var pct = new_value / bar.max_value if bar.max_value > 0 else 0.0
+	var color: Color
+	if pct > 0.5:
+		color = Color(0.2, 0.8, 0.2)
+	elif pct > 0.25:
+		color = Color(0.9, 0.8, 0.1)
+	else:
+		color = Color(0.9, 0.2, 0.1)
+	tween.parallel().tween_property(bar, "modulate", color, duration * 0.5)
+
+# === HIT FLASH ===
+
+func _flash_enemy_mesh() -> void:
+	var tween = create_tween()
+	tween.tween_property(enemy_mesh_rect, "modulate", Color(3.0, 3.0, 3.0), 0.05)
+	tween.tween_property(enemy_mesh_rect, "modulate", Color.WHITE, 0.15)
+
+func _flash_player_panel() -> void:
+	var panel = get_node_or_null("PlayerPanel")
+	if panel == null:
+		return
+	var tween = create_tween()
+	tween.tween_property(panel, "modulate", Color(1.5, 0.5, 0.5), 0.05)
+	tween.tween_property(panel, "modulate", Color.WHITE, 0.15)
+
+# === SCREEN SHAKE ===
+
+func _screen_shake(duration: float = 0.3, intensity: float = 8.0) -> void:
+	var bg = get_node_or_null("BG")
+	if bg == null:
+		return
+	var original_left = bg.offset_left
+	var original_top = bg.offset_top
+	var tween = create_tween()
+	var steps = 6
+	var step_dur = duration / steps
+	for i in range(steps):
+		var offset_x = randf_range(-intensity, intensity)
+		var offset_y = randf_range(-intensity, intensity)
+		tween.tween_property(bg, "offset_left", original_left + offset_x, step_dur)
+		tween.parallel().tween_property(bg, "offset_top", original_top + offset_y, step_dur)
+	tween.tween_property(bg, "offset_left", original_left, step_dur)
+	tween.parallel().tween_property(bg, "offset_top", original_top, step_dur)
+
+# === DAMAGE NUMBER POPUP ===
+
+func _spawn_damage_number(amount: int, target: String, effectiveness: String = "") -> void:
+	var lbl = Label.new()
+	lbl.text = str(amount)
+	lbl.add_theme_font_size_override("font_size", 28)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.z_index = 100
+
+	# Color based on effectiveness
+	match effectiveness:
+		"super_effective":
+			lbl.add_theme_color_override("font_color", Color(0.2, 1.0, 0.2))
+		"not_very_effective":
+			lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.0))
+		_:
+			lbl.add_theme_color_override("font_color", Color.WHITE)
+
+	# Position over target
+	if target == "enemy":
+		var rect = enemy_mesh_rect
+		lbl.position = Vector2(rect.position.x + rect.size.x / 2.0 - 30, rect.position.y)
+	else:
+		var panel = get_node_or_null("PlayerPanel")
+		if panel:
+			lbl.position = Vector2(panel.position.x + panel.size.x / 2.0 - 30, panel.position.y)
+		else:
+			lbl.position = Vector2(200, 400)
+
+	add_child(lbl)
+
+	# Float up + fade out
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(lbl, "position:y", lbl.position.y - 60, 1.0).set_ease(Tween.EASE_OUT)
+	tween.tween_property(lbl, "modulate:a", 0.0, 1.0).set_ease(Tween.EASE_IN)
+	tween.chain().tween_callback(lbl.queue_free)
+
+# === MOVE BUTTON HOVER ===
+
+func _on_move_hover(idx: int, hovering: bool) -> void:
+	if idx >= move_buttons.size():
+		return
+	var btn = move_buttons[idx]
+	btn.pivot_offset = btn.size / 2.0
+	var tween = create_tween()
+	if hovering:
+		tween.tween_property(btn, "scale", Vector2(1.05, 1.05), 0.1).set_ease(Tween.EASE_OUT)
+	else:
+		tween.tween_property(btn, "scale", Vector2.ONE, 0.1).set_ease(Tween.EASE_OUT)
+
 func _refresh_ui() -> void:
 	if battle_mgr == null:
 		return
@@ -266,7 +399,11 @@ func _refresh_ui() -> void:
 	enemy_name.text = "%s%s Lv.%d" % [enemy_prefix, enemy.get("nickname", "???"), enemy.get("level", 1)]
 	var enemy_max_hp = enemy.get("max_hp", 1)
 	enemy_hp_bar.max_value = enemy_max_hp
-	enemy_hp_bar.value = enemy.get("hp", 0)
+	if _initial_setup:
+		enemy_hp_bar.value = enemy.get("hp", 0)
+		# Reset HP bar color on initial setup
+		var pct = float(enemy.get("hp", 0)) / enemy_max_hp if enemy_max_hp > 0 else 0.0
+		enemy_hp_bar.modulate = Color(0.2, 0.8, 0.2) if pct > 0.5 else (Color(0.9, 0.8, 0.1) if pct > 0.25 else Color(0.9, 0.2, 0.1))
 	# Enemy types
 	var species = DataRegistry.get_species(enemy.get("species_id", ""))
 	var enemy_types: Array = enemy.get("types", [])
@@ -287,7 +424,10 @@ func _refresh_ui() -> void:
 		player_name.text = "%s Lv.%d" % [creature.get("nickname", "???"), creature.get("level", 1)]
 		var max_hp = creature.get("max_hp", 1)
 		player_hp_bar.max_value = max_hp
-		player_hp_bar.value = creature.get("hp", 0)
+		if _initial_setup:
+			player_hp_bar.value = creature.get("hp", 0)
+			var php = float(creature.get("hp", 0)) / max_hp if max_hp > 0 else 0.0
+			player_hp_bar.modulate = Color(0.2, 0.8, 0.2) if php > 0.5 else (Color(0.9, 0.8, 0.1) if php > 0.25 else Color(0.9, 0.2, 0.1))
 		# Player types
 		var p_species = DataRegistry.get_species(creature.get("species_id", ""))
 		var p_types: Array = creature.get("types", [])
@@ -299,7 +439,8 @@ func _refresh_ui() -> void:
 		player_status.text = _format_status_with_turns(ps, battle_mgr.client_player_status_turns)
 		# XP bar
 		player_xp_bar.max_value = creature.get("xp_to_next", 100)
-		player_xp_bar.value = creature.get("xp", 0)
+		if _initial_setup:
+			player_xp_bar.value = creature.get("xp", 0)
 		# Ability
 		var ability_id = creature.get("ability_id", "")
 		if ability_id != "":
@@ -343,6 +484,9 @@ func _refresh_ui() -> void:
 					move_buttons[i].modulate = color.lerp(Color.WHITE, 0.5)
 					move_buttons[i].visible = true
 					move_buttons[i].disabled = (i < pp.size() and pp[i] <= 0)
+					# Reset scale and set pivot for hover
+					move_buttons[i].scale = Vector2.ONE
+					move_buttons[i].pivot_offset = move_buttons[i].size / 2.0
 				else:
 					move_buttons[i].visible = false
 			else:
@@ -530,6 +674,8 @@ func _show_summary_screen() -> void:
 
 	summary_panel = PanelContainer.new()
 	summary_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Start invisible for slide-in animation
+	summary_panel.modulate.a = 0.0
 	summary_panel.visible = true
 	var center = CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -648,6 +794,14 @@ func _show_summary_screen() -> void:
 
 	add_child(summary_panel)
 
+	# Slide-in animation
+	var start_offset = summary_panel.offset_top
+	summary_panel.offset_top = start_offset + 100
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(summary_panel, "modulate:a", 1.0, 0.4).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(summary_panel, "offset_top", start_offset, 0.4).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
 # === REWARD SIGNAL HANDLERS ===
 
 func _on_battle_rewards(drops: Dictionary) -> void:
@@ -684,10 +838,47 @@ func _on_defeat_penalty(money_lost: int) -> void:
 func _on_turn_result(turn_log: Array) -> void:
 	if waiting_label:
 		waiting_label.visible = false
+	_set_buttons_enabled(false)
+	_is_animating_log = true
+	_animate_turn_log(turn_log)
+
+func _animate_turn_log(turn_log: Array) -> void:
 	for entry in turn_log:
 		var msg = _format_log_entry(entry)
 		if msg != "":
 			battle_log.append_text(msg + "\n")
+
+		# Visual effects per entry
+		var actor = entry.get("actor", "")
+		var entry_type = entry.get("type", "move")
+
+		if entry_type == "move" and entry.has("damage") and entry.damage > 0:
+			# Damage number popup
+			var target = "enemy" if actor == "player" else "player"
+			_spawn_damage_number(entry.damage, target, entry.get("effectiveness", ""))
+			# Hit flash
+			if actor == "player":
+				_flash_enemy_mesh()
+			else:
+				_flash_player_panel()
+			# Screen shake on critical hit
+			if entry.get("critical", false):
+				_screen_shake()
+
+		# Tween HP bars after each entry with damage/heal
+		if entry_type == "move" or entry_type == "status_damage" or entry_type == "ability_heal" or entry_type == "item_heal" or entry_type == "hazard_damage":
+			if battle_mgr:
+				var enemy = battle_mgr.client_enemy
+				_tween_hp_bar(enemy_hp_bar, enemy.get("hp", 0))
+				var aidx = battle_mgr.client_active_creature_idx
+				if aidx < PlayerData.party.size():
+					_tween_hp_bar(player_hp_bar, PlayerData.party[aidx].get("hp", 0))
+
+		# Stagger delay between entries
+		if msg != "":
+			await get_tree().create_timer(0.3).timeout
+
+	_is_animating_log = false
 	_refresh_ui()
 	if battle_mgr and battle_mgr.awaiting_action:
 		_set_buttons_enabled(true)
@@ -716,6 +907,15 @@ func _on_xp_result(results: Dictionary) -> void:
 			var new_species = DataRegistry.get_species(r.get("new_species_id", ""))
 			var evo_name = new_species.display_name if new_species else r.get("new_species_id", "")
 			battle_log.append_text("[color=magenta]Evolved into %s![/color]\n" % evo_name)
+
+	# Tween XP bar
+	var active_idx = battle_mgr.client_active_creature_idx if battle_mgr else 0
+	if active_idx < PlayerData.party.size():
+		var creature = PlayerData.party[active_idx]
+		player_xp_bar.max_value = creature.get("xp_to_next", 100)
+		var tween = create_tween()
+		tween.tween_property(player_xp_bar, "value", float(creature.get("xp", 0)), 0.8).set_ease(Tween.EASE_OUT)
+
 	_refresh_ui()
 
 func _on_pvp_challenge(challenger_name: String, challenger_peer: int) -> void:
@@ -763,6 +963,8 @@ func _format_log_entry(entry: Dictionary) -> String:
 				text += " %s took %d recoil!" % [actor_name, entry.recoil]
 			if entry.has("drain_heal"):
 				text += " Drained %d HP!" % entry.drain_heal
+			if entry.has("ability_heal"):
+				text += " Absorbed %d HP!" % entry.ability_heal
 			if entry.has("status_applied"):
 				text += " Inflicted %s!" % StatusEffects.get_status_display_name(entry.status_applied)
 			if entry.has("heal"):
@@ -793,7 +995,18 @@ func _format_log_entry(entry: Dictionary) -> String:
 				var msg = entry.attacker_item_trigger.get("message", "")
 				if msg != "":
 					text += " " + actor_name + " " + msg
+			# Ability messages
+			if entry.has("ability_messages"):
+				for amsg in entry.ability_messages:
+					text += "\n  [color=purple]%s[/color]" % amsg
+			# Item messages
+			if entry.has("item_messages"):
+				for imsg in entry.item_messages:
+					text += "\n  [color=cyan]%s[/color]" % imsg
 			return text
+		"ability_trigger":
+			var actor_name = "Your creature" if entry.get("actor") == "player" else "Enemy"
+			return "[color=purple]%s's %s[/color]" % [actor_name, entry.get("message", "")]
 		"status_damage":
 			var actor_name = "Your creature" if entry.get("actor") == "player" else "Enemy"
 			return "%s %s (%d damage)" % [actor_name, entry.get("message", ""), entry.get("damage", 0)]

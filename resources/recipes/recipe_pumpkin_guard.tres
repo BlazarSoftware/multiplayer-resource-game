@@ -9,3 +9,5 @@ display_name = "Cook Pumpkin Guard"
 result_species_id = "pumpkin_guard"
 ingredients = {"pumpkin": 1, "grain_core": 2}
 description = "Stuff a pumpkin with grain cores to create a Pumpkin Guard."
+station = "cauldron"
+unlockable = true

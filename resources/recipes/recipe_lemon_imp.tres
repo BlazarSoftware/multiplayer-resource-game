@@ -9,3 +9,5 @@ display_name = "Cook Lemon Imp"
 result_species_id = "lemon_imp"
 ingredients = {"lemon": 2, "sour_essence": 2}
 description = "Combine lemons with sour essence to create a Lemon Imp."
+station = "cauldron"
+unlockable = true

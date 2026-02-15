@@ -9,3 +9,4 @@ display_name = "Craft Ginger Root"
 result_item_id = "ginger_root"
 ingredients = {"herbal_dew": 2, "spicy_essence": 1, "sour_essence": 1}
 description = "A potent root. Cures status conditions once, then consumed."
+station = "workbench"

@@ -9,3 +9,4 @@ display_name = "Craft Honey Drop"
 result_item_id = "honey_drop"
 ingredients = {"sweet_crystal": 3, "herb_basil": 1}
 description = "A sweet honey bead. Boosts Sweet moves by 20%."
+station = "workbench"

@@ -135,8 +135,12 @@ func _physics_process(delta: float) -> void:
 	var move_dir = (forward * input_direction.y + right * input_direction.x).normalized()
 
 	if move_dir.length() > 0.1:
-		velocity.x = move_dir.x * SPEED
-		velocity.z = move_dir.z * SPEED
+		var speed_mult = 1.0
+		var speed_buff = NetworkManager.server_get_buff_value(peer_id, "speed_boost")
+		if speed_buff > 0.0:
+			speed_mult = speed_buff
+		velocity.x = move_dir.x * SPEED * speed_mult
+		velocity.z = move_dir.z * SPEED * speed_mult
 		# Rotate mesh to face movement direction (synced via StateSync)
 		var target_angle = atan2(move_dir.x, move_dir.z)
 		mesh_rotation_y = lerp_angle(mesh_rotation_y, target_angle, 10 * delta)

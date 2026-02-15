@@ -4,29 +4,34 @@ extends RefCounted
 # Dispatches ability effects at various trigger points in battle.
 # All functions are static and operate on creature dictionaries.
 
-static func on_enter(creature: Dictionary, foe: Dictionary, battle: Dictionary) -> void:
+static func on_enter(creature: Dictionary, foe: Dictionary, battle: Dictionary) -> Array:
+	var messages: Array = []
 	var ability_id = creature.get("ability_id", "")
 	if ability_id == "":
-		return
+		return messages
 	var ability = DataRegistry.get_ability(ability_id)
 	if ability == null:
-		return
+		return messages
 
 	match ability_id:
 		"sour_aura":
 			# Lower foe's Defense by 1 stage
 			var stage_key = "defense_stage"
 			foe[stage_key] = clampi(foe.get(stage_key, 0) - 1, -6, 6)
+			messages.append({"message": "Sour Aura lowered foe's Defense!"})
 		"grain_shield":
 			# Raise own Defense by 1 during grain weather
 			if battle.get("weather", "") == "grain":
 				var stage_key = "defense_stage"
 				creature[stage_key] = clampi(creature.get(stage_key, 0) + 1, -6, 6)
+				messages.append({"message": "Grain Shield raised its Defense!"})
 
-static func on_attack(attacker: Dictionary, move, damage: int) -> int:
+	return messages
+
+static func on_attack(attacker: Dictionary, move, damage: int) -> Dictionary:
 	var ability_id = attacker.get("ability_id", "")
 	if ability_id == "" or damage <= 0:
-		return damage
+		return {"damage": damage}
 
 	match ability_id:
 		"flash_fry":
@@ -34,66 +39,67 @@ static func on_attack(attacker: Dictionary, move, damage: int) -> int:
 			pass
 		"deep_umami":
 			if move.type == "umami":
-				return int(damage * 1.3)
+				return {"damage": int(damage * 1.3), "message": "Deep Umami boosted the attack!"}
 		"sharp_zest":
 			if move.type == "sour":
-				return int(damage * 1.3)
+				return {"damage": int(damage * 1.3), "message": "Sharp Zest boosted the attack!"}
 		"scoville_boost":
 			if move.type == "spicy":
-				return int(damage * 1.3)
+				return {"damage": int(damage * 1.3), "message": "Scoville Boost boosted the attack!"}
 		"stretchy":
 			if move.category == "physical":
-				return int(damage * 1.2)
-	return damage
+				return {"damage": int(damage * 1.2), "message": "Stretchy boosted the attack!"}
+	return {"damage": damage}
 
-static func on_defend(defender: Dictionary, move, damage: int) -> int:
+static func on_defend(defender: Dictionary, move, damage: int) -> Dictionary:
 	var ability_id = defender.get("ability_id", "")
 	if ability_id == "" or damage <= 0:
-		return damage
+		return {"damage": damage}
 
 	match ability_id:
 		"brine_body":
 			if move.category == "special":
-				return int(damage * 0.8)
+				return {"damage": int(damage * 0.8), "message": "Brine Body weakened the attack!"}
 		"crusty_armor":
 			if move.category == "physical":
-				return int(damage * 0.8)
+				return {"damage": int(damage * 0.8), "message": "Crusty Armor weakened the attack!"}
 		"herbivore":
 			# Herbal moves heal instead of dealing damage
 			if move.type == "herbal":
 				var heal = max(1, int(defender.get("max_hp", 40) * 0.25))
 				defender["hp"] = min(defender.get("max_hp", 40), defender.get("hp", 0) + heal)
-				return 0
+				return {"damage": 0, "message": "Herbivore absorbed the attack!", "heal": heal}
 		"flavor_absorb":
 			# Sweet moves heal instead of dealing damage
 			if move.type == "sweet":
 				var heal = max(1, int(defender.get("max_hp", 40) * 0.25))
 				defender["hp"] = min(defender.get("max_hp", 40), defender.get("hp", 0) + heal)
-				return 0
+				return {"damage": 0, "message": "Flavor Absorb absorbed the attack!", "heal": heal}
 		"flash_freeze":
 			# 15% chance to freeze attacker on contact
 			if move.is_contact and randf() < 0.15:
 				# We can't directly freeze the attacker from on_defend,
 				# but we store a flag for the battle manager to process
 				defender["_trigger_freeze_attacker"] = true
-	return damage
+				return {"damage": damage, "message": "Flash Freeze may freeze the attacker!"}
+	return {"damage": damage}
 
-static func on_status_attempt(creature: Dictionary, status: String) -> bool:
-	# Returns true if the status should be BLOCKED
+static func on_status_attempt(creature: Dictionary, status: String) -> Dictionary:
+	# Returns {blocked: bool, message?: String}
 	var ability_id = creature.get("ability_id", "")
 	if ability_id == "":
-		return false
+		return {"blocked": false}
 
 	match ability_id:
 		"sugar_coat":
 			# Immune to all status conditions
 			if status != "stat_drop":
-				return true
+				return {"blocked": true, "message": "Sugar Coat blocked the status!"}
 		"firm_press":
 			# Blocks stat drops
 			if status == "stat_drop":
-				return true
-	return false
+				return {"blocked": true, "message": "Firm Press blocked the stat drop!"}
+	return {"blocked": false}
 
 static func end_of_turn(creature: Dictionary, weather: String) -> int:
 	var ability_id = creature.get("ability_id", "")

@@ -9,3 +9,5 @@ display_name = "Cook Basil Sprite"
 result_species_id = "basil_sprite"
 ingredients = {"herb_basil": 2, "herbal_dew": 2}
 description = "Mix fresh basil with herbal dew to create a Basil Sprite."
+station = "cauldron"
+unlockable = true

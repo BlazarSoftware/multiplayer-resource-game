@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ToolDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/tool_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tool_id = "watering_can_iron"
+display_name = "Iron Watering Can"
+description = "A sturdy iron watering can. Holds 20 charges."
+tool_type = "watering_can"
+tier = 2
+icon_color = Color(0.7, 0.7, 0.7, 1)
+effectiveness = {"capacity": 20}

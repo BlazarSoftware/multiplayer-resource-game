@@ -9,3 +9,4 @@ display_name = "Craft Chili Charm"
 result_item_id = "chili_charm"
 ingredients = {"chili_pepper": 3, "spicy_essence": 1}
 description = "A charm infused with chili heat. Boosts Spicy moves by 20%."
+station = "workbench"

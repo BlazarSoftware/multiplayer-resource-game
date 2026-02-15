@@ -9,3 +9,5 @@ display_name = "Cook Sear Slug"
 result_species_id = "sear_slug"
 ingredients = {"chili_pepper": 1, "umami_extract": 3}
 description = "Simmer chili with umami extract to create a Sear Slug."
+station = "cauldron"
+unlockable = true

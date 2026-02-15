@@ -9,3 +9,4 @@ display_name = "Craft Vinegar Vial"
 result_item_id = "vinegar_vial"
 ingredients = {"sour_essence": 3, "pickle_brine": 1}
 description = "A vial of potent vinegar. Boosts Sour moves by 20%."
+station = "workbench"

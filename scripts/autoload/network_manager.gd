@@ -10,6 +10,7 @@ signal player_data_received()
 const PORT = 7777
 const MAX_CLIENTS = 32
 const JOIN_READY_TIMEOUT_MS = 15000
+const BUFF_CHECK_INTERVAL = 5.0
 
 var player_info: Dictionary = {"name": "Player"}
 var players: Dictionary = {} # peer_id -> player_info
@@ -17,6 +18,8 @@ var players: Dictionary = {} # peer_id -> player_info
 # Server-side: full player data for persistence
 var player_data_store: Dictionary = {} # peer_id -> full data dict
 var join_state: Dictionary = {} # peer_id -> {"state": String, "player_name": String, "joined_at_ms": int}
+
+var _buff_check_timer: float = 0.0
 
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_peer_connected)
@@ -37,26 +40,47 @@ static func _has_server_flag() -> bool:
 			return true
 	return false
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if multiplayer.multiplayer_peer == null or not multiplayer.is_server():
 		return
-	if join_state.is_empty():
-		return
-	var now = Time.get_ticks_msec()
-	var timed_out: Array[int] = []
-	for peer_id in join_state:
-		var state = join_state[peer_id].get("state", "")
-		if state == "active":
-			continue
-		var joined_at = int(join_state[peer_id].get("joined_at_ms", now))
-		if now - joined_at >= JOIN_READY_TIMEOUT_MS:
-			timed_out.append(peer_id)
-	for peer_id in timed_out:
-		var pending_name = str(join_state[peer_id].get("player_name", "unknown"))
-		print("Join ready timeout for peer ", peer_id, " (", pending_name, "), disconnecting")
-		join_state.erase(peer_id)
-		if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
-			(multiplayer.multiplayer_peer as ENetMultiplayerPeer).disconnect_peer(peer_id)
+	# Join timeout check
+	if not join_state.is_empty():
+		var now = Time.get_ticks_msec()
+		var timed_out: Array[int] = []
+		for peer_id in join_state:
+			var state = join_state[peer_id].get("state", "")
+			if state == "active":
+				continue
+			var joined_at = int(join_state[peer_id].get("joined_at_ms", now))
+			if now - joined_at >= JOIN_READY_TIMEOUT_MS:
+				timed_out.append(peer_id)
+		for peer_id in timed_out:
+			var pending_name = str(join_state[peer_id].get("player_name", "unknown"))
+			print("Join ready timeout for peer ", peer_id, " (", pending_name, "), disconnecting")
+			join_state.erase(peer_id)
+			if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
+				(multiplayer.multiplayer_peer as ENetMultiplayerPeer).disconnect_peer(peer_id)
+
+	# Buff expiry check
+	_buff_check_timer += delta
+	if _buff_check_timer >= BUFF_CHECK_INTERVAL:
+		_buff_check_timer = 0.0
+		_check_buff_expiry()
+
+func _check_buff_expiry() -> void:
+	var now = Time.get_unix_time_from_system()
+	for peer_id in player_data_store:
+		var buffs = player_data_store[peer_id].get("active_buffs", [])
+		var changed = false
+		var i = buffs.size() - 1
+		while i >= 0:
+			if float(buffs[i].get("expires_at", 0)) <= now:
+				buffs.remove_at(i)
+				changed = true
+			i -= 1
+		if changed:
+			player_data_store[peer_id]["active_buffs"] = buffs
+			_sync_active_buffs.rpc_id(peer_id, buffs)
 
 func host_game(player_name: String = "Host") -> Error:
 	player_info.name = player_name
@@ -113,8 +137,6 @@ func _on_connected_to_server() -> void:
 	print("Connected to server!")
 	connection_succeeded.emit()
 	# Load game world FIRST so MultiplayerSpawner exists before any spawn RPCs arrive.
-	# Without this, a late-joining client gets spawn replication for already-connected
-	# players before its scene tree has the spawner path, causing cascading errors.
 	GameManager.start_game()
 	# Send join request with our name
 	request_join.rpc_id(1, player_info.name)
@@ -152,6 +174,24 @@ func request_join(player_name: String) -> void:
 	var pc = data.get("player_color", {})
 	if not pc is Dictionary or pc.is_empty():
 		data["player_color"] = _generate_player_color(sender_id)
+	# Backfill equipped_tools for old saves
+	if not data.has("equipped_tools") or not data["equipped_tools"] is Dictionary or data["equipped_tools"].is_empty():
+		data["equipped_tools"] = {"hoe": "tool_hoe_basic", "axe": "tool_axe_basic", "watering_can": "tool_watering_can_basic"}
+	# Backfill known_recipes/active_buffs/storage
+	if not data.has("known_recipes"):
+		data["known_recipes"] = []
+	if not data.has("active_buffs"):
+		data["active_buffs"] = []
+	if not data.has("creature_storage"):
+		data["creature_storage"] = []
+	if not data.has("storage_capacity"):
+		data["storage_capacity"] = 10
+	# Backfill basic tools in inventory
+	var inv = data.get("inventory", {})
+	for tool_id in ["tool_hoe_basic", "tool_axe_basic", "tool_watering_can_basic"]:
+		if tool_id not in inv:
+			inv[tool_id] = 1
+	data["inventory"] = inv
 	# Store server-side
 	player_data_store[sender_id] = data
 	join_state[sender_id] = {
@@ -224,8 +264,8 @@ func _create_default_player_data(player_name: String) -> Dictionary:
 		"sp_attack": 10,
 		"sp_defense": 14,
 		"speed": 10,
-		"moves": ["grain_bash", "quick_bite", "bread_wall", "taste_test"],
-		"pp": [15, 25, 10, 5],
+		"moves": ["grain_bash", "quick_bite", "bread_wall", "syrup_trap"],
+		"pp": [15, 25, 10, 10],
 		"types": ["grain"],
 		"xp": 0,
 		"xp_to_next": 100,
@@ -235,13 +275,26 @@ func _create_default_player_data(player_name: String) -> Dictionary:
 	}
 	return {
 		"player_name": player_name,
-		"inventory": {},
+		"inventory": {
+			"tool_hoe_basic": 1,
+			"tool_axe_basic": 1,
+			"tool_watering_can_basic": 1,
+		},
 		"party": [starter],
 		"position": {},
 		"watering_can_current": 10,
 		"money": 0,
 		"defeated_trainers": {},
 		"player_color": {},
+		"equipped_tools": {
+			"hoe": "tool_hoe_basic",
+			"axe": "tool_axe_basic",
+			"watering_can": "tool_watering_can_basic",
+		},
+		"known_recipes": [],
+		"active_buffs": [],
+		"creature_storage": [],
+		"storage_capacity": 10,
 	}
 
 # === Server-side player data tracking ===
@@ -267,6 +320,12 @@ func server_remove_inventory(peer_id: int, item_id: String, amount: int) -> bool
 		inv.erase(item_id)
 	player_data_store[peer_id]["inventory"] = inv
 	return true
+
+func server_has_inventory(peer_id: int, item_id: String, amount: int = 1) -> bool:
+	if peer_id not in player_data_store:
+		return false
+	var inv = player_data_store[peer_id].get("inventory", {})
+	return item_id in inv and inv[item_id] >= amount
 
 func server_add_money(peer_id: int, amount: int) -> void:
 	if peer_id not in player_data_store:
@@ -300,7 +359,111 @@ func server_use_watering_can(peer_id: int) -> bool:
 func server_refill_watering_can(peer_id: int) -> void:
 	if peer_id not in player_data_store:
 		return
-	player_data_store[peer_id]["watering_can_current"] = 10
+	player_data_store[peer_id]["watering_can_current"] = server_get_watering_can_capacity(peer_id)
+
+func server_get_watering_can_capacity(peer_id: int) -> int:
+	if peer_id not in player_data_store:
+		return 10
+	DataRegistry.ensure_loaded()
+	var et = player_data_store[peer_id].get("equipped_tools", {})
+	var tool_id = et.get("watering_can", "tool_watering_can_basic")
+	var tool_def = DataRegistry.get_tool(tool_id)
+	if tool_def:
+		return int(tool_def.effectiveness.get("capacity", 10))
+	return 10
+
+# === Recipe System ===
+
+func server_add_known_recipe(peer_id: int, recipe_id: String) -> bool:
+	if peer_id not in player_data_store:
+		return false
+	var recipes = player_data_store[peer_id].get("known_recipes", [])
+	if recipe_id in recipes:
+		return false
+	recipes.append(recipe_id)
+	player_data_store[peer_id]["known_recipes"] = recipes
+	_sync_known_recipes.rpc_id(peer_id, recipes)
+	return true
+
+func server_has_known_recipe(peer_id: int, recipe_id: String) -> bool:
+	if peer_id not in player_data_store:
+		return false
+	var recipes = player_data_store[peer_id].get("known_recipes", [])
+	return recipe_id in recipes
+
+# === Buff System ===
+
+func server_add_buff(peer_id: int, buff_type: String, buff_value: float, duration_sec: float) -> void:
+	if peer_id not in player_data_store:
+		return
+	var buffs = player_data_store[peer_id].get("active_buffs", [])
+	# Remove existing buff of same type
+	var i = buffs.size() - 1
+	while i >= 0:
+		if buffs[i].get("buff_type", "") == buff_type:
+			buffs.remove_at(i)
+		i -= 1
+	var expires_at = Time.get_unix_time_from_system() + duration_sec
+	buffs.append({"buff_type": buff_type, "buff_value": buff_value, "expires_at": expires_at})
+	player_data_store[peer_id]["active_buffs"] = buffs
+	_sync_active_buffs.rpc_id(peer_id, buffs)
+
+func server_get_active_buffs(peer_id: int) -> Array:
+	if peer_id not in player_data_store:
+		return []
+	return player_data_store[peer_id].get("active_buffs", [])
+
+func server_has_buff(peer_id: int, buff_type: String) -> bool:
+	var now = Time.get_unix_time_from_system()
+	for buff in server_get_active_buffs(peer_id):
+		if buff.get("buff_type", "") == buff_type and float(buff.get("expires_at", 0)) > now:
+			return true
+	return false
+
+func server_get_buff_value(peer_id: int, buff_type: String) -> float:
+	var now = Time.get_unix_time_from_system()
+	for buff in server_get_active_buffs(peer_id):
+		if buff.get("buff_type", "") == buff_type and float(buff.get("expires_at", 0)) > now:
+			return float(buff.get("buff_value", 0.0))
+	return 0.0
+
+# === Tool System ===
+
+func server_equip_tool(peer_id: int, slot: String, tool_id: String) -> bool:
+	if peer_id not in player_data_store:
+		return false
+	if not server_has_inventory(peer_id, tool_id):
+		return false
+	DataRegistry.ensure_loaded()
+	var tool_def = DataRegistry.get_tool(tool_id)
+	if tool_def == null:
+		return false
+	if tool_def.tool_type != slot:
+		return false
+	var et = player_data_store[peer_id].get("equipped_tools", {})
+	et[slot] = tool_id
+	player_data_store[peer_id]["equipped_tools"] = et
+	# Update watering can capacity if applicable
+	if slot == "watering_can":
+		var cap = int(tool_def.effectiveness.get("capacity", 10))
+		var current = int(player_data_store[peer_id].get("watering_can_current", 0))
+		if current > cap:
+			player_data_store[peer_id]["watering_can_current"] = cap
+	_sync_equipped_tools.rpc_id(peer_id, et)
+	return true
+
+# === NPC Friendship stubs ===
+
+func server_get_npc_friendship(_peer_id: int, _npc_id: String) -> int:
+	return 0
+
+func server_add_npc_friendship(_peer_id: int, _npc_id: String, _amount: int) -> void:
+	pass
+
+func server_check_friendship_recipe_unlock(_peer_id: int, _npc_id: String) -> void:
+	pass
+
+# === Utility ===
 
 func is_server() -> bool:
 	return multiplayer.multiplayer_peer != null and multiplayer.is_server()
@@ -310,3 +473,306 @@ func _get_player_node(peer_id: int) -> Node3D:
 	if players_node:
 		return players_node.get_node_or_null(str(peer_id))
 	return null
+
+# === New RPCs ===
+
+@rpc("authority", "reliable")
+func _sync_known_recipes(recipes: Array) -> void:
+	PlayerData.known_recipes = recipes.duplicate()
+	PlayerData.known_recipes_changed.emit()
+
+@rpc("authority", "reliable")
+func _sync_active_buffs(buffs: Array) -> void:
+	PlayerData.active_buffs = buffs.duplicate()
+	PlayerData.buffs_changed.emit()
+
+@rpc("authority", "reliable")
+func _sync_equipped_tools(tools_dict: Dictionary) -> void:
+	PlayerData.equipped_tools = tools_dict.duplicate()
+	PlayerData.tool_changed.emit(PlayerData.current_tool_slot)
+
+@rpc("authority", "reliable")
+func _notify_recipe_unlocked(recipe_id: String, recipe_name: String) -> void:
+	print("Recipe unlocked: ", recipe_name)
+	if recipe_id not in PlayerData.known_recipes:
+		PlayerData.known_recipes.append(recipe_id)
+		PlayerData.known_recipes_changed.emit()
+
+@rpc("authority", "reliable")
+func _sync_inventory_full(new_inventory: Dictionary) -> void:
+	PlayerData.inventory.clear()
+	for key in new_inventory:
+		PlayerData.inventory[key] = int(new_inventory[key])
+	PlayerData.inventory_changed.emit()
+
+@rpc("authority", "reliable")
+func _sync_money(amount: int) -> void:
+	PlayerData.money = amount
+
+@rpc("authority", "reliable")
+func _sync_party_full(party_array: Array) -> void:
+	PlayerData.party = party_array.duplicate(true)
+	PlayerData.party_changed.emit()
+
+# === Client->Server RPCs ===
+
+@rpc("any_peer", "reliable")
+func request_use_food(food_id: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if not server_has_inventory(sender, food_id):
+		return
+	DataRegistry.ensure_loaded()
+	var food = DataRegistry.get_food(food_id)
+	if food == null:
+		return
+	# Consume the food
+	server_remove_inventory(sender, food_id, 1)
+	_sync_inventory_full.rpc_id(sender, player_data_store[sender].get("inventory", {}))
+
+	match food.buff_type:
+		"creature_heal":
+			# Heal all creatures
+			var party = player_data_store[sender].get("party", [])
+			for creature in party:
+				creature["hp"] = creature.get("max_hp", 40)
+			player_data_store[sender]["party"] = party
+			_sync_party_full.rpc_id(sender, party)
+			print("[Food] ", sender, " used ", food.display_name, " — healed all creatures")
+		"speed_boost", "xp_multiplier", "encounter_rate":
+			server_add_buff(sender, food.buff_type, food.buff_value, food.buff_duration_sec)
+			print("[Food] ", sender, " used ", food.display_name, " — ", food.buff_type, " x", food.buff_value, " for ", food.buff_duration_sec, "s")
+		_:
+			print("[Food] ", sender, " used ", food.display_name, " (no effect)")
+
+@rpc("any_peer", "reliable")
+func request_use_recipe_scroll(scroll_id: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if not server_has_inventory(sender, scroll_id):
+		return
+	DataRegistry.ensure_loaded()
+	var scroll = DataRegistry.get_recipe_scroll(scroll_id)
+	if scroll == null:
+		return
+	# Check if already known
+	if server_has_known_recipe(sender, scroll.unlocks_recipe_id):
+		return
+	# Consume scroll and unlock recipe
+	server_remove_inventory(sender, scroll_id, 1)
+	server_add_known_recipe(sender, scroll.unlocks_recipe_id)
+	var recipe = DataRegistry.get_recipe(scroll.unlocks_recipe_id)
+	var recipe_name = recipe.display_name if recipe else scroll.unlocks_recipe_id
+	_notify_recipe_unlocked.rpc_id(sender, scroll.unlocks_recipe_id, recipe_name)
+	_sync_inventory_full.rpc_id(sender, player_data_store[sender].get("inventory", {}))
+	print("[Scroll] ", sender, " unlocked recipe: ", recipe_name)
+
+@rpc("any_peer", "reliable")
+func request_equip_held_item(creature_idx: int, item_id: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if sender not in player_data_store:
+		return
+	var party = player_data_store[sender].get("party", [])
+	if creature_idx < 0 or creature_idx >= party.size():
+		return
+	if not server_has_inventory(sender, item_id):
+		return
+	DataRegistry.ensure_loaded()
+	var held_item = DataRegistry.get_held_item(item_id)
+	if held_item == null:
+		return
+	# Unequip current item if any
+	var current_item = party[creature_idx].get("held_item_id", "")
+	if current_item != "":
+		server_add_inventory(sender, current_item, 1)
+	# Equip new item
+	server_remove_inventory(sender, item_id, 1)
+	party[creature_idx]["held_item_id"] = item_id
+	player_data_store[sender]["party"] = party
+	_sync_party_full.rpc_id(sender, party)
+	_sync_inventory_full.rpc_id(sender, player_data_store[sender].get("inventory", {}))
+
+@rpc("any_peer", "reliable")
+func request_unequip_held_item(creature_idx: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if sender not in player_data_store:
+		return
+	var party = player_data_store[sender].get("party", [])
+	if creature_idx < 0 or creature_idx >= party.size():
+		return
+	var current_item = party[creature_idx].get("held_item_id", "")
+	if current_item == "":
+		return
+	# Return to inventory
+	server_add_inventory(sender, current_item, 1)
+	party[creature_idx]["held_item_id"] = ""
+	player_data_store[sender]["party"] = party
+	_sync_party_full.rpc_id(sender, party)
+	_sync_inventory_full.rpc_id(sender, player_data_store[sender].get("inventory", {}))
+
+@rpc("any_peer", "reliable")
+func request_sell_item(item_id: String, qty: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if qty <= 0:
+		return
+	if not server_has_inventory(sender, item_id, qty):
+		return
+	DataRegistry.ensure_loaded()
+	var food = DataRegistry.get_food(item_id)
+	if food == null or food.sell_price <= 0:
+		return
+	var total = food.sell_price * qty
+	server_remove_inventory(sender, item_id, qty)
+	server_add_money(sender, total)
+	_sync_inventory_full.rpc_id(sender, player_data_store[sender].get("inventory", {}))
+	_sync_money.rpc_id(sender, int(player_data_store[sender].get("money", 0)))
+	print("[Sell] ", sender, " sold ", qty, "x ", food.display_name, " for $", total)
+
+@rpc("any_peer", "reliable")
+func request_equip_tool(tool_id: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	DataRegistry.ensure_loaded()
+	var tool_def = DataRegistry.get_tool(tool_id)
+	if tool_def == null:
+		return
+	server_equip_tool(sender, tool_def.tool_type, tool_id)
+
+# === Creature Storage ===
+
+const STORAGE_TIERS = [
+	{"name": "Pantry", "capacity": 10, "cost": 0, "ingredients": {}},
+	{"name": "Cold Storage", "capacity": 20, "cost": 500, "ingredients": {}},
+	{"name": "Walk-in Freezer", "capacity": 30, "cost": 2000, "ingredients": {"sweet_crystal": 5}},
+	{"name": "Deep Freeze Vault", "capacity": 50, "cost": 5000, "ingredients": {"sweet_crystal": 8, "frost_essence": 5}},
+]
+
+func server_deposit_creature(peer_id: int, party_idx: int) -> bool:
+	if peer_id not in player_data_store:
+		return false
+	var party = player_data_store[peer_id].get("party", [])
+	var storage = player_data_store[peer_id].get("creature_storage", [])
+	var capacity = int(player_data_store[peer_id].get("storage_capacity", 10))
+	# Must keep at least 1 creature in party
+	if party.size() <= 1:
+		return false
+	if party_idx < 0 or party_idx >= party.size():
+		return false
+	if storage.size() >= capacity:
+		return false
+	var creature = party[party_idx]
+	party.remove_at(party_idx)
+	storage.append(creature)
+	player_data_store[peer_id]["party"] = party
+	player_data_store[peer_id]["creature_storage"] = storage
+	return true
+
+func server_withdraw_creature(peer_id: int, storage_idx: int) -> bool:
+	if peer_id not in player_data_store:
+		return false
+	var party = player_data_store[peer_id].get("party", [])
+	var storage = player_data_store[peer_id].get("creature_storage", [])
+	if party.size() >= PlayerData.MAX_PARTY_SIZE:
+		return false
+	if storage_idx < 0 or storage_idx >= storage.size():
+		return false
+	var creature = storage[storage_idx]
+	storage.remove_at(storage_idx)
+	party.append(creature)
+	player_data_store[peer_id]["party"] = party
+	player_data_store[peer_id]["creature_storage"] = storage
+	return true
+
+func _get_storage_tier(capacity: int) -> int:
+	for i in range(STORAGE_TIERS.size()):
+		if STORAGE_TIERS[i]["capacity"] == capacity:
+			return i
+	return 0
+
+@rpc("any_peer", "reliable")
+func request_deposit_creature(party_idx: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if server_deposit_creature(sender, party_idx):
+		_sync_party_full.rpc_id(sender, player_data_store[sender].get("party", []))
+		_sync_storage_full.rpc_id(sender, player_data_store[sender].get("creature_storage", []), int(player_data_store[sender].get("storage_capacity", 10)))
+		print("[Storage] ", sender, " deposited creature from party slot ", party_idx)
+
+@rpc("any_peer", "reliable")
+func request_withdraw_creature(storage_idx: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if server_withdraw_creature(sender, storage_idx):
+		_sync_party_full.rpc_id(sender, player_data_store[sender].get("party", []))
+		_sync_storage_full.rpc_id(sender, player_data_store[sender].get("creature_storage", []), int(player_data_store[sender].get("storage_capacity", 10)))
+		print("[Storage] ", sender, " withdrew creature from storage slot ", storage_idx)
+
+@rpc("any_peer", "reliable")
+func request_upgrade_storage(tier: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if sender not in player_data_store:
+		return
+	if tier < 0 or tier >= STORAGE_TIERS.size():
+		return
+	var current_capacity = int(player_data_store[sender].get("storage_capacity", 10))
+	var current_tier = _get_storage_tier(current_capacity)
+	if tier <= current_tier:
+		return
+	var tier_data = STORAGE_TIERS[tier]
+	# Check money
+	if not server_remove_money(sender, tier_data["cost"]):
+		return
+	# Check and deduct ingredients
+	var ingredients = tier_data["ingredients"] as Dictionary
+	for item_id in ingredients:
+		if not server_has_inventory(sender, item_id, int(ingredients[item_id])):
+			# Refund money
+			server_add_money(sender, tier_data["cost"])
+			return
+	for item_id in ingredients:
+		server_remove_inventory(sender, item_id, int(ingredients[item_id]))
+	# Apply upgrade
+	player_data_store[sender]["storage_capacity"] = tier_data["capacity"]
+	_sync_storage_full.rpc_id(sender, player_data_store[sender].get("creature_storage", []), tier_data["capacity"])
+	_sync_inventory_full.rpc_id(sender, player_data_store[sender].get("inventory", {}))
+	_sync_money.rpc_id(sender, int(player_data_store[sender].get("money", 0)))
+	print("[Storage] ", sender, " upgraded to ", tier_data["name"], " (capacity: ", tier_data["capacity"], ")")
+
+@rpc("authority", "reliable")
+func _sync_storage_full(storage: Array, capacity: int) -> void:
+	PlayerData.creature_storage = storage.duplicate(true)
+	PlayerData.storage_capacity = capacity
+	PlayerData.storage_changed.emit()
+
+# === Fragment auto-combine ===
+
+func _check_fragment_combine(peer_id: int, fragment_id: String) -> void:
+	if not fragment_id.begins_with("fragment_"):
+		return
+	var scroll_id = fragment_id.substr(9) # Remove "fragment_" prefix
+	DataRegistry.ensure_loaded()
+	var scroll_def = DataRegistry.get_recipe_scroll(scroll_id)
+	if scroll_def == null or scroll_def.fragment_count <= 0:
+		return
+	var inv = player_data_store[peer_id].get("inventory", {})
+	var count = inv.get(fragment_id, 0)
+	if count >= scroll_def.fragment_count:
+		# Combine fragments into scroll
+		server_remove_inventory(peer_id, fragment_id, scroll_def.fragment_count)
+		server_add_inventory(peer_id, scroll_id, 1)
+		_sync_inventory_full.rpc_id(peer_id, player_data_store[peer_id].get("inventory", {}))
+		_notify_recipe_unlocked.rpc_id(peer_id, "", "Assembled " + scroll_def.display_name + "!")
+		print("[Fragment] ", peer_id, " assembled ", scroll_def.display_name, " from ", scroll_def.fragment_count, " fragments")

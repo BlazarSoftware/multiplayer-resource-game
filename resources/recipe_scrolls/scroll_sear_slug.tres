@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeScrollDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_scroll_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+scroll_id = "scroll_sear_slug"
+display_name = "Sear Slug Recipe"
+description = "A recipe that requires 3 fragments to complete. Reveals how to craft a Sear Slug."
+unlocks_recipe_id = "recipe_sear_slug"
+icon_color = Color(0.9, 0.4, 0.1, 1)
+fragment_count = 3

@@ -87,7 +87,7 @@ func _refresh() -> void:
 			item_label.text = "Held: (none)"
 		item_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		item_hbox.add_child(item_label)
-		# Equip/Unequip held item buttons
+		# Equip/Unequip held item buttons (networked)
 		if held_item_id != "":
 			var unequip_btn = Button.new()
 			unequip_btn.text = "Unequip"
@@ -121,26 +121,14 @@ func _refresh() -> void:
 			ev_label.text = ev_text
 			ev_label.add_theme_font_size_override("font_size", 12)
 			vbox.add_child(ev_label)
-		# Release button (if not last creature)
-		if PlayerData.party.size() > 1:
-			var btn = Button.new()
-			btn.text = "Release"
-			var idx = i
-			btn.pressed.connect(func(): PlayerData.remove_creature_from_party(idx); _refresh())
-			hbox.add_child(btn)
 
 func _unequip_item(creature_idx: int) -> void:
-	if creature_idx < PlayerData.party.size():
-		var creature = PlayerData.party[creature_idx]
-		var item_id = creature.get("held_item_id", "")
-		if item_id != "":
-			# Return item to inventory
-			PlayerData.add_to_inventory(item_id, 1)
-			creature["held_item_id"] = ""
-			PlayerData.party_changed.emit()
+	# Send to server instead of modifying locally
+	NetworkManager.request_unequip_held_item.rpc_id(1, creature_idx)
 
 func _show_equip_options(creature_idx: int) -> void:
 	# Find held items in inventory
+	DataRegistry.ensure_loaded()
 	var available_items = []
 	for item_id in PlayerData.inventory:
 		var item = DataRegistry.get_held_item(item_id)
@@ -148,9 +136,6 @@ func _show_equip_options(creature_idx: int) -> void:
 			available_items.append(item_id)
 	if available_items.size() == 0:
 		return
-	# Equip the first available item (simple implementation)
+	# Equip the first available item via server RPC
 	var item_id = available_items[0]
-	if creature_idx < PlayerData.party.size():
-		PlayerData.remove_from_inventory(item_id, 1)
-		PlayerData.party[creature_idx]["held_item_id"] = item_id
-		PlayerData.party_changed.emit()
+	NetworkManager.request_equip_held_item.rpc_id(1, creature_idx, item_id)

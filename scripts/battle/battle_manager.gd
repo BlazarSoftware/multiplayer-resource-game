@@ -346,6 +346,17 @@ func _receive_party_data(party_data: Array) -> void:
 					trainer_name = trainer.display_name
 			print("[BattleManager] Sending _start_battle_client to peer ", sender, " mode=", battle.mode)
 			_start_battle_client.rpc_id(sender, enemy_active, battle.mode, trainer_name)
+			# Fire on_enter abilities for both sides at battle start
+			var player_active = battle.side_a_party[battle.side_a_active_idx]
+			var initial_log: Array = []
+			var p_enter_msgs = AbilityEffects.on_enter(player_active, enemy_active, battle)
+			for msg in p_enter_msgs:
+				initial_log.append({"type": "ability_trigger", "actor": "player", "message": msg.get("message", "")})
+			var e_enter_msgs = AbilityEffects.on_enter(enemy_active, player_active, battle)
+			for msg in e_enter_msgs:
+				initial_log.append({"type": "ability_trigger", "actor": "enemy", "message": msg.get("message", "")})
+			if initial_log.size() > 0:
+				_send_turn_result.rpc_id(sender, initial_log, player_active.hp, player_active.get("pp", []), enemy_active.hp)
 			_send_state_to_peer(battle, sender)
 	elif side == "b":
 		battle.side_b_party = party_data
@@ -364,6 +375,21 @@ func _start_pvp_battle(battle: Dictionary) -> void:
 	var b_name = NetworkManager.players.get(battle.side_b_peer, {}).get("name", "Player")
 	_start_battle_client.rpc_id(battle.side_a_peer, b_active, BattleMode.PVP, b_name)
 	_start_battle_client.rpc_id(battle.side_b_peer, a_active, BattleMode.PVP, a_name)
+	# Fire on_enter abilities for both sides
+	var a_log: Array = []
+	var b_log: Array = []
+	var a_enter_msgs = AbilityEffects.on_enter(a_active, b_active, battle)
+	for msg in a_enter_msgs:
+		a_log.append({"type": "ability_trigger", "actor": "player", "message": msg.get("message", "")})
+		b_log.append({"type": "ability_trigger", "actor": "enemy", "message": msg.get("message", "")})
+	var b_enter_msgs = AbilityEffects.on_enter(b_active, a_active, battle)
+	for msg in b_enter_msgs:
+		b_log.append({"type": "ability_trigger", "actor": "player", "message": msg.get("message", "")})
+		a_log.append({"type": "ability_trigger", "actor": "enemy", "message": msg.get("message", "")})
+	if a_log.size() > 0:
+		_send_turn_result.rpc_id(battle.side_a_peer, a_log, a_active.hp, a_active.get("pp", []), b_active.hp)
+	if b_log.size() > 0:
+		_send_turn_result.rpc_id(battle.side_b_peer, b_log, b_active.hp, b_active.get("pp", []), a_active.hp)
 	_send_state_to_peer(battle, battle.side_a_peer)
 	_send_state_to_peer(battle, battle.side_b_peer)
 
@@ -590,12 +616,36 @@ func _execute_action(attacker: Dictionary, defender: Dictionary, move, actor: St
 
 			# Ability hooks — on_attack and on_defend
 			var dmg = dmg_result.damage
-			dmg = AbilityEffects.on_attack(attacker, move, dmg)
-			dmg = AbilityEffects.on_defend(defender, move, dmg)
+			var atk_ability_result = AbilityEffects.on_attack(attacker, move, dmg)
+			dmg = atk_ability_result.damage
+			if atk_ability_result.has("message"):
+				if not result.has("ability_messages"):
+					result["ability_messages"] = []
+				result["ability_messages"].append(atk_ability_result.message)
+
+			var def_ability_result = AbilityEffects.on_defend(defender, move, dmg)
+			dmg = def_ability_result.damage
+			if def_ability_result.has("message"):
+				if not result.has("ability_messages"):
+					result["ability_messages"] = []
+				result["ability_messages"].append(def_ability_result.message)
+			if def_ability_result.has("heal"):
+				result["ability_heal"] = def_ability_result.heal
 
 			# Held item hooks — on_damage_calc and on_damage_received
-			dmg = HeldItemEffects.on_damage_calc(attacker.get("held_item_id", ""), move, dmg)
-			dmg = HeldItemEffects.on_damage_received(defender.get("held_item_id", ""), move, dmg)
+			var atk_item_result = HeldItemEffects.on_damage_calc(attacker.get("held_item_id", ""), move, dmg)
+			dmg = atk_item_result.damage
+			if atk_item_result.has("message"):
+				if not result.has("item_messages"):
+					result["item_messages"] = []
+				result["item_messages"].append(atk_item_result.message)
+
+			var def_item_result = HeldItemEffects.on_damage_received(defender.get("held_item_id", ""), move, dmg)
+			dmg = def_item_result.damage
+			if def_item_result.has("message"):
+				if not result.has("item_messages"):
+					result["item_messages"] = []
+				result["item_messages"].append(def_item_result.message)
 
 			defender["hp"] = max(0, defender.get("hp", 0) - dmg)
 			total_damage += dmg
@@ -626,12 +676,21 @@ func _execute_action(attacker: Dictionary, defender: Dictionary, move, actor: St
 
 	# Status effect on defender
 	if move.status_effect != "" and defender.get("hp", 0) > 0:
-		if not AbilityEffects.on_status_attempt(defender, move.status_effect):
+		var status_block = AbilityEffects.on_status_attempt(defender, move.status_effect)
+		if not status_block.blocked:
 			var applied = StatusEffects.try_apply_status(defender, move.status_effect, move.status_chance)
 			if applied:
 				result["status_applied"] = move.status_effect
 				# Held item: Ginger Root cures status on apply
-				HeldItemEffects.on_status_applied(defender)
+				var item_status_result = HeldItemEffects.on_status_applied(defender)
+				if item_status_result.has("message"):
+					if not result.has("item_messages"):
+						result["item_messages"] = []
+					result["item_messages"].append(item_status_result.message)
+		elif status_block.has("message"):
+			if not result.has("ability_messages"):
+				result["ability_messages"] = []
+			result["ability_messages"].append(status_block.message)
 
 	# Stat changes (self-targeting)
 	if move.stat_changes.size() > 0:
@@ -640,9 +699,14 @@ func _execute_action(attacker: Dictionary, defender: Dictionary, move, actor: St
 
 	# Target stat changes
 	if move.target_stat_changes.size() > 0 and defender.get("hp", 0) > 0:
-		if not AbilityEffects.on_status_attempt(defender, "stat_drop"):
+		var stat_block = AbilityEffects.on_status_attempt(defender, "stat_drop")
+		if not stat_block.blocked:
 			var changes = BattleCalculator.apply_stat_changes(defender, move.target_stat_changes)
 			result["target_stat_changes"] = changes
+		elif stat_block.has("message"):
+			if not result.has("ability_messages"):
+				result["ability_messages"] = []
+			result["ability_messages"].append(stat_block.message)
 
 	# Weather setting
 	if move.weather_set != "":
@@ -746,8 +810,10 @@ func _check_battle_outcome(battle: Dictionary, turn_log: Array) -> void:
 					turn_log.append(hr)
 				# Ability on_enter
 				var a_active = battle.side_a_party[battle.side_a_active_idx]
-				AbilityEffects.on_enter(new_enemy, a_active, battle)
+				var enter_msgs = AbilityEffects.on_enter(new_enemy, a_active, battle)
 				turn_log.append({"type": "trainer_switch", "actor": "enemy", "to": next_idx})
+				for emsg in enter_msgs:
+					turn_log.append({"type": "ability_trigger", "actor": "enemy", "message": emsg.get("message", "")})
 				# Grant XP for the defeated enemy
 				_grant_xp_for_defeat(battle, enemy, turn_log)
 				# Accumulate drops from defeated creature (deferred)
@@ -774,6 +840,9 @@ func _check_battle_outcome(battle: Dictionary, turn_log: Array) -> void:
 		_grant_battle_rewards.rpc_id(peer_id, all_drops)
 		for item_id in all_drops:
 			NetworkManager.server_add_inventory(peer_id, item_id, all_drops[item_id])
+			# Check for fragment auto-combine
+			if item_id.begins_with("fragment_"):
+				NetworkManager._check_fragment_combine(peer_id, item_id)
 
 		# Trainer rewards
 		if battle.mode == BattleMode.TRAINER and battle.trainer_id != "":
@@ -783,6 +852,20 @@ func _check_battle_outcome(battle: Dictionary, turn_log: Array) -> void:
 				for ing_id in trainer.reward_ingredients:
 					NetworkManager.server_add_inventory(peer_id, ing_id, trainer.reward_ingredients[ing_id])
 				_grant_trainer_rewards_client.rpc_id(peer_id, trainer.reward_money, trainer.reward_ingredients)
+				# Check for first-defeat recipe scroll reward
+				var is_first_defeat = true
+				if peer_id in NetworkManager.player_data_store:
+					var pdata = NetworkManager.player_data_store[peer_id]
+					var defeated = pdata.get("defeated_trainers", {})
+					if battle.trainer_id in defeated:
+						is_first_defeat = false
+				if is_first_defeat and trainer.reward_recipe_scroll_id != "":
+					NetworkManager.server_add_inventory(peer_id, trainer.reward_recipe_scroll_id, 1)
+					NetworkManager._sync_inventory_full.rpc_id(peer_id, NetworkManager.player_data_store[peer_id].get("inventory", {}))
+					var scroll = DataRegistry.get_recipe_scroll(trainer.reward_recipe_scroll_id)
+					var scroll_name = scroll.display_name if scroll else trainer.reward_recipe_scroll_id
+					NetworkManager._notify_recipe_unlocked.rpc_id(peer_id, "", "Received " + scroll_name + "!")
+					print("[Trainer] ", peer_id, " received recipe scroll: ", scroll_name)
 				# Record defeat
 				if peer_id in NetworkManager.player_data_store:
 					var pdata = NetworkManager.player_data_store[peer_id]
@@ -836,10 +919,15 @@ func _grant_xp_for_defeat(battle: Dictionary, defeated_enemy: Dictionary, _turn_
 		BattleMode.PVP:
 			xp_mult = 1.25
 
-	var xp_amount = int(raw_xp * xp_mult)
-
 	# Grant XP to all party members (participants=full, bench=50%)
 	var peer_id = battle.side_a_peer
+
+	# Buff multiplier (XP multiplier food buff)
+	var buff_mult = NetworkManager.server_get_buff_value(peer_id, "xp_multiplier")
+	if buff_mult > 0.0:
+		xp_mult *= buff_mult
+
+	var xp_amount = int(raw_xp * xp_mult)
 	var participants = battle.get("participants_a", [0])
 	var xp_results = []
 
@@ -1044,8 +1132,12 @@ func _resolve_pvp_turn(battle: Dictionary) -> void:
 		b_log.append(r)
 		a_log.append(_swap_actor(r))
 
-	# End of turn
-	_apply_end_of_turn(battle, a_log)
+	# End of turn — collect entries and add perspective-swapped copies to both logs
+	var eot_log: Array = []
+	_apply_end_of_turn(battle, eot_log)
+	for entry in eot_log:
+		a_log.append(entry)
+		b_log.append(_swap_actor(entry))
 	battle.turn += 1
 
 	# Check outcomes
@@ -1162,13 +1254,15 @@ func _process_switch(battle: Dictionary, side: String, new_idx: int) -> void:
 	# Ability on_enter
 	var opponent_side = "b" if side == "a" else "a"
 	var opponent = battle["side_" + opponent_side + "_party"][battle["side_" + opponent_side + "_active_idx"]]
-	AbilityEffects.on_enter(new_creature, opponent, battle)
+	var switch_enter_msgs = AbilityEffects.on_enter(new_creature, opponent, battle)
 
 	# For non-PvP, send switch result and enemy attacks
 	if battle.mode != BattleMode.PVP:
 		var peer_id = battle["side_" + side + "_peer"]
 		var actor = "player" if side == "a" else "enemy"
 		var switch_log: Array = [{"type": "switch", "actor": actor, "from": old_idx, "to": new_idx}]
+		for emsg in switch_enter_msgs:
+			switch_log.append({"type": "ability_trigger", "actor": actor, "message": emsg.get("message", "")})
 		for hr in hazard_results:
 			hr["actor"] = actor
 			switch_log.append(hr)
@@ -1263,6 +1357,11 @@ func _calculate_drops(enemy: Dictionary) -> Dictionary:
 	for drop_id in species.drop_ingredient_ids:
 		var amount = randi_range(species.drop_min, species.drop_max)
 		drops[drop_id] = amount
+	# Recipe fragment drops
+	if species.drop_fragment_id != "" and species.drop_fragment_chance > 0.0:
+		if randf() < species.drop_fragment_chance:
+			var frag_id = "fragment_" + species.drop_fragment_id
+			drops[frag_id] = drops.get(frag_id, 0) + 1
 	return drops
 
 # === BATTLE END ===

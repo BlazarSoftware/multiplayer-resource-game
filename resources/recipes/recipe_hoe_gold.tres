@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "hoe_gold"
+display_name = "Forge Gold Hoe"
+result_tool_id = "tool_hoe_gold"
+requires_tool_ingredient = "tool_hoe_iron"
+ingredients = {"sweet_crystal": 8}
+description = "Upgrade your hoe with gold."
+station = "workbench"

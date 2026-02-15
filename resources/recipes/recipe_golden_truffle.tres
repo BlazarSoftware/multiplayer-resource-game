@@ -9,3 +9,4 @@ display_name = "Craft Golden Truffle"
 result_item_id = "golden_truffle"
 ingredients = {"mushroom": 3, "umami_extract": 2, "sweet_crystal": 1}
 description = "A rare golden truffle. Restores 25% HP once when below 25%. Consumed on use."
+station = "workbench"

@@ -13,3 +13,4 @@ ai_difficulty = "easy"
 rematch_cooldown_sec = 300
 reward_money = 150
 reward_ingredients = {"spicy_essence": 2}
+reward_recipe_scroll_id = "scroll_chili_drake"

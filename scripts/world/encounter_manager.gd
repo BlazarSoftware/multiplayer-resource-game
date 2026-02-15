@@ -42,6 +42,9 @@ func start_encounter(peer_id: int, table_id: String) -> void:
 		battle_mgr.server_start_battle(peer_id, enemy_data)
 	encounter_started.emit(peer_id, enemy_data)
 
+func get_encounter_rate_multiplier(peer_id: int) -> float:
+	return NetworkManager.server_get_buff_value(peer_id, "encounter_rate") if NetworkManager.server_has_buff(peer_id, "encounter_rate") else 1.0
+
 func _roll_encounter(table) -> String:
 	var total_weight = 0
 	for entry in table.entries:
