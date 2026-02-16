@@ -22,6 +22,7 @@ spec:
       containers:
         - name: creature-crafting-server
           image: ghcr.io/crankymagician/mt-creature-crafting-server:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 7777
               protocol: UDP

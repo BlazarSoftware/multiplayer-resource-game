@@ -12,8 +12,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
 
-IMAGE_SERVER="ghcr.io/crankymagician/mt-creature-crafting-server:latest"
-IMAGE_API="ghcr.io/crankymagician/mt-creature-crafting-api:latest"
+# Tag images with git short hash to guarantee K8s pulls the exact build.
+# Appends "-dirty" if working tree has uncommitted changes so the tag is unique.
+GIT_HASH=$(git rev-parse --short=8 HEAD)
+if ! git diff --quiet HEAD -- 2>/dev/null; then
+	GIT_HASH="${GIT_HASH}-dirty"
+	echo "WARNING: Working tree has uncommitted changes. Image tag: $GIT_HASH"
+fi
+IMAGE_REPO_SERVER="ghcr.io/crankymagician/mt-creature-crafting-server"
+IMAGE_REPO_API="ghcr.io/crankymagician/mt-creature-crafting-api"
+IMAGE_SERVER="${IMAGE_REPO_SERVER}:${GIT_HASH}"
+IMAGE_API="${IMAGE_REPO_API}:${GIT_HASH}"
 K8S_NAMESPACE="godot-multiplayer"
 K8S_DEPLOYMENT_SERVER="creature-crafting-server"
 K8S_DEPLOYMENT_API="creature-crafting-api"
@@ -84,24 +93,30 @@ fi
 # --- Build ---
 if [ "$SKIP_BUILD" = false ]; then
 	echo "==> Building game server Docker image ($IMAGE_SERVER)..."
-	docker build --platform linux/amd64 -t "$IMAGE_SERVER" .
+	docker build --platform linux/amd64 \
+		-t "$IMAGE_SERVER" \
+		-t "${IMAGE_REPO_SERVER}:latest" \
+		.
 
 	echo "==> Building API service Docker image ($IMAGE_API)..."
-	docker build --platform linux/amd64 -t "$IMAGE_API" ./api
+	docker build --platform linux/amd64 \
+		-t "$IMAGE_API" \
+		-t "${IMAGE_REPO_API}:latest" \
+		./api
 else
 	echo "==> Skipping build (using existing images)."
 fi
 
 # --- Push ---
-echo "==> Pushing images to GHCR..."
-if ! docker push "$IMAGE_SERVER"; then
+echo "==> Pushing images to GHCR (tag: $GIT_HASH)..."
+if ! docker push "$IMAGE_SERVER" || ! docker push "${IMAGE_REPO_SERVER}:latest"; then
 	echo ""
 	echo "ERROR: Push failed for game server. Make sure you are authenticated:"
 	echo "  docker login ghcr.io -u YOUR_GITHUB_USERNAME"
 	exit 1
 fi
 
-if ! docker push "$IMAGE_API"; then
+if ! docker push "$IMAGE_API" || ! docker push "${IMAGE_REPO_API}:latest"; then
 	echo ""
 	echo "ERROR: Push failed for API service. Make sure you are authenticated:"
 	echo "  docker login ghcr.io -u YOUR_GITHUB_USERNAME"
@@ -118,17 +133,24 @@ kubectl apply -f k8s/service.yaml
 echo "==> Waiting for MongoDB to be ready..."
 kubectl rollout status "deployment/creature-crafting-mongodb" -n "$K8S_NAMESPACE" --timeout=120s
 
-echo "==> Restarting API service..."
-kubectl rollout restart "deployment/$K8S_DEPLOYMENT_API" -n "$K8S_NAMESPACE"
+# Set the exact image tag on deployments — this triggers a rollout with the
+# precise image we just built and pushed, instead of relying on :latest + restart.
+echo "==> Setting image tags (git: $GIT_HASH)..."
+kubectl set image "deployment/$K8S_DEPLOYMENT_API" \
+	"api=$IMAGE_API" \
+	-n "$K8S_NAMESPACE"
 kubectl rollout status "deployment/$K8S_DEPLOYMENT_API" -n "$K8S_NAMESPACE" --timeout=120s
 
-echo "==> Restarting game server..."
-kubectl rollout restart "deployment/$K8S_DEPLOYMENT_SERVER" -n "$K8S_NAMESPACE"
+kubectl set image "deployment/$K8S_DEPLOYMENT_SERVER" \
+	"creature-crafting-server=$IMAGE_SERVER" \
+	-n "$K8S_NAMESPACE"
 
 echo "==> Waiting for rollout to complete..."
 if kubectl rollout status "deployment/$K8S_DEPLOYMENT_SERVER" -n "$K8S_NAMESPACE" --timeout=180s; then
 	echo ""
-	echo "Deploy successful! Server available at $SERVER_ENDPOINT (UDP)"
+	echo "Deploy successful!"
+	echo "  Image tag:  $GIT_HASH"
+	echo "  Server:     $SERVER_ENDPOINT (UDP)"
 else
 	echo ""
 	echo "WARNING: Rollout did not complete within 180s."
