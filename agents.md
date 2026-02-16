@@ -1,5 +1,52 @@
 # Agents Guide
 
+## Automated Testing (REQUIRED)
+
+### Run Before Committing
+All 312 tests must pass before any commit:
+
+```bash
+# GDScript tests (GUT 9.5.0) — 291 tests
+'/Applications/Mechanical Turk.app/Contents/MacOS/Mechanical Turk' --path . --headless -s addons/gut/gut_cmdln.gd -gexit
+
+# Express API tests (Vitest) — 21 tests
+cd api && npx vitest run
+```
+
+### Test Coverage Map
+
+| Source Area | Test File(s) | Tests |
+|-------------|-------------|-------|
+| `scripts/battle/battle_calculator.gd` | `test/unit/battle/test_battle_calculator.gd`, `test_battle_calculator_rng.gd` | ~76 |
+| `scripts/battle/status_effects.gd` | `test/unit/battle/test_status_effects.gd` | ~33 |
+| `scripts/battle/field_effects.gd` | `test/unit/battle/test_field_effects.gd` | ~31 |
+| `scripts/battle/ability_effects.gd` | `test/unit/battle/test_ability_effects.gd` | ~34 |
+| `scripts/battle/held_item_effects.gd` | `test/unit/battle/test_held_item_effects.gd` | ~25 |
+| `scripts/battle/battle_ai.gd` | `test/unit/battle/test_battle_ai.gd` | ~16 |
+| `scripts/data/creature_instance.gd` | `test/unit/data/test_creature_instance.gd`, `test_creature_instance_creation.gd` | ~24 |
+| `scripts/world/season_manager.gd` | `test/unit/world/test_season_manager.gd` | ~21 |
+| Crafting validation | `test/unit/crafting/test_crafting_validation.gd` | ~14 |
+| Battle integration (full pipeline) | `test/integration/test_battle_turn.gd`, `test_battle_pvp.gd` | ~36 |
+| `api/src/routes/players.ts` | `api/test/players.test.ts` | 14 |
+| `api/src/routes/world.ts` | `api/test/world.test.ts` | 6 |
+| `api/src/app.ts` | `api/test/health.test.ts` | 1 |
+
+### Test Helpers (GDScript)
+- **`RegistrySeeder`** (`test/helpers/registry_seeder.gd`): Populates DataRegistry with test data. Use `seed_all()` in `before_each()`, `clear_all()` in `after_each()`.
+- **`BattleFactory`** (`test/helpers/battle_factory.gd`): `creature(overrides)` / `battle(overrides)` — dict factories with all expected keys.
+- **`MockMove`** (`test/helpers/mock_move.gd`): `physical()` / `special()` / `status()` / `with_props()` — MoveDef Resource factory.
+- **`BattleTestScene`** (`test/helpers/battle_test_scene.gd`): Integration test helper for battle dicts.
+
+### Test Helpers (API)
+- **`setupTestDb()`** (`api/test/setup.ts`): Creates MongoMemoryServer + Express app. Returns `{app, db}`.
+- **`clearCollections()`**: Wipes test data between tests.
+- **`teardownTestDb()`**: Closes connections after test suite.
+
+### Adding New Tests
+- **New battle mechanic**: Add to existing `test/unit/battle/` file. Update `registry_seeder.gd` if new data entries needed.
+- **New data type**: Add serialization tests in `test/unit/data/`.
+- **New API endpoint**: Add test file in `api/test/` using `setupTestDb()` pattern.
+
 ## Quick Start (MCP Editor Session — preferred for local dev)
 1. Use MCP `run_multiplayer_session` with `serverArgs: ["--server"]`, `numClients: 2`
 2. Server auto-starts on port 7777 (no ConnectUI), clients show ConnectUI defaulting to `127.0.0.1`

@@ -255,6 +255,42 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 ## Kubernetes Deployment
 See `docs/k8s-deployment.md` for full K8s deployment details (3 deployments, SSH access, deploy workflow, manifests).
 
+## Automated Testing
+
+### Run Commands
+```bash
+# GDScript tests (GUT) — 291 tests
+'/Applications/Mechanical Turk.app/Contents/MacOS/Mechanical Turk' --path . --headless -s addons/gut/gut_cmdln.gd -gexit
+
+# Express API tests (Vitest) — 21 tests
+cd api && npx vitest run
+```
+
+### GDScript Test Suite (GUT 9.5.0)
+- **Config**: `.gutconfig.json` — dirs `res://test/`, prefix `test_`, include subdirs
+- **Helpers** (`test/helpers/`): `mock_move.gd` (MoveDef factory), `battle_factory.gd` (creature/battle dict factory), `registry_seeder.gd` (DataRegistry populator), `battle_test_scene.gd` (integration helper)
+- **Unit tests** (`test/unit/`): battle/ (calculator, status, field effects, abilities, held items, AI, calculator RNG), data/ (creature instance, creature creation), world/ (season manager), crafting/ (validation)
+- **Integration tests** (`test/integration/`): battle turn pipeline, PvP mechanics
+
+### Test Patterns
+- **RegistrySeeder**: Populates DataRegistry directly (sets `_loaded = true`). Call `seed_all()` in `before_each()`, `clear_all()` in `after_each()`.
+- **BattleFactory**: `creature(overrides)` and `battle(overrides)` create dicts with all expected battle keys + sensible defaults.
+- **MockMove**: `physical()`, `special()`, `status()`, `with_props(overrides)` create MoveDef Resources without DataRegistry.
+- **Deterministic RNG**: Use `seed(N)` for reproducible randf/randi results in tests.
+- **No preloading**: Reference `class_name` utilities directly (BattleCalculator, StatusEffects, etc.) — never preload in tests.
+- **SeasonManager testing**: Load script onto standalone Node, set state directly, don't add to tree (avoids multiplayer _ready).
+
+### API Tests (Vitest + Supertest + MongoMemoryServer)
+- **App extraction**: `api/src/app.ts` exports `createApp(db)` for Supertest without real listener.
+- **Setup**: `api/test/setup.ts` — `setupTestDb()` / `teardownTestDb()` / `clearCollections()`
+- **Test files**: `players.test.ts` (14 tests), `world.test.ts` (6 tests), `health.test.ts` (1 test)
+
+### When Adding New Features
+- **New battle mechanic** (move effect, ability, held item): Add tests to the relevant `test/unit/battle/` file. Update `registry_seeder.gd` if new data entries are needed.
+- **New data type or resource**: Add serialization round-trip tests in `test/unit/data/`.
+- **New API endpoint**: Add tests in `api/test/`. Use the existing `setupTestDb()` pattern.
+- **Run tests before committing**: All 312 tests must pass.
+
 ## MCP Testing Workflow
 See `docs/mcp-testing.md` for full MCP testing guide (editor bridge, runtime bridge sessions, caveats, port conflicts).
 
@@ -268,4 +304,11 @@ See `docs/mcp-testing.md` for full MCP testing guide (editor bridge, runtime bri
 - `scripts/crafting/` — CraftingSystem
 - `scripts/player/` — PlayerController, PlayerInteraction
 - `scripts/ui/` — ConnectUI, HUD (calendar + weather + trainer prompt), BattleUI, CraftingUI (station-filtered), InventoryUI (tabbed), PartyUI (networked equip), PvPChallengeUI, TrainerDialogueUI (gatekeeper accept/decline + post-battle dialogue)
+- `test/helpers/` — MockMove, BattleFactory, RegistrySeeder, BattleTestScene
+- `test/unit/battle/` — test_battle_calculator, test_battle_calculator_rng, test_status_effects, test_field_effects, test_ability_effects, test_held_item_effects, test_battle_ai
+- `test/unit/data/` — test_creature_instance, test_creature_instance_creation
+- `test/unit/world/` — test_season_manager
+- `test/unit/crafting/` — test_crafting_validation
+- `test/integration/` — test_battle_turn, test_battle_pvp
+- `api/test/` — players.test.ts, world.test.ts, health.test.ts
 - `resources/` — ingredients/ (16), creatures/ (21), moves/ (57), encounters/ (6), recipes/ (52), abilities/ (20), held_items/ (18), trainers/ (7), foods/ (12), tools/ (12), recipe_scrolls/ (13)
