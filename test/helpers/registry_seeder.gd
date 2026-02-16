@@ -12,6 +12,7 @@ static func seed_all() -> void:
 	_seed_trainers()
 	_seed_battle_items()
 	_seed_shops()
+	_seed_npcs()
 
 static func clear_all() -> void:
 	DataRegistry.moves.clear()
@@ -27,6 +28,7 @@ static func clear_all() -> void:
 	DataRegistry.encounter_tables.clear()
 	DataRegistry.shops.clear()
 	DataRegistry.battle_items.clear()
+	DataRegistry.npcs.clear()
 	DataRegistry._loaded = false
 
 static func _seed_moves() -> void:
@@ -195,3 +197,33 @@ static func _seed_shops() -> void:
 	shop.items_for_sale.append({"item_id": "herb_poultice", "buy_price": 100})
 	shop.items_for_sale.append({"item_id": "spicy_tonic", "buy_price": 200})
 	DataRegistry.shops["test_general"] = shop
+
+static func _seed_npcs() -> void:
+	var npc = NPCDef.new()
+	npc.npc_id = "test_npc"
+	npc.display_name = "Test NPC"
+	npc.visual_color = Color(0.5, 0.5, 0.5)
+	npc.birthday = {"season": "spring", "day": 5}
+	npc.gift_preferences = {
+		"loved": ["grain_wheat"],
+		"liked": ["herb_leaf"],
+		"disliked": ["sour_vinegar"],
+		"hated": ["bitter_root"],
+	}
+	npc.dialogues = {
+		"neutral": [{"text": "Hello.", "choices": [
+			{"label": "Hi!", "points": 3, "response": "Nice!"},
+		]}],
+		"like": [{"text": "Friend!", "choices": []}],
+		"love": [{"text": "Best friend!", "choices": []}],
+		"dislike": [{"text": "Oh.", "choices": []}],
+		"hate": [{"text": "Leave.", "choices": []}],
+		"birthday": [{"text": "My birthday!", "choices": []}],
+	}
+	npc.npc_gifts = [{"threshold": 20, "item_id": "grain_wheat", "quantity": 3, "message": "A gift!"}]
+	npc.occupation = "Tester"
+	npc.schedule = [
+		{"time_start": 0.0, "time_end": 0.5, "position": {"x": 0, "y": 1, "z": 0}, "seasons": []},
+		{"time_start": 0.5, "time_end": 1.0, "position": {"x": 10, "y": 1, "z": 10}, "seasons": []},
+	]
+	DataRegistry.npcs["test_npc"] = npc

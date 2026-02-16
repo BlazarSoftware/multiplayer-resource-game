@@ -1,0 +1,147 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_fisherman"
+display_name = "Old Salt"
+visual_color = Color(0.3, 0.45, 0.7, 1)
+birthday = {
+"season": "winter",
+"day": 3
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": -18, "y": 1, "z": -35 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": -16, "y": 1, "z": -33 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["sour_vinegar", "pickle_brine", "salt_crystal"],
+"liked": ["grain_bread", "herb_leaf"],
+"disliked": ["sweet_crystal", "sweet_honey"],
+"hated": ["hot_sauce"]
+}
+dialogues = {
+"neutral": [{
+"text": "The sea was rough this morning. Barely caught anything. *grumbles*",
+"choices": [{
+"label": "Tomorrow will be better!",
+"points": 2,
+"response": "Heh. That's what my old captain used to say."
+}, {
+"label": "Maybe try a different spot?",
+"points": 1,
+"response": "I've fished every inch of this coast, kid. But... maybe you're right."
+}, {
+"label": "Sounds like a you problem.",
+"points": -4,
+"response": "Cold as the winter sea, you are."
+}]
+}, {
+"text": "I found this old compass washed up on shore. Still works, too.",
+"choices": [{
+"label": "Any idea where it came from?",
+"points": 2,
+"response": "Could be from the old trading ships. Lots of history in these waters."
+}, {
+"label": "Can I have it?",
+"points": -2,
+"response": "What?! No! Finders keepers, as they say at sea."
+}]
+}, {
+"text": "Back in my day, the fish were twice as big and half as stubborn.",
+"choices": [{
+"label": "Tell me more about the old days!",
+"points": 3,
+"response": "Well, there was this one time with a sea serpent... nah, you'd never believe me."
+}, {
+"label": "Sure they were, old timer.",
+"points": -2,
+"response": "Skeptics never catch the big ones, I'll tell you that."
+}]
+}],
+"like": [{
+"text": "I tied a special lure just for you. Catches twice the fish, guaranteed.",
+"choices": [{
+"label": "Thank you, that's generous!",
+"points": 3,
+"response": "Every sailor needs good gear. Consider it an investment."
+}, {
+"label": "Does it really work?",
+"points": 0,
+"response": "Thirty years of fishing says yes. Trust the old salt."
+}]
+}],
+"love": [{
+"text": "You remind me of my first mate. Loyal, curious, and not afraid of a little sea spray.",
+"choices": [{
+"label": "That means a lot coming from you.",
+"points": 3,
+"response": "Don't go getting emotional on me, kid. *wipes eye*"
+}, {
+"label": "We should go fishing together!",
+"points": 2,
+"response": "Ha! Name the day. I'll bring the bait."
+}]
+}],
+"dislike": [{
+"text": "*stares at the water* ...Oh. Didn't see you there.",
+"choices": [{
+"label": "I've been unfair to you. Sorry.",
+"points": 3,
+"response": "...The tide turns for everyone eventually. We'll see."
+}, {
+"label": "Just passing through.",
+"points": 0,
+"response": "Mm-hmm."
+}]
+}],
+"hate": [{
+"text": "The barnacles on my boat are better conversation partners.",
+"choices": [{
+"label": "Give me a chance to fix this.",
+"points": 5,
+"response": "...One chance. Like a fish on the line — don't let it slip."
+}, {
+"label": "Fine, I'll leave.",
+"points": -1,
+"response": "Wouldn't be the first time someone sailed away."
+}]
+}],
+"birthday": [{
+"text": "Another year older, another year saltier! The crew used to throw me overboard on my birthday.",
+"choices": [{
+"label": "Happy birthday, Old Salt!",
+"points": 3,
+"response": "Ha! Thanks, kid. Best birthday on land I've had."
+}, {
+"label": "That tradition sounds terrible!",
+"points": 1,
+"response": "Terrible? It was tradition! ...Okay, it was terrible."
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "sour_vinegar",
+"quantity": 3,
+"message": "Best pickling vinegar this side of the coast. Treat it well!"
+}, {
+"threshold": 50,
+"item_id": "salt_crystal",
+"quantity": 5,
+"message": "Sea salt crystals from the deep caves. Only the best for a true friend."
+}, {
+"threshold": 80,
+"item_id": "pickle_brine",
+"quantity": 5,
+"message": "My secret brine recipe. Guard it with your life, sailor."
+}]
+occupation = "Fisherman"

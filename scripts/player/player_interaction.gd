@@ -47,6 +47,11 @@ func _try_interact() -> void:
 	if parent_body == null:
 		return
 	var pos = parent_body.global_position
+	# Check for social NPC proximity (E key to talk)
+	var social_npc = _find_nearest_area("social_npc", pos, 3.0)
+	if social_npc and social_npc.has_method("request_talk"):
+		social_npc.request_talk.rpc_id(1)
+		return
 	# Check for shop NPC proximity (E key to open shop)
 	var shop = _find_nearest_area("shop_npc", pos, 3.0)
 	if shop and shop.has_method("request_open_shop"):

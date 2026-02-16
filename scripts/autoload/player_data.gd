@@ -7,6 +7,7 @@ signal known_recipes_changed()
 signal buffs_changed()
 signal storage_changed()
 signal location_changed(zone: String, owner_name: String)
+signal friendships_changed()
 
 # Location tracking (client-side mirror of server state)
 var current_zone: String = "overworld"
@@ -49,6 +50,9 @@ var active_buffs: Array = [] # [{buff_type, buff_value, expires_at}]
 # Creature storage
 var creature_storage: Array = [] # Array of creature dicts (same format as party)
 var storage_capacity: int = 10 # Current max storage slots
+
+# NPC friendships: npc_id -> {points, talked_today, gifted_today, ...}
+var npc_friendships: Dictionary = {}
 
 # Player state
 var player_name: String = "Player"
@@ -153,6 +157,8 @@ func load_from_server(data: Dictionary) -> void:
 	storage_capacity = int(data.get("storage_capacity", 10))
 	# Load restaurant data
 	restaurant_data = data.get("restaurant", {}).duplicate(true)
+	# Load NPC friendships
+	npc_friendships = data.get("npc_friendships", {}).duplicate(true)
 	# Reset tool
 	current_tool_slot = ""
 	selected_seed_id = ""
@@ -161,6 +167,7 @@ func load_from_server(data: Dictionary) -> void:
 	known_recipes_changed.emit()
 	buffs_changed.emit()
 	storage_changed.emit()
+	friendships_changed.emit()
 
 func to_dict() -> Dictionary:
 	return {
@@ -177,6 +184,7 @@ func to_dict() -> Dictionary:
 		"creature_storage": creature_storage.duplicate(true),
 		"storage_capacity": storage_capacity,
 		"restaurant": restaurant_data.duplicate(true),
+		"npc_friendships": npc_friendships.duplicate(true),
 	}
 
 func reset() -> void:
@@ -198,6 +206,7 @@ func reset() -> void:
 	active_buffs.clear()
 	creature_storage.clear()
 	storage_capacity = 10
+	npc_friendships.clear()
 	current_zone = "overworld"
 	current_restaurant_owner = ""
 	restaurant_data.clear()
@@ -206,6 +215,7 @@ func reset() -> void:
 	known_recipes_changed.emit()
 	buffs_changed.emit()
 	storage_changed.emit()
+	friendships_changed.emit()
 
 func add_to_inventory(item_id: String, amount: int = 1) -> void:
 	if item_id in inventory:

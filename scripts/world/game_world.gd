@@ -15,6 +15,7 @@ var party_ui_scene = preload("res://scenes/ui/party_ui.tscn")
 var storage_ui_scene = preload("res://scenes/ui/storage_ui.tscn")
 var shop_ui_scene = preload("res://scenes/ui/shop_ui.tscn")
 var trade_ui_scene = preload("res://scenes/ui/trade_ui.tscn")
+var dialogue_ui_scene = preload("res://scenes/ui/dialogue_ui.tscn")
 
 func _ready() -> void:
 	# Initialize DataRegistry
@@ -171,6 +172,9 @@ func _setup_ui() -> void:
 
 	var trade_ui = trade_ui_scene.instantiate()
 	ui_node.add_child(trade_ui)
+
+	var dialogue_ui = dialogue_ui_scene.instantiate()
+	ui_node.add_child(dialogue_ui)
 
 # === WORLD DECORATION GENERATION ===
 

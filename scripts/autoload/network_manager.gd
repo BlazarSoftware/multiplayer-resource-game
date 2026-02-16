@@ -355,6 +355,9 @@ func _finalize_join(sender_id: int, player_name: String, data: Dictionary) -> vo
 				"overrides": {},
 			},
 		}
+	# Backfill NPC friendships
+	if not data.has("npc_friendships"):
+		data["npc_friendships"] = {}
 	# Backfill basic tools in inventory
 	var inv = data.get("inventory", {})
 	for tool_id in ["tool_hoe_basic", "tool_axe_basic", "tool_watering_can_basic"]:
@@ -480,6 +483,7 @@ func _create_default_player_data(player_name: String) -> Dictionary:
 		"active_buffs": [],
 		"creature_storage": [],
 		"storage_capacity": 10,
+		"npc_friendships": {},
 		"restaurant": {
 			"restaurant_index": -1,
 			"tier": 0,
@@ -709,6 +713,11 @@ func _sync_money(amount: int) -> void:
 func _sync_party_full(party_array: Array) -> void:
 	PlayerData.party = party_array.duplicate(true)
 	PlayerData.party_changed.emit()
+
+@rpc("authority", "reliable")
+func _sync_npc_friendships(friendships: Dictionary) -> void:
+	PlayerData.npc_friendships = friendships.duplicate(true)
+	PlayerData.friendships_changed.emit()
 
 # === Client->Server RPCs ===
 

@@ -1,0 +1,151 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_blacksmith"
+display_name = "Ember the Smith"
+visual_color = Color(0.8, 0.35, 0.15, 1)
+birthday = {
+"season": "autumn",
+"day": 8
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": 8, "y": 1, "z": 1 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": 10, "y": 1, "z": 3 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["spice_pepper", "hot_sauce", "iron_ore"],
+"liked": ["grain_wheat", "salt_crystal"],
+"disliked": ["sweet_crystal", "sweet_honey"],
+"hated": ["herb_mint"]
+}
+dialogues = {
+"neutral": [{
+"text": "*clang clang* Sorry — just finishing up a hoe repair. These tools take a beating out here.",
+"choices": [{
+"label": "Your work keeps this town running!",
+"points": 3,
+"response": "Ha! Somebody's gotta keep the tools sharp. Appreciate you saying that."
+}, {
+"label": "How long have you been smithing?",
+"points": 2,
+"response": "Since I could hold a hammer. My parents were smiths too."
+}, {
+"label": "Can you hurry it up?",
+"points": -3,
+"response": "Good metalwork takes patience. Something you could learn."
+}]
+}, {
+"text": "I've been experimenting with a new alloy. Stronger but lighter. Still not quite right though.",
+"choices": [{
+"label": "Keep at it! Sounds amazing.",
+"points": 3,
+"response": "Thanks for the encouragement. I'll crack it eventually."
+}, {
+"label": "What ingredients do you need?",
+"points": 2,
+"response": "Mostly iron ore and a special charcoal. Hard to come by."
+}, {
+"label": "Sounds like a waste of time.",
+"points": -4,
+"response": "Innovation is never a waste. You'll see when I succeed."
+}]
+}, {
+"text": "Someone brought in a completely rusted axe today. How do you even let it get that bad?",
+"choices": [{
+"label": "Some people don't respect their tools.",
+"points": 2,
+"response": "Exactly! A well-maintained tool is a friend for life."
+}, {
+"label": "Can you fix anything?",
+"points": 2,
+"response": "Almost! Give me enough time and I can salvage just about anything."
+}]
+}],
+"like": [{
+"text": "I forged something special today. A blade that holds its edge three times longer than normal.",
+"choices": [{
+"label": "That's incredible craftsmanship!",
+"points": 3,
+"response": "Years of practice. But having friends who appreciate the work makes it worthwhile."
+}, {
+"label": "Can you make me one?",
+"points": 1,
+"response": "Ha! Maybe if you keep being this nice."
+}]
+}],
+"love": [{
+"text": "I've never shown anyone my private workshop before. But I trust you. Come take a look.",
+"choices": [{
+"label": "I'm honored, truly.",
+"points": 3,
+"response": "There's a custom piece in there I've been making. For you."
+}, {
+"label": "Your trust means everything.",
+"points": 2,
+"response": "And your friendship means more than any masterwork I've forged."
+}]
+}],
+"dislike": [{
+"text": "*hammers louder* Oh, didn't notice you over the noise.",
+"choices": [{
+"label": "I deserve that. I'm sorry.",
+"points": 3,
+"response": "...Steel can be reforged. Maybe people can too."
+}, {
+"label": "Very mature.",
+"points": 0,
+"response": "*shrugs and keeps hammering*"
+}]
+}],
+"hate": [{
+"text": "My hammer hits harder when I'm annoyed. Guess I should thank you for the productivity boost.",
+"choices": [{
+"label": "Let me prove I can change.",
+"points": 5,
+"response": "...Even the hardest metals bend with enough heat. Show me you mean it."
+}, {
+"label": "Glad to help.",
+"points": -1,
+"response": "That attitude is why my hammer hits so hard."
+}]
+}],
+"birthday": [{
+"text": "Birthday tradition: I forge one piece just for fun. No orders, no deadlines. Pure creativity.",
+"choices": [{
+"label": "Happy birthday, Ember!",
+"points": 3,
+"response": "Thanks! Today I'm making a decorative sun. Want to watch?"
+}, {
+"label": "What did you make this year?",
+"points": 2,
+"response": "A copper rose. Petals and all. My best work yet, I think."
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "spice_pepper",
+"quantity": 5,
+"message": "Good spices keep the forge fire interesting. Take these!"
+}, {
+"threshold": 50,
+"item_id": "iron_ore",
+"quantity": 5,
+"message": "Premium ore from my personal reserves. You've earned it, friend."
+}, {
+"threshold": 80,
+"item_id": "hot_sauce",
+"quantity": 5,
+"message": "My family's secret hot sauce recipe. Burns like the forge itself!"
+}]
+occupation = "Blacksmith"

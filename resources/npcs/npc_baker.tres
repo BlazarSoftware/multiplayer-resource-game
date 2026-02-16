@@ -1,0 +1,162 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_baker"
+display_name = "Baker Brioche"
+visual_color = Color(0.6, 0.4, 0.2, 1)
+birthday = {
+"season": "spring",
+"day": 5
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": 3, "y": 1, "z": 5 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": 5, "y": 1, "z": 10 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["grain_wheat", "grain_bread", "sweet_crystal"],
+"liked": ["herb_salad", "herb_leaf"],
+"disliked": ["sour_vinegar", "pickle_brine"],
+"hated": ["bitter_root"]
+}
+dialogues = {
+"neutral": [{
+"text": "I'm trying a new sourdough recipe today. The starter has been fermenting for three days!",
+"choices": [{
+"label": "That sounds delicious! Can I try some?",
+"points": 3,
+"response": "Ha! Sure, come back later and I'll save you a slice."
+}, {
+"label": "Sourdough takes too long.",
+"points": -2,
+"response": "Well... good things take time, you know."
+}, {
+"label": "Any tips for a beginner baker?",
+"points": 2,
+"response": "Start simple — flatbread. You can't mess it up!"
+}]
+}, {
+"text": "Ugh, I burned a whole batch of croissants this morning. What a waste of butter...",
+"choices": [{
+"label": "That happens to everyone!",
+"points": 3,
+"response": "You're right. Tomorrow I'll nail it."
+}, {
+"label": "Maybe baking isn't your thing.",
+"points": -5,
+"response": "Excuse me?! I've been baking since before you were born!"
+}]
+}, {
+"text": "Business has been slow lately. Not many folks stop by for bread anymore.",
+"choices": [{
+"label": "I'll spread the word!",
+"points": 4,
+"response": "You'd really do that? That means a lot to me."
+}, {
+"label": "Maybe add new menu items?",
+"points": 2,
+"response": "Hmm, not a bad idea. Maybe some pastries..."
+}, {
+"label": "That's just how it goes.",
+"points": -1,
+"response": "I suppose... *sigh*"
+}]
+}],
+"like": [{
+"text": "I saved the best baguette of the batch for you! Perfectly golden crust.",
+"choices": [{
+"label": "You're the best, Brioche!",
+"points": 3,
+"response": "Oh stop, you'll make me blush! Now eat up."
+}, {
+"label": "I'm not hungry right now.",
+"points": -1,
+"response": "Oh... well, it'll be here if you change your mind."
+}]
+}, {
+"text": "I've been experimenting with honey-glazed rolls. Want to be my taste tester?",
+"choices": [{
+"label": "I'd be honored!",
+"points": 3,
+"response": "Great! Here, try this one. Still warm from the oven."
+}, {
+"label": "Only if they're good.",
+"points": 0,
+"response": "Ha! Confidence is key in baking... and in friendship."
+}]
+}],
+"love": [{
+"text": "You know, you're the reason I still love this job. Having a friend who appreciates good bread...",
+"choices": [{
+"label": "You make this town smell amazing!",
+"points": 2,
+"response": "Haha! Best compliment a baker can get."
+}, {
+"label": "I'll always be your biggest fan.",
+"points": 3,
+"response": "That warms my heart more than any oven could."
+}]
+}],
+"dislike": [{
+"text": "Oh. It's you again.",
+"choices": [{
+"label": "I'm sorry if I've been rude.",
+"points": 3,
+"response": "...Actions speak louder than words. But I appreciate you saying that."
+}, {
+"label": "Nice to see you too.",
+"points": 0,
+"response": "*grunt*"
+}]
+}],
+"hate": [{
+"text": "I'd rather talk to my sourdough starter. At least IT rises to the occasion.",
+"choices": [{
+"label": "I want to make things right.",
+"points": 5,
+"response": "...We'll see. Talk is cheap, but it's a start."
+}, {
+"label": "Whatever.",
+"points": -1,
+"response": "Exactly the response I expected."
+}]
+}],
+"birthday": [{
+"text": "It's my birthday! I baked myself a cake, but it's always better shared.",
+"choices": [{
+"label": "Happy birthday, Brioche!",
+"points": 3,
+"response": "Thank you! Here, have a slice. Extra frosting, just for you."
+}, {
+"label": "I brought you something!",
+"points": 2,
+"response": "Oh! You remembered! That's so thoughtful."
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "grain_bread",
+"quantity": 3,
+"message": "Here, take some of my freshest bread. You've earned it!"
+}, {
+"threshold": 50,
+"item_id": "grain_wheat",
+"quantity": 10,
+"message": "I want you to have my secret wheat stash. Use it well!"
+}, {
+"threshold": 80,
+"item_id": "sweet_crystal",
+"quantity": 5,
+"message": "These rare crystals are my most prized baking ingredient. For you, my dearest friend."
+}]
+occupation = "Baker"

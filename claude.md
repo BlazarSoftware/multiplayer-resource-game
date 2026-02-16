@@ -214,6 +214,18 @@ See `docs/docker-build.md` for full build instructions (two-phase engine + game 
 - **Guards**: Wild encounters, PvP challenges, trainer interactions, shop/trade all check `is_busy` before proceeding.
 - **RPC**: `request_set_busy(busy: bool)` — client requests busy toggle, server sets on player node. Auto-cleared when closing shop/trade UI.
 
+## NPC Social System (Stardew Valley-style)
+- **Friendship**: -100 to +100 points per NPC, 5 tiers (hate < -60, dislike < -20, neutral < 20, like < 60, love >= 60)
+- **Talk**: +2 daily bonus (once/NPC/day), branching dialogue with player choices (+/- points per choice)
+- **Gifts**: 1 gift/NPC/day. Tiers: loved (+15), liked (+8), neutral (+3), disliked (-8), hated (-15). 3x birthday multiplier.
+- **Daily decay**: -1/day if not interacted (floor at 0, no negative spiral). Flags reset on day_changed.
+- **NPC gifts**: One-time threshold rewards at 20/50/80 friendship points.
+- **5 NPCs**: Baker Brioche, Sage Herbalist, Old Salt, Ember Smith, Professor Umami — each with branching dialogues, gift prefs, schedule.
+- **Architecture**: Server-authoritative. SocialManager (no class_name — references autoloads) handles all friendship logic. SocialNPC (Area3D) handles proximity + RPCs. DialogueUI (CanvasLayer) is client-only.
+- **Key RPCs**: `request_talk` → `_send_dialogue(npc_id, text, choices, points, tier)` → `request_dialogue_choice(idx)` → `_dialogue_choice_result(response, points, tier)`. Gift: `request_give_gift(item_id)` → `_gift_response(msg, pts)`.
+- **No class_name on SocialManager** — inlined static methods in dialogue_ui.gd and test files to avoid autoload reference issues.
+- **Files**: `scripts/data/npc_def.gd`, `scripts/world/social_npc.gd`, `scripts/world/social_manager.gd`, `scripts/ui/dialogue_ui.gd`, `scenes/ui/dialogue_ui.tscn`, `resources/npcs/*.tres` (5), `test/unit/world/test_social_system.gd`, `test/integration/test_social_flow.gd`
+
 ## Networking Rules (IMPORTANT)
 
 This is a server-authoritative multiplayer game. **Every gameplay change — new feature, new action, new resource, any UI that affects game state — must be evaluated for networking impact.** If the user does not specify whether a change should be networked, always ask before implementing.
@@ -242,6 +254,7 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 | Shop buy/sell | Server (`request_buy/sell_item` RPCs) | Server validates + syncs inventory via RPC |
 | Player trading | Server (atomic swap in `_execute_trade`) | RPCs for offer updates, confirm, cancel |
 | Busy state | Server (`request_set_busy` RPC) | StateSync (always mode) on player node |
+| NPC friendship | Server (SocialManager) | RPCs: `_sync_npc_friendships`, `_send_dialogue`, `_gift_response` |
 | Save/load | Server only (SaveManager → Express API → MongoDB) | Data sent to client via `_receive_player_data` |
 
 ### Never do this
@@ -282,7 +295,7 @@ See `docs/k8s-deployment.md` for full K8s deployment details (3 deployments, SSH
 
 ### Run Commands
 ```bash
-# GDScript tests (GUT) — 318 tests
+# GDScript tests (GUT) — 399 tests
 '/Applications/Mechanical Turk.app/Contents/MacOS/Mechanical Turk' --path . --headless -s addons/gut/gut_cmdln.gd -gexit
 
 # Express API tests (Vitest) — 21 tests
@@ -312,7 +325,7 @@ cd api && npx vitest run
 - **New battle mechanic** (move effect, ability, held item): Add tests to the relevant `test/unit/battle/` file. Update `registry_seeder.gd` if new data entries are needed.
 - **New data type or resource**: Add serialization round-trip tests in `test/unit/data/`.
 - **New API endpoint**: Add tests in `api/test/`. Use the existing `setupTestDb()` pattern.
-- **Run tests before committing**: All 339 tests must pass.
+- **Run tests before committing**: All 399 tests must pass.
 
 ## MCP Testing Workflow
 See `docs/mcp-testing.md` for full MCP testing guide (editor bridge, runtime bridge sessions, caveats, port conflicts).
@@ -321,17 +334,17 @@ See `docs/mcp-testing.md` for full MCP testing guide (editor bridge, runtime bri
 - `api/` — Express API service (TypeScript): `src/index.ts`, `src/routes/players.ts`, `src/routes/world.ts`, `Dockerfile`
 - `k8s/` — Kubernetes manifests: `mongodb.yaml`, `api-service.yaml`, `deployment.yaml`, `service.yaml`
 - `scripts/autoload/` — NetworkManager, GameManager, PlayerData, SaveManager
-- `scripts/data/` — 15 Resource class definitions (+ food_def, tool_def, recipe_scroll_def, battle_item_def, shop_def)
+- `scripts/data/` — 16 Resource class definitions (+ food_def, tool_def, recipe_scroll_def, battle_item_def, shop_def, npc_def)
 - `scripts/battle/` — BattleManager, BattleCalculator, StatusEffects, FieldEffects, AbilityEffects, HeldItemEffects, BattleAI
-- `scripts/world/` — FarmPlot, FarmManager, SeasonManager, TallGrass, EncounterManager, GameWorld, TrainerNPC, CraftingStation, RecipePickup, WorldItem, WorldItemManager, RestaurantManager, RestaurantInterior, RestaurantDoor, ShopNPC
+- `scripts/world/` — FarmPlot, FarmManager, SeasonManager, TallGrass, EncounterManager, GameWorld, TrainerNPC, CraftingStation, RecipePickup, WorldItem, WorldItemManager, RestaurantManager, RestaurantInterior, RestaurantDoor, ShopNPC, SocialNPC, SocialManager
 - `scripts/crafting/` — CraftingSystem
 - `scripts/player/` — PlayerController, PlayerInteraction
-- `scripts/ui/` — ConnectUI, HUD (calendar + weather + trainer prompt), BattleUI, CraftingUI (station-filtered), InventoryUI (tabbed), PartyUI (networked equip), PvPChallengeUI, TrainerDialogueUI (gatekeeper accept/decline + post-battle dialogue), ShopUI (buy/sell tabs), TradeUI (offer/confirm panels)
+- `scripts/ui/` — ConnectUI, HUD (calendar + weather + trainer prompt), BattleUI, CraftingUI (station-filtered), InventoryUI (tabbed), PartyUI (networked equip), PvPChallengeUI, TrainerDialogueUI (gatekeeper accept/decline + post-battle dialogue), ShopUI (buy/sell tabs), TradeUI (offer/confirm panels), DialogueUI (NPC social dialogue + gift panel)
 - `test/helpers/` — MockMove, BattleFactory, RegistrySeeder, BattleTestScene
 - `test/unit/battle/` — test_battle_calculator, test_battle_calculator_rng, test_status_effects, test_field_effects, test_ability_effects, test_held_item_effects, test_battle_ai, test_battle_items
 - `test/unit/data/` — test_creature_instance, test_creature_instance_creation, test_battle_item_def
-- `test/unit/world/` — test_season_manager, test_shop_system
+- `test/unit/world/` — test_season_manager, test_shop_system, test_social_system
 - `test/unit/crafting/` — test_crafting_validation
-- `test/integration/` — test_battle_turn, test_battle_pvp, test_player_trading
+- `test/integration/` — test_battle_turn, test_battle_pvp, test_player_trading, test_social_flow
 - `api/test/` — players.test.ts, world.test.ts, health.test.ts
-- `resources/` — ingredients/ (16), creatures/ (21), moves/ (57), encounters/ (6), recipes/ (58), abilities/ (20), held_items/ (18), trainers/ (7), foods/ (12), tools/ (12), recipe_scrolls/ (13), battle_items/ (6), shops/ (3)
+- `resources/` — ingredients/ (16), creatures/ (21), moves/ (57), encounters/ (6), recipes/ (58), abilities/ (20), held_items/ (18), trainers/ (7), foods/ (12), tools/ (12), recipe_scrolls/ (13), battle_items/ (6), shops/ (3), npcs/ (5)
