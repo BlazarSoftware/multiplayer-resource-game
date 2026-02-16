@@ -82,7 +82,7 @@ See `docs/docker-build.md` for full build instructions (two-phase engine + game 
 - **Player collision layers**: Players use `collision_layer=2`, `collision_mask=1`. TallGrass and TrainerNPC Area3Ds set `collision_mask=3` (bits 1+2) to detect players.
 - **UI node sharing**: `_setup_ui()` adds HUD, BattleUI, CraftingUI, InventoryUI, PartyUI to the **existing** `$UI` node from `game_world.tscn`. Do NOT create a new "UI" node — Godot will rename it, breaking path lookups.
 - **Player visuals** (color, nameplate): set on the player node server-side **before** `add_child()` in `_spawn_player()`, synced via StateSync spawn-only mode.
-- **StateSync properties** (5 total): `position`, `velocity` (always), `player_color`, `player_name_display` (spawn-only), `mesh_rotation_y` (always).
+- **StateSync properties** (6 total): `position`, `velocity` (always), `player_color`, `player_name_display` (spawn-only), `mesh_rotation_y` (always), `is_busy` (always).
 
 ## Battle System
 - **3 battle modes**: Wild, Trainer (7 NPCs), PvP (V key challenge within 5 units of another player)
@@ -94,6 +94,7 @@ See `docs/docker-build.md` for full build instructions (two-phase engine + game 
 - **XP/Leveling**: XP from battles, level-up stat recalc, learnset moves, evolution. Full XP to participants, 50% to bench.
 - **AI**: 3 tiers (easy=random, medium=type-aware, hard=damage-calc + prediction)
 - **PvP**: Both-submit simultaneous turns, 30s timeout, disconnect = forfeit. Loser forfeits 25% of each ingredient stack to winner.
+- **6 battle items**: herb_poultice (30 HP), spicy_tonic (60 HP), full_feast (full HP), mint_extract (cure status), flavor_essence (5 PP), revival_soup (revive 50% HP). Used via "Items" button in battle UI. Item use consumes a turn. Blocked in PvP battles. Server processes via `_process_item_use()`.
 - **Defeat penalty**: 50% money loss, teleport to spawn point, all creatures healed
 
 ### IVs, Bond, and Crit Stages
@@ -117,7 +118,7 @@ See `docs/docker-build.md` for full build instructions (two-phase engine + game 
 - **Move buttons**: 3-line format — Name / Type|Category|Power / Accuracy|PP
 - **Field effects bar**: trick room, taunt turns, substitute HP, crit stage
 - **Weather bar**: weather name + remaining turns
-- **Flee/Switch**: Flee in wild only, Switch always available
+- **Flee/Switch/Items**: Flee in wild only, Switch always available, Items button opens battle item list (hidden in PvP)
 - **Turn log**: scrolling RichTextLabel. Ability messages in `[color=purple]`, item in `[color=cyan]`, effectiveness in green/yellow.
 - **Summary screen**: Victory/Defeat, XP per creature (level-up highlights), item drops, trainer money + bonus ingredients. Continue button returns to world.
 - **PvP-specific**: no Flee, "Waiting for opponent..." label, perspectives actor-swapped. PvP challenge UI auto-hides when battle starts.
@@ -133,14 +134,14 @@ See `docs/docker-build.md` for full build instructions (two-phase engine + game 
 - **Party deep-copy**: `server_update_party()` uses `.duplicate(true)` to prevent cross-player state corruption.
 
 ## Crafting & Item System (Unified Overhaul)
-- **52 recipes**: 13 creature (cauldron, unlockable), 18 held item (workbench), 12 food (kitchen), 9 tool upgrade (workbench)
-- **5 item types**: ingredients (16), held items (18), foods (12), tools (12), recipe scrolls (13) — all share single inventory namespace
+- **58 recipes**: 13 creature (cauldron, unlockable), 18 held item (workbench), 12 food (kitchen), 9 tool upgrade (workbench), 6 battle item (kitchen)
+- **6 item types**: ingredients (16), held items (18), foods (12), tools (12), recipe scrolls (13), battle items (6) — all share single inventory namespace
 - **3 crafting stations**: Kitchen (restaurant zone), Workbench (near spawn), Cauldron (deep wild zone) — each filters recipes by `station` field
 - **Recipe unlock system**: Creature recipes require recipe scrolls to unlock. Scrolls come from trainer first-defeat rewards, world pickups, or fragment collection (3-5 fragments auto-combine)
 - **Food & buffs**: 4 buff foods (speed_boost, xp_multiplier, encounter_rate, creature_heal) + 8 trade goods for selling. Buffs are timed, server-side expiry checked every 5s
 - **Tool upgrades**: 3 tool types (hoe, axe, watering_can) x 4 tiers (basic→bronze→iron→gold). Upgrade recipes consume old tool + ingredients. Dynamic stats from ToolDef
 - **Crafting security**: Single-phase server-authoritative — `request_craft(recipe_id)` RPC validates everything server-side, deducts, produces result, syncs to client. No client-side deduction.
-- **Selling**: `request_sell_item(item_id, qty)` RPC for food trade goods with sell_price
+- **Selling**: `request_sell_item(item_id, qty)` RPC. Universal `DataRegistry.get_sell_price(item_id)` checks BattleItemDef, FoodDef, IngredientDef for sell prices
 - **16 ingredients**: farm crops (season-locked) + battle drops. New plantable crops: lemon (summer), pickle_brine (autumn)
 - **Planting flow** (server-authoritative): Client sends `request_farm_action(plot_idx, "plant", seed_id)` RPC. Server removes seed from `player_data_store`, attempts plant, rolls back on failure. No client-side deduction.
 - **Watering flow** (server-authoritative): Client sends `request_farm_action(plot_idx, "water", "")` RPC. Server decrements, syncs via `_sync_watering_can` RPC. Refill via `_request_refill` RPC.
@@ -194,6 +195,25 @@ See `docs/docker-build.md` for full build instructions (two-phase engine + game 
 - **Unloading**: When all players leave, saves farm data and `queue_free()`s the instance.
 - **Files**: `scripts/world/restaurant_manager.gd`, `restaurant_interior.gd`, `restaurant_door.gd`, `scenes/world/restaurant_interior.tscn`
 
+## Shop System
+- **ShopDef** (`scripts/data/shop_def.gd`): Resource with `shop_id`, `display_name`, `items_for_sale` (Array of `{item_id, buy_price}` dicts)
+- **3 shops**: General Store (ingredients), Battle Supplies (battle items), Rare Goods (premium items)
+- **ShopNPC** (`scripts/world/shop_npc.gd`): Area3D with 3.0-unit detection radius. E-key prompt via HUD's trainer prompt system. Guards: rejects if player `is_busy` or in battle.
+- **ShopUI** (`scripts/ui/shop_ui.gd`): CanvasLayer with Buy/Sell tabs. Buy shows catalog with prices (disabled if insufficient money). Sell lists player inventory with sell prices.
+- **RPCs**: `request_open_shop()` → server validates → `_open_shop_client(shop_id, name, catalog)`. `request_buy_item(item_id, qty, shop_id)` / `request_sell_item(item_id, qty)` for transactions. Sets player busy state on open/close.
+
+## Player Trading
+- **T key** initiates trade with nearest player (within 5 units). Server validates both players not busy/in battle.
+- **TradeUI** (`scripts/ui/trade_ui.gd`): Two phases — request panel (Accept/Decline) and trade panel (3-column: Your Offer | Their Offer | Your Inventory with +/- buttons).
+- **Atomic swap**: Both players must confirm. Server re-validates all items exist before executing swap. `_execute_trade()` transfers items atomically.
+- **RPCs**: `request_trade(target_peer)` → `_trade_request_received(name, peer)` → `respond_trade(peer, accepted)` → `update_trade_offer(item_id, count_change)` → `confirm_trade()` / `cancel_trade()`. Sets busy state during trade.
+
+## Player Busy State
+- **`is_busy: bool`** on player node, synced via StateSync (always mode). Visible to all clients.
+- **BusyIndicator**: Label3D above player showing "[Busy]" when `is_busy = true`.
+- **Guards**: Wild encounters, PvP challenges, trainer interactions, shop/trade all check `is_busy` before proceeding.
+- **RPC**: `request_set_busy(busy: bool)` — client requests busy toggle, server sets on player node. Auto-cleared when closing shop/trade UI.
+
 ## Networking Rules (IMPORTANT)
 
 This is a server-authoritative multiplayer game. **Every gameplay change — new feature, new action, new resource, any UI that affects game state — must be evaluated for networking impact.** If the user does not specify whether a change should be networked, always ask before implementing.
@@ -219,6 +239,9 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 | World item spawn/pickup | Server (WorldItemManager) | `_spawn/_despawn_world_item_client` RPCs to all |
 | Restaurant entry/exit | Server (RestaurantManager) | `_notify_location_change` RPC |
 | Calendar/weather | Server (SeasonManager) | `_broadcast_time` RPC to all |
+| Shop buy/sell | Server (`request_buy/sell_item` RPCs) | Server validates + syncs inventory via RPC |
+| Player trading | Server (atomic swap in `_execute_trade`) | RPCs for offer updates, confirm, cancel |
+| Busy state | Server (`request_set_busy` RPC) | StateSync (always mode) on player node |
 | Save/load | Server only (SaveManager → Express API → MongoDB) | Data sent to client via `_receive_player_data` |
 
 ### Never do this
@@ -259,7 +282,7 @@ See `docs/k8s-deployment.md` for full K8s deployment details (3 deployments, SSH
 
 ### Run Commands
 ```bash
-# GDScript tests (GUT) — 291 tests
+# GDScript tests (GUT) — 318 tests
 '/Applications/Mechanical Turk.app/Contents/MacOS/Mechanical Turk' --path . --headless -s addons/gut/gut_cmdln.gd -gexit
 
 # Express API tests (Vitest) — 21 tests
@@ -269,8 +292,8 @@ cd api && npx vitest run
 ### GDScript Test Suite (GUT 9.5.0)
 - **Config**: `.gutconfig.json` — dirs `res://test/`, prefix `test_`, include subdirs
 - **Helpers** (`test/helpers/`): `mock_move.gd` (MoveDef factory), `battle_factory.gd` (creature/battle dict factory), `registry_seeder.gd` (DataRegistry populator), `battle_test_scene.gd` (integration helper)
-- **Unit tests** (`test/unit/`): battle/ (calculator, status, field effects, abilities, held items, AI, calculator RNG), data/ (creature instance, creature creation), world/ (season manager), crafting/ (validation)
-- **Integration tests** (`test/integration/`): battle turn pipeline, PvP mechanics
+- **Unit tests** (`test/unit/`): battle/ (calculator, status, field effects, abilities, held items, AI, calculator RNG, battle items), data/ (creature instance, creature creation, battle item def), world/ (season manager, shop system), crafting/ (validation)
+- **Integration tests** (`test/integration/`): battle turn pipeline, PvP mechanics, player trading
 
 ### Test Patterns
 - **RegistrySeeder**: Populates DataRegistry directly (sets `_loaded = true`). Call `seed_all()` in `before_each()`, `clear_all()` in `after_each()`.
@@ -289,7 +312,7 @@ cd api && npx vitest run
 - **New battle mechanic** (move effect, ability, held item): Add tests to the relevant `test/unit/battle/` file. Update `registry_seeder.gd` if new data entries are needed.
 - **New data type or resource**: Add serialization round-trip tests in `test/unit/data/`.
 - **New API endpoint**: Add tests in `api/test/`. Use the existing `setupTestDb()` pattern.
-- **Run tests before committing**: All 312 tests must pass.
+- **Run tests before committing**: All 339 tests must pass.
 
 ## MCP Testing Workflow
 See `docs/mcp-testing.md` for full MCP testing guide (editor bridge, runtime bridge sessions, caveats, port conflicts).
@@ -298,17 +321,17 @@ See `docs/mcp-testing.md` for full MCP testing guide (editor bridge, runtime bri
 - `api/` — Express API service (TypeScript): `src/index.ts`, `src/routes/players.ts`, `src/routes/world.ts`, `Dockerfile`
 - `k8s/` — Kubernetes manifests: `mongodb.yaml`, `api-service.yaml`, `deployment.yaml`, `service.yaml`
 - `scripts/autoload/` — NetworkManager, GameManager, PlayerData, SaveManager
-- `scripts/data/` — 13 Resource class definitions (+ food_def, tool_def, recipe_scroll_def)
+- `scripts/data/` — 15 Resource class definitions (+ food_def, tool_def, recipe_scroll_def, battle_item_def, shop_def)
 - `scripts/battle/` — BattleManager, BattleCalculator, StatusEffects, FieldEffects, AbilityEffects, HeldItemEffects, BattleAI
-- `scripts/world/` — FarmPlot, FarmManager, SeasonManager, TallGrass, EncounterManager, GameWorld, TrainerNPC, CraftingStation, RecipePickup, WorldItem, WorldItemManager, RestaurantManager, RestaurantInterior, RestaurantDoor
+- `scripts/world/` — FarmPlot, FarmManager, SeasonManager, TallGrass, EncounterManager, GameWorld, TrainerNPC, CraftingStation, RecipePickup, WorldItem, WorldItemManager, RestaurantManager, RestaurantInterior, RestaurantDoor, ShopNPC
 - `scripts/crafting/` — CraftingSystem
 - `scripts/player/` — PlayerController, PlayerInteraction
-- `scripts/ui/` — ConnectUI, HUD (calendar + weather + trainer prompt), BattleUI, CraftingUI (station-filtered), InventoryUI (tabbed), PartyUI (networked equip), PvPChallengeUI, TrainerDialogueUI (gatekeeper accept/decline + post-battle dialogue)
+- `scripts/ui/` — ConnectUI, HUD (calendar + weather + trainer prompt), BattleUI, CraftingUI (station-filtered), InventoryUI (tabbed), PartyUI (networked equip), PvPChallengeUI, TrainerDialogueUI (gatekeeper accept/decline + post-battle dialogue), ShopUI (buy/sell tabs), TradeUI (offer/confirm panels)
 - `test/helpers/` — MockMove, BattleFactory, RegistrySeeder, BattleTestScene
-- `test/unit/battle/` — test_battle_calculator, test_battle_calculator_rng, test_status_effects, test_field_effects, test_ability_effects, test_held_item_effects, test_battle_ai
-- `test/unit/data/` — test_creature_instance, test_creature_instance_creation
-- `test/unit/world/` — test_season_manager
+- `test/unit/battle/` — test_battle_calculator, test_battle_calculator_rng, test_status_effects, test_field_effects, test_ability_effects, test_held_item_effects, test_battle_ai, test_battle_items
+- `test/unit/data/` — test_creature_instance, test_creature_instance_creation, test_battle_item_def
+- `test/unit/world/` — test_season_manager, test_shop_system
 - `test/unit/crafting/` — test_crafting_validation
-- `test/integration/` — test_battle_turn, test_battle_pvp
+- `test/integration/` — test_battle_turn, test_battle_pvp, test_player_trading
 - `api/test/` — players.test.ts, world.test.ts, health.test.ts
-- `resources/` — ingredients/ (16), creatures/ (21), moves/ (57), encounters/ (6), recipes/ (52), abilities/ (20), held_items/ (18), trainers/ (7), foods/ (12), tools/ (12), recipe_scrolls/ (13)
+- `resources/` — ingredients/ (16), creatures/ (21), moves/ (57), encounters/ (6), recipes/ (58), abilities/ (20), held_items/ (18), trainers/ (7), foods/ (12), tools/ (12), recipe_scrolls/ (13), battle_items/ (6), shops/ (3)

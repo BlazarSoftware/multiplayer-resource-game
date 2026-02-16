@@ -21,11 +21,13 @@ func _on_data_changed() -> void:
 func open() -> void:
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	NetworkManager.request_set_busy.rpc_id(1, true)
 	_refresh()
 
 func _close() -> void:
 	visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	NetworkManager.request_set_busy.rpc_id(1, false)
 
 func _refresh() -> void:
 	# Party side

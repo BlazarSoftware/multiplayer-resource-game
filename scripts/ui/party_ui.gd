@@ -12,6 +12,7 @@ func _input(event: InputEvent) -> void:
 		visible = !visible
 		if visible:
 			_refresh()
+		NetworkManager.request_set_busy.rpc_id(1, visible)
 
 func _refresh() -> void:
 	for child in creature_list.get_children():

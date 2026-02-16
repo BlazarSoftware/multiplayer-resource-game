@@ -10,6 +10,8 @@ static func seed_all() -> void:
 	_seed_abilities()
 	_seed_held_items()
 	_seed_trainers()
+	_seed_battle_items()
+	_seed_shops()
 
 static func clear_all() -> void:
 	DataRegistry.moves.clear()
@@ -23,6 +25,8 @@ static func clear_all() -> void:
 	DataRegistry.tools.clear()
 	DataRegistry.recipe_scrolls.clear()
 	DataRegistry.encounter_tables.clear()
+	DataRegistry.shops.clear()
+	DataRegistry.battle_items.clear()
 	DataRegistry._loaded = false
 
 static func _seed_moves() -> void:
@@ -166,3 +170,28 @@ static func _seed_trainers() -> void:
 	t3.display_name = "Test Hard Trainer"
 	t3.ai_difficulty = "hard"
 	DataRegistry.trainers["test_hard"] = t3
+
+static func _seed_battle_items() -> void:
+	_add_battle_item("herb_poultice", "Herb Poultice", "heal_hp", 30)
+	_add_battle_item("spicy_tonic", "Spicy Tonic", "heal_hp", 60)
+	_add_battle_item("full_feast", "Full Feast", "heal_hp", 9999)
+	_add_battle_item("mint_extract", "Mint Extract", "cure_status", 0)
+	_add_battle_item("flavor_essence", "Flavor Essence", "restore_pp", 5)
+	_add_battle_item("revival_soup", "Revival Soup", "revive", 50)
+
+static func _add_battle_item(id: String, display: String, effect_type: String, effect_value: int) -> void:
+	var bi = BattleItemDef.new()
+	bi.item_id = id
+	bi.display_name = display
+	bi.effect_type = effect_type
+	bi.effect_value = effect_value
+	bi.target = "single"
+	DataRegistry.battle_items[id] = bi
+
+static func _seed_shops() -> void:
+	var shop = ShopDef.new()
+	shop.shop_id = "test_general"
+	shop.display_name = "Test General Store"
+	shop.items_for_sale.append({"item_id": "herb_poultice", "buy_price": 100})
+	shop.items_for_sale.append({"item_id": "spicy_tonic", "buy_price": 200})
+	DataRegistry.shops["test_general"] = shop

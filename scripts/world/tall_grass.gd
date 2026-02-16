@@ -75,6 +75,8 @@ func _physics_process(_delta: float) -> void:
 			continue
 		var player = players_node.get_node_or_null(str(peer_id))
 		if player and player is CharacterBody3D:
+			if player.get("is_busy"):
+				continue
 			if player.velocity.length() > 0.5:
 				player_step_counters[peer_id] += 1
 				if player_step_counters[peer_id] >= step_threshold:

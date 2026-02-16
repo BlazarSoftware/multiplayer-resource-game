@@ -1,4 +1,4 @@
-[gd_scene load_steps=44 format=3]
+[gd_scene load_steps=45 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/game_world.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/world/season_manager.gd" id="2"]
@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://scripts/world/recipe_pickup.gd" id="13"]
 [ext_resource type="Script" path="res://scripts/world/world_item_manager.gd" id="15"]
 [ext_resource type="Script" path="res://scripts/world/restaurant_manager.gd" id="16"]
+[ext_resource type="Script" path="res://scripts/world/shop_npc.gd" id="17"]
 
 [sub_resource type="BoxShape3D" id="ground_shape"]
 size = Vector3(200, 0.2, 200)
@@ -579,6 +580,27 @@ is_gatekeeper = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, -55)
 script = ExtResource("9")
 trainer_id = "grand_chef_michelin"
+
+; === SHOP NPCs ===
+[node name="Shops" type="Node3D" parent="Zones"]
+
+; General Store — near spawn hub
+[node name="GeneralStore" type="Area3D" parent="Zones/Shops"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 5)
+script = ExtResource("17")
+shop_id = "general_store"
+
+; Battle Supplies — mid-game area
+[node name="BattleSupplies" type="Area3D" parent="Zones/Shops"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -15)
+script = ExtResource("17")
+shop_id = "battle_supplies"
+
+; Rare Goods — deep zone
+[node name="RareGoods" type="Area3D" parent="Zones/Shops"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -45)
+script = ExtResource("17")
+shop_id = "rare_goods"
 
 ; === RESTAURANT ROW (south of spawn, z=12) ===
 [node name="RestaurantRow" type="Node3D" parent="Zones"]

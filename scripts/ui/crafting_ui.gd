@@ -8,7 +8,10 @@ var current_station: String = "" # "kitchen", "workbench", "cauldron", "" for al
 var title_label: Label = null
 
 func _ready() -> void:
-	close_button.pressed.connect(func(): visible = false)
+	close_button.pressed.connect(func():
+		visible = false
+		NetworkManager.request_set_busy.rpc_id(1, false)
+	)
 	# Create title label
 	title_label = Label.new()
 	title_label.text = "Crafting"
@@ -36,6 +39,7 @@ func open_for_station(station: String) -> void:
 			_:
 				title_label.text = "Crafting"
 	visible = true
+	NetworkManager.request_set_busy.rpc_id(1, true)
 	refresh()
 
 func refresh() -> void:

@@ -97,6 +97,9 @@ func _on_body_entered(body: Node3D) -> void:
 	var battle_mgr = get_node_or_null("/root/Main/GameWorld/BattleManager")
 	if battle_mgr and peer_id in battle_mgr.player_battle_map:
 		return
+	# Check if busy
+	if body.get("is_busy"):
+		return
 
 	if is_gatekeeper:
 		_handle_gatekeeper_enter(peer_id, body)
@@ -149,6 +152,10 @@ func request_challenge() -> void:
 	var peer_id = multiplayer.get_remote_sender_id()
 	# Validate proximity
 	if peer_id not in nearby_peers:
+		return
+	# Check if busy
+	var player_node = NetworkManager._get_player_node(peer_id)
+	if player_node and player_node.get("is_busy"):
 		return
 	# Check not in battle
 	var battle_mgr = get_node_or_null("/root/Main/GameWorld/BattleManager")

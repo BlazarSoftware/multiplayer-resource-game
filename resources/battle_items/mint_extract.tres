@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BattleItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/battle_item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_id = "mint_extract"
+display_name = "Mint Extract"
+description = "Refreshing mint oil. Cures any status condition."
+icon_color = Color(0.4, 0.9, 0.6, 1)
+effect_type = "cure_status"
+effect_value = 0
+target = "single"
+sell_price = 40

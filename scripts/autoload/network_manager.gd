@@ -138,6 +138,8 @@ func _on_peer_disconnected(id: int) -> void:
 	print("Peer disconnected: ", id)
 	# Clean up rate limit tracking
 	_rpc_timestamps.erase(id)
+	# Clear busy state
+	server_clear_busy(id)
 	# Clean up active name tracking
 	var disconnecting_name = ""
 	for pname in active_player_names:
@@ -148,6 +150,9 @@ func _on_peer_disconnected(id: int) -> void:
 		active_player_names.erase(disconnecting_name)
 		print("[Names] Released name '", disconnecting_name, "' (peer ", id, " disconnected)")
 	join_state.erase(id)
+	# Cancel active trade
+	if id in player_trade_map:
+		_cancel_trade_internal(player_trade_map[id], "Partner disconnected.")
 	# Handle battle disconnect (PvP forfeit, cleanup)
 	var battle_mgr = get_node_or_null("/root/Main/GameWorld/BattleManager")
 	if battle_mgr:
@@ -827,15 +832,46 @@ func request_sell_item(item_id: String, qty: int) -> void:
 	if not server_has_inventory(sender, item_id, qty):
 		return
 	DataRegistry.ensure_loaded()
-	var food = DataRegistry.get_food(item_id)
-	if food == null or food.sell_price <= 0:
+	var sell_price = DataRegistry.get_sell_price(item_id)
+	if sell_price <= 0:
 		return
-	var total = food.sell_price * qty
+	var total = sell_price * qty
 	server_remove_inventory(sender, item_id, qty)
 	server_add_money(sender, total)
 	_sync_inventory_full.rpc_id(sender, player_data_store[sender].get("inventory", {}))
 	_sync_money.rpc_id(sender, int(player_data_store[sender].get("money", 0)))
-	print("[Sell] ", sender, " sold ", qty, "x ", food.display_name, " for $", total)
+	var info = DataRegistry.get_item_display_info(item_id)
+	print("[Sell] ", sender, " sold ", qty, "x ", info.get("display_name", item_id), " for $", total)
+
+@rpc("any_peer", "reliable")
+func request_buy_item(item_id: String, qty: int, shop_id: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if not _check_rate_limit(sender):
+		return
+	if qty <= 0:
+		return
+	DataRegistry.ensure_loaded()
+	var shop = DataRegistry.get_shop(shop_id)
+	if shop == null:
+		return
+	# Validate item is in shop catalog
+	var buy_price = -1
+	for entry in shop.items_for_sale:
+		if str(entry.get("item_id", "")) == item_id:
+			buy_price = int(entry.get("buy_price", 0))
+			break
+	if buy_price < 0:
+		return
+	var total = buy_price * qty
+	if not server_remove_money(sender, total):
+		return
+	server_add_inventory(sender, item_id, qty)
+	_sync_inventory_full.rpc_id(sender, player_data_store[sender].get("inventory", {}))
+	_sync_money.rpc_id(sender, int(player_data_store[sender].get("money", 0)))
+	var info = DataRegistry.get_item_display_info(item_id)
+	print("[Buy] ", sender, " bought ", qty, "x ", info.get("display_name", item_id), " for $", total)
 
 @rpc("any_peer", "reliable")
 func request_equip_tool(tool_id: String) -> void:
@@ -1066,6 +1102,231 @@ func request_feed_creature(creature_idx: int, food_id: String) -> void:
 	_sync_party_full.rpc_id(sender, party)
 	_sync_inventory_full.rpc_id(sender, player_data_store[sender].get("inventory", {}))
 	print("[Bond] ", sender, " fed creature ", creature_idx, " with ", food_id, " — bond now ", creature["bond_points"])
+
+# === Trade System ===
+
+signal trade_request_received(peer_name: String, peer_id: int)
+signal trade_started(partner_name: String)
+signal trade_offer_updated(my_offer: Dictionary, their_offer: Dictionary)
+signal trade_confirmed(who: String)
+signal trade_completed(received_items: Dictionary)
+signal trade_cancelled(reason: String)
+
+var active_trades: Dictionary = {} # trade_id -> {peer_a, peer_b, offer_a, offer_b, confirmed_a, confirmed_b}
+var player_trade_map: Dictionary = {} # peer_id -> trade_id
+var next_trade_id: int = 1
+
+@rpc("any_peer", "reliable")
+func request_trade(target_peer: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if not _check_rate_limit(sender):
+		return
+	if sender == target_peer:
+		return
+	# Check neither in battle, trade, or busy
+	var battle_mgr = get_node_or_null("/root/Main/GameWorld/BattleManager")
+	if battle_mgr and (sender in battle_mgr.player_battle_map or target_peer in battle_mgr.player_battle_map):
+		return
+	if sender in player_trade_map or target_peer in player_trade_map:
+		return
+	var sender_node = _get_player_node(sender)
+	var target_node = _get_player_node(target_peer)
+	if sender_node and sender_node.get("is_busy"):
+		return
+	if target_node and target_node.get("is_busy"):
+		return
+	# Check proximity
+	if sender_node == null or target_node == null:
+		return
+	if sender_node.position.distance_to(target_node.position) > 5.0:
+		return
+	var sender_name = players.get(sender, {}).get("name", "Player")
+	_trade_request_client.rpc_id(target_peer, sender_name, sender)
+
+@rpc("any_peer", "reliable")
+func respond_trade(initiator_peer: int, accepted: bool) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if not _check_rate_limit(sender):
+		return
+	if not accepted:
+		_trade_declined_client.rpc_id(initiator_peer)
+		return
+	# Create trade
+	var trade_id = next_trade_id
+	next_trade_id += 1
+	active_trades[trade_id] = {
+		"peer_a": initiator_peer,
+		"peer_b": sender,
+		"offer_a": {},
+		"offer_b": {},
+		"confirmed_a": false,
+		"confirmed_b": false,
+	}
+	player_trade_map[initiator_peer] = trade_id
+	player_trade_map[sender] = trade_id
+	var name_a = players.get(initiator_peer, {}).get("name", "Player")
+	var name_b = players.get(sender, {}).get("name", "Player")
+	_trade_started_client.rpc_id(initiator_peer, name_b)
+	_trade_started_client.rpc_id(sender, name_a)
+
+@rpc("any_peer", "reliable")
+func update_trade_offer(item_id: String, count: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if not _check_rate_limit(sender):
+		return
+	if sender not in player_trade_map:
+		return
+	var trade_id = player_trade_map[sender]
+	var trade = active_trades.get(trade_id)
+	if trade == null:
+		return
+	var side = "a" if trade.peer_a == sender else "b"
+	var offer_key = "offer_" + side
+	# Validate inventory
+	if count > 0:
+		if not server_has_inventory(sender, item_id, count):
+			return
+		trade[offer_key][item_id] = count
+	else:
+		trade[offer_key].erase(item_id)
+	# Reset confirmations when offer changes
+	trade.confirmed_a = false
+	trade.confirmed_b = false
+	# Sync offers to both
+	_trade_offer_sync.rpc_id(trade.peer_a, trade.offer_a, trade.offer_b)
+	_trade_offer_sync.rpc_id(trade.peer_b, trade.offer_b, trade.offer_a)
+
+@rpc("any_peer", "reliable")
+func confirm_trade() -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if not _check_rate_limit(sender):
+		return
+	if sender not in player_trade_map:
+		return
+	var trade_id = player_trade_map[sender]
+	var trade = active_trades.get(trade_id)
+	if trade == null:
+		return
+	var side = "a" if trade.peer_a == sender else "b"
+	trade["confirmed_" + side] = true
+	# Notify both
+	var who = players.get(sender, {}).get("name", "Player")
+	_trade_confirmed_client.rpc_id(trade.peer_a, who)
+	_trade_confirmed_client.rpc_id(trade.peer_b, who)
+	# Check if both confirmed
+	if trade.confirmed_a and trade.confirmed_b:
+		_execute_trade(trade_id)
+
+func _execute_trade(trade_id: int) -> void:
+	var trade = active_trades.get(trade_id)
+	if trade == null:
+		return
+	var peer_a = int(trade.peer_a)
+	var peer_b = int(trade.peer_b)
+	# Final validation: both still have items
+	for item_id in trade.offer_a:
+		if not server_has_inventory(peer_a, item_id, int(trade.offer_a[item_id])):
+			_cancel_trade_internal(trade_id, "Trade failed — items no longer available.")
+			return
+	for item_id in trade.offer_b:
+		if not server_has_inventory(peer_b, item_id, int(trade.offer_b[item_id])):
+			_cancel_trade_internal(trade_id, "Trade failed — items no longer available.")
+			return
+	# Execute atomic swap
+	for item_id in trade.offer_a:
+		server_remove_inventory(peer_a, item_id, int(trade.offer_a[item_id]))
+		server_add_inventory(peer_b, item_id, int(trade.offer_a[item_id]))
+	for item_id in trade.offer_b:
+		server_remove_inventory(peer_b, item_id, int(trade.offer_b[item_id]))
+		server_add_inventory(peer_a, item_id, int(trade.offer_b[item_id]))
+	# Sync inventories
+	_sync_inventory_full.rpc_id(peer_a, player_data_store[peer_a].get("inventory", {}))
+	_sync_inventory_full.rpc_id(peer_b, player_data_store[peer_b].get("inventory", {}))
+	# Notify completion
+	_trade_completed_client.rpc_id(peer_a, trade.offer_b.duplicate())
+	_trade_completed_client.rpc_id(peer_b, trade.offer_a.duplicate())
+	# Cleanup
+	player_trade_map.erase(peer_a)
+	player_trade_map.erase(peer_b)
+	active_trades.erase(trade_id)
+	print("[Trade] Completed between peer ", peer_a, " and peer ", peer_b)
+
+@rpc("any_peer", "reliable")
+func cancel_trade() -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if sender not in player_trade_map:
+		return
+	_cancel_trade_internal(player_trade_map[sender], "Trade cancelled.")
+
+func _cancel_trade_internal(trade_id: int, reason: String) -> void:
+	var trade = active_trades.get(trade_id)
+	if trade == null:
+		return
+	var peer_a = int(trade.peer_a)
+	var peer_b = int(trade.peer_b)
+	_trade_cancelled_client.rpc_id(peer_a, reason)
+	_trade_cancelled_client.rpc_id(peer_b, reason)
+	player_trade_map.erase(peer_a)
+	player_trade_map.erase(peer_b)
+	active_trades.erase(trade_id)
+
+# Trade client RPCs
+@rpc("authority", "reliable")
+func _trade_request_client(requester_name: String, requester_peer: int) -> void:
+	trade_request_received.emit(requester_name, requester_peer)
+
+@rpc("authority", "reliable")
+func _trade_declined_client() -> void:
+	trade_cancelled.emit("Trade declined.")
+
+@rpc("authority", "reliable")
+func _trade_started_client(partner_name: String) -> void:
+	trade_started.emit(partner_name)
+
+@rpc("authority", "reliable")
+func _trade_offer_sync(my_offer: Dictionary, their_offer: Dictionary) -> void:
+	trade_offer_updated.emit(my_offer, their_offer)
+
+@rpc("authority", "reliable")
+func _trade_confirmed_client(who: String) -> void:
+	trade_confirmed.emit(who)
+
+@rpc("authority", "reliable")
+func _trade_completed_client(received_items: Dictionary) -> void:
+	# Update local inventory from server sync (already handled by _sync_inventory_full)
+	trade_completed.emit(received_items)
+
+@rpc("authority", "reliable")
+func _trade_cancelled_client(reason: String) -> void:
+	trade_cancelled.emit(reason)
+
+# === Busy State ===
+
+@rpc("any_peer", "reliable")
+func request_set_busy(busy: bool) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender = multiplayer.get_remote_sender_id()
+	if not _check_rate_limit(sender):
+		return
+	var player_node = _get_player_node(sender)
+	if player_node:
+		player_node.is_busy = busy
+
+func server_clear_busy(peer_id: int) -> void:
+	var player_node = _get_player_node(peer_id)
+	if player_node:
+		player_node.is_busy = false
 
 # === Bond Points — Battle Win ===
 

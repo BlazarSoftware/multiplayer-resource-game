@@ -27,6 +27,7 @@ func _input(event: InputEvent) -> void:
 		visible = !visible
 		if visible:
 			_refresh()
+		NetworkManager.request_set_busy.rpc_id(1, visible)
 
 func _on_tab_changed(tab_idx: int) -> void:
 	current_tab = tab_idx

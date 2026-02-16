@@ -13,6 +13,8 @@ static var trainers: Dictionary = {} # id -> TrainerDef
 static var foods: Dictionary = {} # id -> FoodDef
 static var tools: Dictionary = {} # id -> ToolDef
 static var recipe_scrolls: Dictionary = {} # id -> RecipeScrollDef
+static var shops: Dictionary = {} # id -> ShopDef
+static var battle_items: Dictionary = {} # id -> BattleItemDef
 
 static var _loaded: bool = false
 
@@ -31,7 +33,9 @@ static func ensure_loaded() -> void:
 	_load_all("res://resources/foods/", foods, "food_id")
 	_load_all("res://resources/tools/", tools, "tool_id")
 	_load_all("res://resources/recipe_scrolls/", recipe_scrolls, "scroll_id")
-	print("DataRegistry loaded: ", ingredients.size(), " ingredients, ", species.size(), " species, ", moves.size(), " moves, ", encounter_tables.size(), " encounter tables, ", recipes.size(), " recipes, ", abilities.size(), " abilities, ", held_items.size(), " held items, ", trainers.size(), " trainers, ", foods.size(), " foods, ", tools.size(), " tools, ", recipe_scrolls.size(), " recipe scrolls")
+	_load_all("res://resources/shops/", shops, "shop_id")
+	_load_all("res://resources/battle_items/", battle_items, "item_id")
+	print("DataRegistry loaded: ", ingredients.size(), " ingredients, ", species.size(), " species, ", moves.size(), " moves, ", encounter_tables.size(), " encounter tables, ", recipes.size(), " recipes, ", abilities.size(), " abilities, ", held_items.size(), " held items, ", trainers.size(), " trainers, ", foods.size(), " foods, ", tools.size(), " tools, ", recipe_scrolls.size(), " recipe scrolls, ", shops.size(), " shops, ", battle_items.size(), " battle items")
 
 static func _load_all(path: String, registry: Dictionary, id_field: String) -> void:
 	var dir = DirAccess.open(path)
@@ -100,6 +104,25 @@ static func get_recipe_scroll(id: String):
 	ensure_loaded()
 	return recipe_scrolls.get(id)
 
+static func get_shop(id: String):
+	ensure_loaded()
+	return shops.get(id)
+
+static func get_battle_item(id: String):
+	ensure_loaded()
+	return battle_items.get(id)
+
+static func get_sell_price(item_id: String) -> int:
+	ensure_loaded()
+	if item_id in foods:
+		return int(foods[item_id].sell_price)
+	if item_id in ingredients:
+		return int(ingredients[item_id].sell_price)
+	if item_id in held_items:
+		var hi = held_items[item_id]
+		return int(hi.get("sell_price")) if "sell_price" in hi else 0
+	return 0
+
 static func get_item_display_info(item_id: String) -> Dictionary:
 	ensure_loaded()
 	# Check ingredients
@@ -122,6 +145,10 @@ static func get_item_display_info(item_id: String) -> Dictionary:
 	if item_id in recipe_scrolls:
 		var rs = recipe_scrolls[item_id]
 		return {"display_name": rs.display_name, "category": "recipe_scroll", "icon_color": rs.icon_color}
+	# Check battle items
+	if item_id in battle_items:
+		var bi = battle_items[item_id]
+		return {"display_name": bi.display_name, "category": "battle_item", "icon_color": bi.icon_color}
 	# Check for fragment pattern (fragment_<scroll_id>)
 	if item_id.begins_with("fragment_"):
 		var scroll_id = item_id.substr(9) # Remove "fragment_" prefix

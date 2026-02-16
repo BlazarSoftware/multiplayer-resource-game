@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "revival_soup"
+display_name = "Cook Revival Soup"
+result_item_id = "revival_soup"
+ingredients = {"sweet_crystal": 3, "herb_basil": 2, "umami_stock": 2}
+description = "A miraculous broth that revives a fainted creature at 50% HP."
+station = "kitchen"

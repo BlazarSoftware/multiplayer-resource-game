@@ -19,6 +19,9 @@ func _process(_delta: float) -> void:
 	# PvP challenge (V key)
 	if Input.is_action_just_pressed("pvp_challenge"):
 		_try_pvp_challenge()
+	# Trade (T key)
+	if Input.is_action_just_pressed("trade"):
+		_try_trade()
 	# Number keys for tool select
 	if Input.is_action_just_pressed("tool_1"):
 		PlayerData.set_tool("")
@@ -44,6 +47,11 @@ func _try_interact() -> void:
 	if parent_body == null:
 		return
 	var pos = parent_body.global_position
+	# Check for shop NPC proximity (E key to open shop)
+	var shop = _find_nearest_area("shop_npc", pos, 3.0)
+	if shop and shop.has_method("request_open_shop"):
+		shop.request_open_shop.rpc_id(1)
+		return
 	# Check for trainer NPC proximity (E key to challenge)
 	var trainer = _find_nearest_area("trainer_npc", pos, 4.0)
 	if trainer and trainer.has_method("request_challenge"):
@@ -128,6 +136,28 @@ func _try_pvp_challenge() -> void:
 		if battle_mgr:
 			battle_mgr.send_pvp_challenge(closest_peer)
 			print("Sent PvP challenge to peer ", closest_peer)
+
+func _try_trade() -> void:
+	if parent_body == null:
+		return
+	var players_node = get_node_or_null("/root/Main/GameWorld/Players")
+	if players_node == null:
+		return
+	var my_pos = parent_body.global_position
+	var closest_peer: int = 0
+	var closest_dist: float = 5.0
+	for child in players_node.get_children():
+		if child is CharacterBody3D:
+			var other_peer = child.name.to_int()
+			if other_peer == peer_id or other_peer <= 0:
+				continue
+			var dist = child.global_position.distance_to(my_pos)
+			if dist < closest_dist:
+				closest_dist = dist
+				closest_peer = other_peer
+	if closest_peer > 0:
+		NetworkManager.request_trade.rpc_id(1, closest_peer)
+		print("Sent trade request to peer ", closest_peer)
 
 func _find_nearest_area(meta_tag: String, pos: Vector3, max_dist: float) -> Area3D:
 	var areas = get_tree().get_nodes_in_group(meta_tag)

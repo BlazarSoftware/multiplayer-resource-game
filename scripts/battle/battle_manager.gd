@@ -131,6 +131,10 @@ func _create_battle(mode: int, side_a_peer: int, side_b_peer: int = 0, trainer_i
 	player_battle_map[side_a_peer] = battle_id
 	if side_b_peer > 0:
 		player_battle_map[side_b_peer] = battle_id
+	# Auto-clear busy state when entering battle
+	NetworkManager.server_clear_busy(side_a_peer)
+	if side_b_peer > 0:
+		NetworkManager.server_clear_busy(side_b_peer)
 	return battle_id
 
 func _get_battle_for_peer(peer_id: int):
@@ -383,9 +387,14 @@ func request_pvp_challenge(target_peer: int) -> void:
 	# Check neither is in battle
 	if sender in player_battle_map or target_peer in player_battle_map:
 		return
-	# Check proximity (< 5 units)
+	# Check neither is busy
 	var sender_node = NetworkManager._get_player_node(sender)
 	var target_node = NetworkManager._get_player_node(target_peer)
+	if sender_node and sender_node.get("is_busy"):
+		return
+	if target_node and target_node.get("is_busy"):
+		return
+	# Check proximity (< 5 units)
 	if sender_node == null or target_node == null:
 		return
 	if sender_node.position.distance_to(target_node.position) > 5.0:
@@ -501,8 +510,28 @@ func request_battle_action(action_type: String, action_data: String) -> void:
 		if switch_idx < 0 or switch_idx >= battle[party_key].size():
 			print("[BattleManager] Rejected switch to idx ", switch_idx, " — out of bounds for peer ", sender)
 			return
+	elif action_type == "item":
+		# Parse "item_id:creature_idx"
+		var parts = action_data.split(":")
+		if parts.size() != 2:
+			return
+		var item_id = parts[0]
+		var target_idx = parts[1].to_int()
+		if not NetworkManager.server_has_inventory(sender, item_id):
+			print("[BattleManager] Rejected item use — peer ", sender, " doesn't have ", item_id)
+			return
+		var battle_item = DataRegistry.get_battle_item(item_id)
+		if battle_item == null:
+			print("[BattleManager] Rejected item use — unknown battle item ", item_id)
+			return
+		var party_key = "side_" + side + "_party"
+		if target_idx < 0 or target_idx >= battle[party_key].size():
+			return
 
 	if battle.mode == BattleMode.PVP:
+		# Block items in PvP
+		if action_type == "item":
+			return
 		_handle_pvp_action(battle, side, action_type, action_data)
 	else:
 		# Wild / Trainer — only side_a submits actions
@@ -518,6 +547,8 @@ func request_battle_action(action_type: String, action_data: String) -> void:
 				_process_switch(battle, "a", action_data.to_int())
 			"flee":
 				_process_flee(battle)
+			"item":
+				_process_item_use(battle, action_data)
 
 func _handle_pvp_action(battle: Dictionary, side: String, action_type: String, action_data: String) -> void:
 	if battle.state != "waiting_both":
@@ -1641,6 +1672,103 @@ func _process_flee(battle: Dictionary) -> void:
 		_send_turn_result.rpc_id(peer_id, flee_log, player_creature.hp, player_creature.get("pp", []), enemy.hp)
 		_send_state_to_peer(battle, peer_id)
 		battle.state = "waiting_action"
+
+# === ITEM USE ===
+
+func _process_item_use(battle: Dictionary, action_data: String) -> void:
+	var parts = action_data.split(":")
+	if parts.size() != 2:
+		battle.state = "waiting_action"
+		return
+	var item_id = parts[0]
+	var target_idx = parts[1].to_int()
+	var peer_id = battle.side_a_peer
+	DataRegistry.ensure_loaded()
+	var battle_item = DataRegistry.get_battle_item(item_id)
+	if battle_item == null:
+		battle.state = "waiting_action"
+		return
+	# Validate and deduct item
+	if not NetworkManager.server_remove_inventory(peer_id, item_id, 1):
+		battle.state = "waiting_action"
+		return
+	NetworkManager._sync_inventory_full.rpc_id(peer_id, NetworkManager.player_data_store[peer_id].get("inventory", {}))
+
+	var party = battle.side_a_party
+	if target_idx < 0 or target_idx >= party.size():
+		battle.state = "waiting_action"
+		return
+	var target_creature = party[target_idx]
+	var turn_log: Array = []
+
+	# Apply item effect
+	match battle_item.effect_type:
+		"heal_hp":
+			var old_hp = int(target_creature.get("hp", 0))
+			var max_hp = int(target_creature.get("max_hp", 1))
+			if old_hp <= 0:
+				# Can't heal fainted creature with heal item
+				battle.state = "waiting_action"
+				return
+			var heal_amount = min(battle_item.effect_value, max_hp - old_hp)
+			target_creature["hp"] = min(old_hp + battle_item.effect_value, max_hp)
+			turn_log.append({"type": "item_use", "actor": "player", "item_name": battle_item.display_name, "creature_name": target_creature.get("nickname", "???"), "message": "Healed %d HP!" % heal_amount})
+		"cure_status":
+			var status = target_creature.get("status", "")
+			if status != "" and int(target_creature.get("hp", 0)) > 0:
+				target_creature["status"] = ""
+				target_creature["status_turns"] = 0
+				turn_log.append({"type": "item_use", "actor": "player", "item_name": battle_item.display_name, "creature_name": target_creature.get("nickname", "???"), "message": "Cured %s!" % status})
+			else:
+				turn_log.append({"type": "item_use", "actor": "player", "item_name": battle_item.display_name, "creature_name": target_creature.get("nickname", "???"), "message": "No status to cure."})
+		"restore_pp":
+			if int(target_creature.get("hp", 0)) <= 0:
+				battle.state = "waiting_action"
+				return
+			var pp_arr = target_creature.get("pp", [])
+			var moves = target_creature.get("moves", [])
+			for i in range(pp_arr.size()):
+				var move_def = DataRegistry.get_move(moves[i]) if i < moves.size() else null
+				var max_pp = move_def.pp if move_def else 10
+				pp_arr[i] = min(int(pp_arr[i]) + battle_item.effect_value, max_pp)
+			target_creature["pp"] = pp_arr
+			turn_log.append({"type": "item_use", "actor": "player", "item_name": battle_item.display_name, "creature_name": target_creature.get("nickname", "???"), "message": "Restored PP!"})
+		"revive":
+			if int(target_creature.get("hp", 0)) > 0:
+				# Can't revive non-fainted creature
+				battle.state = "waiting_action"
+				return
+			var max_hp = int(target_creature.get("max_hp", 1))
+			target_creature["hp"] = max(1, int(max_hp * battle_item.effect_value / 100.0))
+			turn_log.append({"type": "item_use", "actor": "player", "item_name": battle_item.display_name, "creature_name": target_creature.get("nickname", "???"), "message": "Revived at %d%% HP!" % battle_item.effect_value})
+
+	# Enemy still acts after item use
+	var enemy = battle.side_b_party[battle.side_b_active_idx]
+	var player_creature = party[battle.side_a_active_idx]
+	var enemy_move_id: String
+	if enemy.get("is_charging", false):
+		enemy_move_id = enemy.get("charged_move_id", "")
+		enemy["is_charging"] = false
+		enemy["charged_move_id"] = ""
+	else:
+		enemy_move_id = BattleAI.pick_move(battle, "b") if battle.mode == BattleMode.TRAINER else _pick_enemy_move(enemy)
+	var enemy_move = DataRegistry.get_move(enemy_move_id)
+	if enemy_move and enemy.get("hp", 0) > 0 and player_creature.get("hp", 0) > 0:
+		var r = _execute_action(enemy, player_creature, enemy_move, "enemy", battle)
+		turn_log.append(r)
+
+	# End of turn effects
+	_apply_end_of_turn(battle, turn_log)
+	battle.turn += 1
+
+	# Check outcomes
+	_check_battle_outcome(battle, turn_log)
+
+func send_item_use(item_id: String, creature_idx: int) -> void:
+	if not awaiting_action:
+		return
+	awaiting_action = false
+	request_battle_action.rpc_id(1, "item", item_id + ":" + str(creature_idx))
 
 # === AI ===
 

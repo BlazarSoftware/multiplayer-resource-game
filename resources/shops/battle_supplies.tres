@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="ShopDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/shop_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+shop_id = "battle_supplies"
+display_name = "Battle Supplies"
+items_for_sale = [{
+"item_id": "herb_poultice",
+"buy_price": 50
+}, {
+"item_id": "spicy_tonic",
+"buy_price": 120
+}, {
+"item_id": "mint_extract",
+"buy_price": 80
+}, {
+"item_id": "flavor_essence",
+"buy_price": 100
+}, {
+"item_id": "spicy_curry",
+"buy_price": 60
+}, {
+"item_id": "chili_oil",
+"buy_price": 50
+}]

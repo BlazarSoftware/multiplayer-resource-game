@@ -29,10 +29,12 @@ extends CanvasLayer
 	$ActionPanel/MoveGrid/Move4
 ]
 @onready var flee_button: Button = $ActionPanel/BottomButtons/FleeButton
+@onready var item_button: Button = $ActionPanel/BottomButtons/ItemButton
 @onready var switch_button: Button = $ActionPanel/BottomButtons/SwitchButton
 
 # Dynamic overlay panels
 var switch_panel: PanelContainer = null
+var item_panel: PanelContainer = null
 var move_replace_panel: PanelContainer = null
 var summary_panel: PanelContainer = null
 var waiting_label: Label = null
@@ -92,6 +94,7 @@ func _ready() -> void:
 		move_buttons[i].mouse_entered.connect(func(): _on_move_hover(idx, true))
 		move_buttons[i].mouse_exited.connect(func(): _on_move_hover(idx, false))
 	flee_button.pressed.connect(_on_flee_pressed)
+	item_button.pressed.connect(_on_item_pressed)
 	switch_button.pressed.connect(_on_switch_pressed)
 	_create_dynamic_ui()
 
@@ -148,6 +151,9 @@ func _on_battle_started() -> void:
 	if switch_panel:
 		switch_panel.queue_free()
 		switch_panel = null
+	if item_panel:
+		item_panel.queue_free()
+		item_panel = null
 	if move_replace_panel:
 		move_replace_panel.queue_free()
 		move_replace_panel = null
@@ -169,8 +175,9 @@ func _on_battle_started() -> void:
 		2: # PVP
 			battle_log.append_text("PvP battle!\n")
 
-	# Hide flee for trainer/PvP
+	# Hide flee for trainer/PvP, hide items for PvP
 	flee_button.visible = (mode == 0)
+	item_button.visible = (mode != 2)
 
 	_refresh_ui()
 	_initial_setup = false
@@ -559,6 +566,114 @@ func _on_flee_pressed() -> void:
 	if battle_mgr:
 		battle_mgr.send_flee()
 		_set_buttons_enabled(false)
+
+# === ITEM USE PANEL ===
+
+func _on_item_pressed() -> void:
+	if battle_mgr == null or not battle_mgr.awaiting_action:
+		return
+	_show_item_panel()
+
+func _show_item_panel() -> void:
+	if item_panel:
+		item_panel.queue_free()
+	item_panel = PanelContainer.new()
+	item_panel.anchors_preset = Control.PRESET_CENTER
+	item_panel.custom_minimum_size = Vector2(350, 0)
+	var vbox = VBoxContainer.new()
+	item_panel.add_child(vbox)
+
+	var title = Label.new()
+	title.text = "Use Item"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	DataRegistry.ensure_loaded()
+	var has_items = false
+	for item_id in PlayerData.inventory:
+		if PlayerData.inventory[item_id] <= 0:
+			continue
+		var bi = DataRegistry.get_battle_item(item_id)
+		if bi == null:
+			continue
+		has_items = true
+		var btn = Button.new()
+		btn.text = "%s x%d — %s" % [bi.display_name, PlayerData.inventory[item_id], bi.description]
+		btn.custom_minimum_size.y = 32
+		var iid = item_id
+		var effect = bi.effect_type
+		btn.pressed.connect(func(): _on_item_selected(iid, effect))
+		vbox.add_child(btn)
+
+	if not has_items:
+		var empty_label = Label.new()
+		empty_label.text = "No battle items in inventory."
+		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(empty_label)
+
+	var cancel = Button.new()
+	cancel.text = "Cancel"
+	cancel.pressed.connect(func():
+		item_panel.queue_free()
+		item_panel = null
+	)
+	vbox.add_child(cancel)
+	add_child(item_panel)
+
+func _on_item_selected(item_id: String, effect_type: String) -> void:
+	if item_panel:
+		item_panel.queue_free()
+		item_panel = null
+	# Show target picker
+	_show_item_target_panel(item_id, effect_type)
+
+func _show_item_target_panel(item_id: String, effect_type: String) -> void:
+	if item_panel:
+		item_panel.queue_free()
+	item_panel = PanelContainer.new()
+	item_panel.anchors_preset = Control.PRESET_CENTER
+	item_panel.custom_minimum_size = Vector2(350, 0)
+	var vbox = VBoxContainer.new()
+	item_panel.add_child(vbox)
+
+	var title = Label.new()
+	title.text = "Select Target"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	for i in range(PlayerData.party.size()):
+		var creature = PlayerData.party[i]
+		var hp = int(creature.get("hp", 0))
+		var max_hp = int(creature.get("max_hp", 1))
+		var is_fainted = hp <= 0
+		# Revive: only show fainted. Others: only show alive.
+		if effect_type == "revive" and not is_fainted:
+			continue
+		if effect_type != "revive" and is_fainted:
+			continue
+		var btn = Button.new()
+		btn.text = "%s — HP: %d/%d" % [creature.get("nickname", "???"), hp, max_hp]
+		btn.custom_minimum_size.y = 28
+		var cidx = i
+		var iid = item_id
+		btn.pressed.connect(func():
+			if battle_mgr:
+				battle_mgr.send_item_use(iid, cidx)
+				_set_buttons_enabled(false)
+			if item_panel:
+				item_panel.queue_free()
+				item_panel = null
+		)
+		vbox.add_child(btn)
+
+	var cancel = Button.new()
+	cancel.text = "Cancel"
+	cancel.pressed.connect(func():
+		item_panel.queue_free()
+		item_panel = null
+	)
+	vbox.add_child(cancel)
+	add_child(item_panel)
 
 # === PARTY SWITCH PICKER ===
 
@@ -1125,6 +1240,11 @@ func _format_log_entry(entry: Dictionary) -> String:
 		"sleep_talk_move":
 			var actor_name2 = "Your creature" if entry.get("actor") == "player" else "Enemy"
 			return "%s used a move in its sleep!" % actor_name2
+		"item_use":
+			var item_name = entry.get("item_name", "Item")
+			var creature_name = entry.get("creature_name", "creature")
+			var msg = entry.get("message", "")
+			return "[color=cyan]Used %s on %s! %s[/color]" % [item_name, creature_name, msg]
 		"trainer_switch":
 			return "Trainer sent out the next creature!"
 		"victory":

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "flavor_essence"
+display_name = "Extract Flavor Essence"
+result_item_id = "flavor_essence"
+ingredients = {"umami_stock": 2, "sour_citrus": 2}
+description = "Concentrated flavor extract that restores 5 PP per move in battle."
+station = "kitchen"

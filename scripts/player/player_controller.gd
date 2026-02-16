@@ -6,6 +6,7 @@ const GRAVITY = 9.8
 
 @onready var mesh: MeshInstance3D = $PlayerMesh
 @onready var nameplate: Label3D = $Nameplate
+@onready var busy_indicator: Label3D = $BusyIndicator
 @onready var camera_pivot: Node3D = $CameraPivot
 @onready var spring_arm: SpringArm3D = $CameraPivot/SpringArm3D
 @onready var camera: Camera3D = $CameraPivot/SpringArm3D/Camera3D
@@ -26,6 +27,11 @@ var pitch_limit: float = deg_to_rad(70)
 var player_color: Color = Color(0.2, 0.5, 0.9)
 var player_name_display: String = "Player"
 var mesh_rotation_y: float = 0.0
+var is_busy: bool = false:
+	set(value):
+		is_busy = value
+		if busy_indicator:
+			busy_indicator.visible = value
 
 var peer_id: int = 1
 
@@ -105,10 +111,12 @@ func _apply_visuals() -> void:
 		mesh.material_override = mat
 	if nameplate:
 		nameplate.text = player_name_display
-		# Hide own nameplate
+		# Hide own nameplate and busy indicator
 		var local_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else -1
 		if peer_id == local_id:
 			nameplate.visible = false
+			if busy_indicator:
+				busy_indicator.visible = false
 
 func _process(_delta: float) -> void:
 	# Apply synced rotation to mesh (all clients + server)

@@ -48,6 +48,9 @@ properties/3/replication_mode = 0
 properties/4/path = NodePath(".:mesh_rotation_y")
 properties/4/spawn = true
 properties/4/replication_mode = 1
+properties/5/path = NodePath(".:is_busy")
+properties/5/spawn = true
+properties/5/replication_mode = 1
 
 [sub_resource type="StandardMaterial3D" id="eye_mat"]
 albedo_color = Color(0.1, 0.1, 0.1, 1)
@@ -96,6 +99,15 @@ replication_config = SubResource("input_repl_config")
 
 [node name="StateSync" type="MultiplayerSynchronizer" parent="."]
 replication_config = SubResource("state_repl_config")
+
+[node name="BusyIndicator" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 0)
+billboard = 1
+visible = false
+text = "[Busy]"
+font_size = 20
+modulate = Color(1, 0.9, 0.2, 1)
+outline_size = 4
 
 [node name="PlayerInteraction" type="Node" parent="."]
 script = ExtResource("2")
