@@ -140,12 +140,15 @@ See `docs/social-quests.md` for full details.
 
 ## Friend & Party System
 - **Friend requests**: Send/accept/decline/cancel. Works for online + offline players (offline via API PATCH)
-- **Blocking**: Block/unblock players. Blocks prevent friend requests and remove existing friendships
+- **Blocking**: Block/unblock players. Blocks prevent friend requests, remove existing friendships, auto-kick from shared party
 - **Parties**: 4-player max, leader-based invite system. Runtime-only (not persisted). 60s invite TTL.
 - **FriendManager**: No `class_name`, child of GameWorld. Server-authoritative with pair-locks on mutations.
 - **Social data**: `player_data_store[peer_id]["social"]` = `{friends, blocked, incoming_requests, outgoing_requests}`
 - **API**: `PATCH /api/players/:id/social` for atomic offline player social mutations
 - **RPCs**: `request_send_friend_request`, `request_accept_friend_request`, `request_create_party`, `request_invite_to_party`. Syncs: `_sync_friends_list`, `_sync_party_state`.
+- **MCP testing**: Call `_process_friend_request`, `_do_accept_friend`, `_process_block` directly on server (bypasses `get_remote_sender_id()`). See `docs/friend-party-system.md`.
+
+See `docs/friend-party-system.md` for full details: data model, RPC reference, offline mutations, MCP integration testing procedures.
 
 ## Quest System
 - **Data-driven**: QuestDef Resource (`class_name QuestDef`), 6 quests (3 main story, 1 side, 1 daily, 1 weekly)
