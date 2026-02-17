@@ -235,8 +235,8 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 - **28 LocationDefs** (`resources/locations/*.tres`): landmarks with position, discovery_radius, category, icon_color
 - **LocationManager** (no `class_name`): Server-side, checks proximity every 10 physics frames. Skips restaurant players.
 - **Discovery flow**: Server detects → appends to `player_data_store` → `_notify_location_discovered` RPC → client HUD toast
-- **Compass**: North=-Z, bearing via `atan2(dx,dz)`. CanvasLayer (layer 5), target dropdown by category.
-- **Minimap**: `Control._draw()`, scroll wheel zoom, click-to-target. Pause Overlay: Esc/M key, layer 15.
+- **Compass**: North=-Z, bearing via `atan2(dx,dz)`. CanvasLayer (layer 5), target dropdown by category. Undiscovered locations shown as dimmed markers (6x4 px, 40% alpha) at top of strip.
+- **Minimap**: `Control._draw()`, all locations visible (discovered=filled icons, undiscovered=outlined with "???"), category legend, scroll wheel zoom, click-to-target. Pause Overlay: Esc/M key, layer 15.
 - **Calendar**: 12 months (Jan-Dec), 28 days/month, 336 days/year, start March. `DAY_DURATION = 600.0` (10 min).
 - **Seasons**: Mar-May=spring, Jun-Aug=summer, Sep-Nov=autumn, Dec-Feb=winter
 - **Weather**: Sunny(50%), Rainy(25%), Windy(15%), Stormy(10%). Rain auto-waters farms.
