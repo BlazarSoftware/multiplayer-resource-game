@@ -15,6 +15,8 @@ signal stats_changed()
 signal compendium_changed()
 signal player_friends_changed()
 signal player_party_updated()  # player-to-player party (not creature party)
+signal hotbar_changed()
+signal hotbar_selection_changed(slot_index: int)
 
 # Location tracking (client-side mirror of server state)
 var current_zone: String = "overworld"
@@ -35,7 +37,7 @@ var money: int = 0
 var defeated_trainers: Dictionary = {}
 
 # Current tool slot
-var current_tool_slot: String = "" # "hoe", "axe", "watering_can", "seeds", "" for hands
+var current_tool_slot: String = "" # "hoe", "axe", "watering_can", "shovel", "seeds", "" for hands
 var selected_seed_id: String = ""
 
 # Equipped tools: slot -> tool_id
@@ -43,7 +45,13 @@ var equipped_tools: Dictionary = {
 	"hoe": "tool_hoe_basic",
 	"axe": "tool_axe_basic",
 	"watering_can": "tool_watering_can_basic",
+	"shovel": "tool_shovel_basic",
 }
+
+# Hotbar: 8 configurable slots (all start empty, player assigns items)
+const HOTBAR_SIZE: int = 8
+var hotbar: Array = []  # 8 entries, each {} or {"item_id": String, "item_type": String}
+var selected_hotbar_slot: int = 0
 
 # Watering can state (synced from server)
 var watering_can_current: int = 10
@@ -204,9 +212,19 @@ func load_from_server(data: Dictionary) -> void:
 	compendium = data.get("compendium", {"items": [], "creatures_seen": [], "creatures_owned": []}).duplicate(true)
 	# Load player social (friends are synced separately via FriendManager, but incoming/outgoing stored in save)
 	# Social data is synced on-demand via FriendManager.request_friends_sync()
+	# Load hotbar
+	var hb = data.get("hotbar", [])
+	hotbar.clear()
+	for entry in hb:
+		if entry is Dictionary:
+			hotbar.append(entry.duplicate())
+		else:
+			hotbar.append({})
+	_init_hotbar()
 	# Reset tool
 	current_tool_slot = ""
 	selected_seed_id = ""
+	selected_hotbar_slot = 0
 	compass_target_id = ""
 	# Reset party group (ephemeral, not persisted)
 	group_party_id = -1
@@ -247,6 +265,7 @@ func to_dict() -> Dictionary:
 		},
 		"stats": stats.duplicate(true),
 		"compendium": compendium.duplicate(true),
+		"hotbar": hotbar.duplicate(true),
 	}
 
 func reset() -> void:
@@ -258,8 +277,12 @@ func reset() -> void:
 		"hoe": "tool_hoe_basic",
 		"axe": "tool_axe_basic",
 		"watering_can": "tool_watering_can_basic",
+		"shovel": "tool_shovel_basic",
 	}
 	watering_can_current = 10
+	hotbar.clear()
+	_init_hotbar()
+	selected_hotbar_slot = 0
 	player_id = ""
 	player_name = "Player"
 	player_color = Color(0.2, 0.5, 0.9)
@@ -347,6 +370,51 @@ func heal_all_creatures() -> void:
 func set_tool(tool_slot: String) -> void:
 	current_tool_slot = tool_slot
 	tool_changed.emit(tool_slot)
+
+func _init_hotbar() -> void:
+	if hotbar.size() == HOTBAR_SIZE:
+		return
+	hotbar.clear()
+	# All slots start empty — player assigns items from inventory
+	while hotbar.size() < HOTBAR_SIZE:
+		hotbar.append({})
+
+func select_hotbar_slot(index: int) -> void:
+	if index < 0 or index >= HOTBAR_SIZE:
+		return
+	selected_hotbar_slot = index
+	hotbar_selection_changed.emit(index)
+	# Translate to existing tool system for backward compat
+	var slot_data = hotbar[index]
+	if slot_data.is_empty():
+		set_tool("")
+		return
+	var item_type: String = str(slot_data.get("item_type", ""))
+	var item_id: String = str(slot_data.get("item_id", ""))
+	match item_type:
+		"tool_slot":
+			set_tool(item_id)
+		"seed":
+			set_tool("seeds")
+		_:
+			set_tool("")
+
+func assign_hotbar_slot(index: int, item_id: String, item_type: String) -> void:
+	if index < 0 or index >= HOTBAR_SIZE:
+		return
+	hotbar[index] = {"item_id": item_id, "item_type": item_type}
+	hotbar_changed.emit()
+	# Re-apply selection if this was the active slot
+	if index == selected_hotbar_slot:
+		select_hotbar_slot(index)
+
+func clear_hotbar_slot(index: int) -> void:
+	if index < 0 or index >= HOTBAR_SIZE:
+		return
+	hotbar[index] = {}
+	hotbar_changed.emit()
+	if index == selected_hotbar_slot:
+		select_hotbar_slot(index)
 
 func refill_watering_can() -> void:
 	watering_can_current = get_watering_can_capacity()

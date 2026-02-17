@@ -76,6 +76,12 @@ func _refresh() -> void:
 					var sid = item_id
 					btn.pressed.connect(func(): _select_seed(sid))
 					hbox.add_child(btn)
+					# Hotbar assign button for seeds
+					var hb_btn = Button.new()
+					hb_btn.text = "Hotbar"
+					var hb_sid = item_id
+					hb_btn.pressed.connect(func(): _show_hotbar_assign(hb_sid, "seed"))
+					hbox.add_child(hb_btn)
 			"food":
 				var food = DataRegistry.get_food(item_id)
 				if food:
@@ -91,12 +97,24 @@ func _refresh() -> void:
 						var sid = item_id
 						sell_btn.pressed.connect(func(): _sell_item(sid))
 						hbox.add_child(sell_btn)
+					# Assign food to hotbar
+					var hb_btn = Button.new()
+					hb_btn.text = "Hotbar"
+					var hb_id = item_id
+					hb_btn.pressed.connect(func(): _show_hotbar_assign(hb_id, "food"))
+					hbox.add_child(hb_btn)
 			"recipe_scroll":
 				var btn = Button.new()
 				btn.text = "Use"
 				var sid = item_id
 				btn.pressed.connect(func(): _use_scroll(sid))
 				hbox.add_child(btn)
+			"battle_item":
+				var hb_btn = Button.new()
+				hb_btn.text = "Hotbar"
+				var hb_id = item_id
+				hb_btn.pressed.connect(func(): _show_hotbar_assign(hb_id, "battle_item"))
+				hbox.add_child(hb_btn)
 			"tool":
 				var tool_def = DataRegistry.get_tool(item_id)
 				if tool_def:
@@ -113,6 +131,12 @@ func _refresh() -> void:
 						lbl.text = "[Equipped]"
 						lbl.add_theme_color_override("font_color", Color.GREEN)
 						hbox.add_child(lbl)
+					# Hotbar assign button for tools
+					var hb_btn = Button.new()
+					hb_btn.text = "Hotbar"
+					var hb_tool_type = tool_def.tool_type
+					hb_btn.pressed.connect(func(): _show_hotbar_assign(hb_tool_type, "tool_slot"))
+					hbox.add_child(hb_btn)
 
 	# Show selected seed
 	if PlayerData.selected_seed_id != "":
@@ -137,3 +161,34 @@ func _use_scroll(scroll_id: String) -> void:
 
 func _equip_tool(tool_id: String) -> void:
 	NetworkManager.request_equip_tool.rpc_id(1, tool_id)
+
+var _hotbar_popup: PopupPanel = null
+
+func _show_hotbar_assign(item_id: String, item_type: String) -> void:
+	if _hotbar_popup and is_instance_valid(_hotbar_popup):
+		_hotbar_popup.queue_free()
+	_hotbar_popup = PopupPanel.new()
+	var vbox = VBoxContainer.new()
+	_hotbar_popup.add_child(vbox)
+	var title = Label.new()
+	title.text = "Assign to slot:"
+	vbox.add_child(title)
+	var grid = GridContainer.new()
+	grid.columns = 4
+	vbox.add_child(grid)
+	var key_labels = ["1", "2", "3", "4", "5", "6", "7", "8"]
+	for i in range(PlayerData.HOTBAR_SIZE):
+		var btn = Button.new()
+		btn.text = key_labels[i]
+		btn.custom_minimum_size = Vector2(36, 36)
+		var slot_idx = i
+		var sid = item_id
+		var stype = item_type
+		btn.pressed.connect(func():
+			PlayerData.assign_hotbar_slot(slot_idx, sid, stype)
+			if _hotbar_popup and is_instance_valid(_hotbar_popup):
+				_hotbar_popup.hide()
+		)
+		grid.add_child(btn)
+	add_child(_hotbar_popup)
+	_hotbar_popup.popup_centered(Vector2(200, 120))

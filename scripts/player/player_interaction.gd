@@ -18,8 +18,6 @@ func _process(_delta: float) -> void:
 		return
 	if Input.is_action_just_pressed("interact"):
 		_try_interact()
-	if Input.is_action_just_pressed("cycle_tool"):
-		_cycle_tool()
 	# PvP challenge (V key)
 	if Input.is_action_just_pressed("pvp_challenge"):
 		_try_pvp_challenge()
@@ -35,26 +33,17 @@ func _process(_delta: float) -> void:
 	# Friend list (F key)
 	if Input.is_action_just_pressed("friend_list"):
 		_toggle_friend_list()
-	# Number keys for tool select
-	if Input.is_action_just_pressed("tool_1"):
-		PlayerData.set_tool("")
-	elif Input.is_action_just_pressed("tool_2"):
-		PlayerData.set_tool("hoe")
-	elif Input.is_action_just_pressed("tool_3"):
-		PlayerData.set_tool("axe")
-	elif Input.is_action_just_pressed("tool_4"):
-		PlayerData.set_tool("watering_can")
-	elif Input.is_action_just_pressed("tool_5"):
-		PlayerData.set_tool("seeds")
-
-const TOOL_SLOTS = ["", "hoe", "axe", "watering_can", "seeds"]
-
-func _cycle_tool() -> void:
-	var idx = TOOL_SLOTS.find(PlayerData.current_tool_slot)
-	if idx < 0:
-		idx = 0
-	var next = (idx + 1) % TOOL_SLOTS.size()
-	PlayerData.set_tool(TOOL_SLOTS[next])
+	# Hotbar slot selection (1-8)
+	for i in range(8):
+		var action_name = "hotbar_%d" % (i + 1)
+		if Input.is_action_just_pressed(action_name):
+			PlayerData.select_hotbar_slot(i)
+			break
+	# Mouse wheel hotbar cycling
+	if Input.is_action_just_pressed("hotbar_next"):
+		PlayerData.select_hotbar_slot((PlayerData.selected_hotbar_slot + 1) % PlayerData.HOTBAR_SIZE)
+	elif Input.is_action_just_pressed("hotbar_prev"):
+		PlayerData.select_hotbar_slot((PlayerData.selected_hotbar_slot - 1 + PlayerData.HOTBAR_SIZE) % PlayerData.HOTBAR_SIZE)
 
 func _try_interact() -> void:
 	if parent_body == null:
@@ -99,6 +88,17 @@ func _try_interact() -> void:
 	if station:
 		_open_crafting_ui(station)
 		return
+	# Check for harvestable world objects (trees, rocks, bushes)
+	var harvestable = _find_nearest_in_group("harvestable_object", pos, 3.5)
+	if harvestable and not harvestable.get("is_harvested"):
+		harvestable.request_harvest.rpc_id(1)
+		return
+	# Check for dig spots (requires shovel equipped)
+	if PlayerData.current_tool_slot == "shovel":
+		var dig_spot = _find_nearest_area("dig_spot", pos, 3.0)
+		if dig_spot and dig_spot.has_method("request_dig"):
+			dig_spot.request_dig.rpc_id(1)
+			return
 	# Check for water source — find nearest FarmManager (works for both community and restaurant farms)
 	var water_source = _find_nearest_area("water_source", pos, 3.0)
 	if water_source:
@@ -130,6 +130,8 @@ func _interact_with_plot(farm_mgr: Node, plot_idx: int) -> void:
 			if extra == "":
 				print("No seed selected!")
 				return
+		"shovel":
+			action = "till"
 		"":
 			action = "harvest"
 	if action != "":
@@ -181,6 +183,18 @@ func _try_trade() -> void:
 	if closest_peer > 0:
 		NetworkManager.request_trade.rpc_id(1, closest_peer)
 		print("Sent trade request to peer ", closest_peer)
+
+func _find_nearest_in_group(group_name: String, pos: Vector3, max_dist: float) -> Node3D:
+	var nodes = get_tree().get_nodes_in_group(group_name)
+	var closest: Node3D = null
+	var closest_dist = max_dist
+	for node in nodes:
+		if node is Node3D:
+			var dist = node.global_position.distance_to(pos)
+			if dist < closest_dist:
+				closest_dist = dist
+				closest = node
+	return closest
 
 func _find_nearest_area(meta_tag: String, pos: Vector3, max_dist: float) -> Area3D:
 	var areas = get_tree().get_nodes_in_group(meta_tag)
