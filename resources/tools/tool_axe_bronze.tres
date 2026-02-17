@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1")
-tool_id = "axe_bronze"
+tool_id = "tool_axe_bronze"
 display_name = "Bronze Axe"
 description = "A bronze-forged axe. Chops 30% faster."
 tool_type = "axe"

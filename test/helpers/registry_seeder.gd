@@ -15,6 +15,7 @@ static func seed_all() -> void:
 	_seed_npcs()
 	_seed_locations()
 	_seed_quests()
+	_seed_tools()
 
 static func clear_all() -> void:
 	DataRegistry.moves.clear()
@@ -396,3 +397,30 @@ static func _seed_quests() -> void:
 	]
 	q10.reward_money = 300
 	DataRegistry.quests["test_multi_obj"] = q10
+
+static func _seed_tools() -> void:
+	_add_tool("tool_hoe_basic", "Basic Hoe", "hoe", 0, {"speed_mult": 1.0})
+	_add_tool("tool_hoe_bronze", "Bronze Hoe", "hoe", 1, {"speed_mult": 1.3})
+	_add_tool("tool_hoe_iron", "Iron Hoe", "hoe", 2, {"speed_mult": 1.6})
+	_add_tool("tool_hoe_gold", "Gold Hoe", "hoe", 3, {"speed_mult": 2.0})
+	_add_tool("tool_axe_basic", "Basic Axe", "axe", 0, {"speed_mult": 1.0})
+	_add_tool("tool_axe_bronze", "Bronze Axe", "axe", 1, {"speed_mult": 1.3})
+	_add_tool("tool_axe_iron", "Iron Axe", "axe", 2, {"speed_mult": 1.6})
+	_add_tool("tool_axe_gold", "Gold Axe", "axe", 3, {"speed_mult": 2.0})
+	_add_tool("tool_watering_can_basic", "Basic Watering Can", "watering_can", 0, {"speed_mult": 1.0, "capacity": 10})
+	_add_tool("tool_watering_can_bronze", "Bronze Watering Can", "watering_can", 1, {"speed_mult": 1.3, "capacity": 15})
+	_add_tool("tool_watering_can_iron", "Iron Watering Can", "watering_can", 2, {"speed_mult": 1.6, "capacity": 20})
+	_add_tool("tool_watering_can_gold", "Gold Watering Can", "watering_can", 3, {"speed_mult": 2.0, "capacity": 30})
+	_add_tool("tool_shovel_basic", "Basic Shovel", "shovel", 0, {"speed_mult": 1.0})
+	_add_tool("tool_shovel_bronze", "Bronze Shovel", "shovel", 1, {"speed_mult": 1.3})
+	_add_tool("tool_shovel_iron", "Iron Shovel", "shovel", 2, {"speed_mult": 1.6})
+	_add_tool("tool_shovel_gold", "Gold Shovel", "shovel", 3, {"speed_mult": 2.0})
+
+static func _add_tool(id: String, display: String, tool_type: String, tier: int, effectiveness: Dictionary) -> void:
+	var t = ToolDef.new()
+	t.tool_id = id
+	t.display_name = display
+	t.tool_type = tool_type
+	t.tier = tier
+	t.effectiveness = effectiveness
+	DataRegistry.tools[id] = t

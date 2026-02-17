@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1")
-tool_id = "watering_can_basic"
+tool_id = "tool_watering_can_basic"
 display_name = "Basic Watering Can"
 description = "A basic watering can. Holds 10 charges."
 tool_type = "watering_can"

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="EncounterTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/encounter_table.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+table_id = "excursion_rare"
+display_name = "Excursion Rare Grove"
+entries = [{"species_id": "blaze_wyvern", "weight": 20, "min_level": 18, "max_level": 25}, {"species_id": "sorbet_phoenix", "weight": 15, "min_level": 20, "max_level": 28}, {"species_id": "truffle_king", "weight": 18, "min_level": 18, "max_level": 25}, {"species_id": "citrus_fiend", "weight": 20, "min_level": 18, "max_level": 25}, {"species_id": "herb_guardian", "weight": 15, "min_level": 20, "max_level": 28}, {"species_id": "sushi_samurai", "weight": 5, "min_level": 28, "max_level": 35}]
+season_bonus = {"spring": "sorbet_phoenix", "summer": "blaze_wyvern", "autumn": "truffle_king", "winter": "citrus_fiend"}

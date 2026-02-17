@@ -2,8 +2,6 @@ extends CanvasLayer
 
 @onready var season_label: Label = $TopBar/SeasonLabel
 @onready var day_label: Label = $TopBar/DayLabel
-@onready var tool_label: Label = $ToolBar/ToolLabel
-@onready var water_label: Label = $ToolBar/WaterLabel
 @onready var grass_indicator: ColorRect = $GrassIndicator
 @onready var grass_hint_label: Label = $GrassHintLabel
 @onready var battle_transition: ColorRect = $BattleTransition
@@ -16,7 +14,6 @@ var _trainer_prompt_timer: float = 0.0
 var quest_tracker_panel: VBoxContainer = null
 
 func _ready() -> void:
-	PlayerData.tool_changed.connect(_on_tool_changed)
 	# Create money label dynamically
 	money_label = Label.new()
 	money_label.text = "$0"
@@ -68,7 +65,6 @@ func _process(delta: float) -> void:
 		_trainer_prompt_timer -= delta
 		if _trainer_prompt_timer <= 0.0:
 			hide_trainer_prompt()
-	water_label.text = "Water: %d/%d" % [PlayerData.watering_can_current, PlayerData.get_watering_can_capacity()]
 	var season_mgr = get_node_or_null("/root/Main/GameWorld/SeasonManager")
 	if season_mgr:
 		season_label.text = "Year %d, %s %d" % [season_mgr.current_year, season_mgr.get_month_name(), season_mgr.day_in_month]
@@ -100,13 +96,6 @@ func _process(delta: float) -> void:
 			location_label.text = PlayerData.current_restaurant_owner + "'s Restaurant"
 		else:
 			location_label.text = "Overworld"
-
-func _on_tool_changed(tool_slot: String) -> void:
-	if tool_slot == "" or tool_slot == "seeds":
-		tool_label.text = "Tool: %s" % ("Hands" if tool_slot == "" else "Seeds")
-	else:
-		var display = PlayerData.get_tool_display_name(tool_slot)
-		tool_label.text = "Tool: %s" % display
 
 func show_pickup_notification(item_name: String, amount: int) -> void:
 	var pickup_label = Label.new()

@@ -636,6 +636,7 @@ func request_accept_party_invite(party_id: int) -> void:
 	party["invites"].erase(sender_id)
 	party["members"].append(sender_id)
 	player_party_map[sender_id] = party_id
+	party_member_added.emit(party_id, sender_id)
 	_sync_party_to_all(party_id)
 
 @rpc("any_peer", "reliable")
@@ -725,6 +726,7 @@ func _remove_from_party(player_id: String, party_id: int, reason: String) -> voi
 			_notify_party_disbanded.rpc_id(removed_peer, reason)
 	party["members"].erase(player_id)
 	player_party_map.erase(player_id)
+	party_member_removed.emit(party_id, player_id, reason)
 	if party["members"].is_empty():
 		parties.erase(party_id)
 		return
@@ -822,6 +824,10 @@ func _notify_party_disbanded(reason: String) -> void:
 	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
 	if hud and hud.has_method("show_toast"):
 		hud.show_toast(reason)
+
+# === Server-side signals (for ExcursionManager) ===
+signal party_member_removed(party_id: int, player_id: String, reason: String)
+signal party_member_added(party_id: int, player_id: String)
 
 # === Client-side signals (for UI) ===
 signal party_invite_received(from_name: String, party_id: int)

@@ -23,6 +23,8 @@ var quest_log_ui_scene = preload("res://scenes/ui/quest_log_ui.tscn")
 var compendium_ui_scene = preload("res://scenes/ui/compendium_ui.tscn")
 var creature_destination_ui_scene = preload("res://scenes/ui/creature_destination_ui.tscn")
 var friend_list_ui_scene = preload("res://scenes/ui/friend_list_ui.tscn")
+var hotbar_ui_scene = preload("res://scenes/ui/hotbar_ui.tscn")
+var excursion_hud_scene = preload("res://scenes/ui/excursion_hud.tscn")
 
 func _ready() -> void:
 	# Initialize DataRegistry
@@ -34,6 +36,9 @@ func _ready() -> void:
 	_generate_trees()
 	_generate_zone_overlays()
 	_spawn_calendar_board()
+	_generate_harvestables()
+	_generate_dig_spots()
+	_spawn_excursion_entrance()
 
 	if not multiplayer.is_server():
 		_setup_ui()
@@ -214,6 +219,12 @@ func _setup_ui() -> void:
 	var friend_list_ui = friend_list_ui_scene.instantiate()
 	ui_node.add_child(friend_list_ui)
 
+	var hotbar_ui = hotbar_ui_scene.instantiate()
+	ui_node.add_child(hotbar_ui)
+
+	var excursion_hud = excursion_hud_scene.instantiate()
+	ui_node.add_child(excursion_hud)
+
 func _spawn_calendar_board() -> void:
 	var board_script = load("res://scripts/world/calendar_board.gd")
 	var board = Area3D.new()
@@ -221,6 +232,127 @@ func _spawn_calendar_board() -> void:
 	board.name = "CalendarBoard"
 	board.position = Vector3(5, 0, 5)
 	add_child(board)
+
+func _spawn_excursion_entrance() -> void:
+	var entrance = Node3D.new()
+	entrance.name = "ExcursionEntrance"
+	entrance.position = Vector3(-15, 0, 0)
+	add_child(entrance)
+
+	# Signpost
+	var post_mat = StandardMaterial3D.new()
+	post_mat.albedo_color = Color(0.4, 0.25, 0.1)
+	var post = MeshInstance3D.new()
+	var post_mesh = BoxMesh.new()
+	post_mesh.size = Vector3(0.2, 3.0, 0.2)
+	post.mesh = post_mesh
+	post.set_surface_override_material(0, post_mat)
+	post.position = Vector3(0, 1.5, 0)
+	entrance.add_child(post)
+
+	var sign_label = Label3D.new()
+	sign_label.text = "Excursion Portal"
+	sign_label.font_size = 36
+	sign_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sign_label.modulate = Color(1.0, 0.85, 0.4)
+	sign_label.outline_size = 8
+	sign_label.position = Vector3(0, 3.5, 0)
+	entrance.add_child(sign_label)
+
+	# Glowing portal visual
+	var portal_mesh = MeshInstance3D.new()
+	var torus = CylinderMesh.new()
+	torus.top_radius = 2.0
+	torus.bottom_radius = 2.0
+	torus.height = 0.3
+	portal_mesh.mesh = torus
+	var portal_mat = StandardMaterial3D.new()
+	portal_mat.albedo_color = Color(0.4, 0.3, 0.8, 0.5)
+	portal_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	portal_mat.emission_enabled = true
+	portal_mat.emission = Color(0.5, 0.3, 0.9)
+	portal_mat.emission_energy_multiplier = 2.0
+	portal_mesh.set_surface_override_material(0, portal_mat)
+	portal_mesh.position = Vector3(0, 0.2, 0)
+	entrance.add_child(portal_mesh)
+
+	# Server-side interaction Area3D
+	if multiplayer.is_server():
+		var area = Area3D.new()
+		area.name = "ExcursionPortalArea"
+		area.position = Vector3(0, 0, 0)
+		area.collision_layer = 0
+		area.collision_mask = 3
+
+		var shape = CylinderShape3D.new()
+		shape.radius = 3.0
+		shape.height = 4.0
+		var coll = CollisionShape3D.new()
+		coll.shape = shape
+		coll.position = Vector3(0, 2, 0)
+		area.add_child(coll)
+
+		area.body_entered.connect(_on_excursion_portal_entered)
+		entrance.add_child(area)
+
+	# Hint label for clients
+	var hint = Label3D.new()
+	hint.text = "Party Required"
+	hint.font_size = 24
+	hint.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	hint.modulate = Color(0.8, 0.8, 0.8, 0.7)
+	hint.outline_size = 4
+	hint.position = Vector3(0, 2.5, 0)
+	entrance.add_child(hint)
+
+
+var _excursion_portal_cooldown: Dictionary = {} # peer_id -> timestamp
+
+func _on_excursion_portal_entered(body: Node3D) -> void:
+	if not multiplayer.is_server():
+		return
+	if not body is CharacterBody3D:
+		return
+	var peer_id = body.name.to_int()
+	if peer_id <= 0:
+		return
+
+	# Cooldown to prevent spam
+	var now = Time.get_ticks_msec()
+	if peer_id in _excursion_portal_cooldown and now - _excursion_portal_cooldown[peer_id] < 5000:
+		return
+	_excursion_portal_cooldown[peer_id] = now
+
+	# Check if player is party leader
+	var friend_mgr = get_node_or_null("FriendManager")
+	var excursion_mgr = get_node_or_null("ExcursionManager")
+	if friend_mgr == null or excursion_mgr == null:
+		return
+
+	var player_id = NetworkManager.get_player_id_for_peer(peer_id)
+	if player_id == "":
+		return
+
+	if player_id not in friend_mgr.player_party_map:
+		# Not in a party — show message
+		excursion_mgr._excursion_action_result.rpc_id(peer_id, "enter", false, "You need a party to enter an excursion. Form a party first!")
+		return
+
+	var party_id = friend_mgr.player_party_map[player_id]
+	var party = friend_mgr.parties.get(party_id, {})
+	if party.is_empty():
+		return
+
+	if str(party["leader_id"]) != player_id:
+		# Not the leader
+		excursion_mgr._excursion_action_result.rpc_id(peer_id, "enter", false, "Waiting for party leader to start the excursion.")
+		return
+
+	# Party leader — auto-trigger entry (server already knows sender from body)
+	# We simulate the RPC by calling the server's internal entry logic directly
+	# since this runs on the server already
+	excursion_mgr._create_excursion_from_portal(peer_id)
+
 
 # === WORLD DECORATION GENERATION ===
 
@@ -446,6 +578,10 @@ func _on_player_connected(peer_id: int, _info: Dictionary) -> void:
 	_sync_world_to_client.call_deferred(peer_id)
 
 func _on_player_disconnected(peer_id: int) -> void:
+	# Clean up excursion state (restore overworld position before despawn)
+	var excursion_mgr = get_node_or_null("ExcursionManager")
+	if excursion_mgr:
+		excursion_mgr.handle_disconnect(peer_id)
 	# Clean up restaurant state (save data, remove door, eject from restaurant)
 	var rest_mgr = get_node_or_null("RestaurantManager")
 	if rest_mgr:
@@ -542,3 +678,113 @@ func _sync_world_to_client(peer_id: int) -> void:
 	for npc in get_tree().get_nodes_in_group("trainer_npc"):
 		if npc.is_gatekeeper:
 			npc.update_gate_for_peer(peer_id)
+	# Sync harvestable objects
+	for h in get_tree().get_nodes_in_group("harvestable_object"):
+		if h.has_method("sync_to_client"):
+			h.sync_to_client(peer_id)
+	# Sync dig spots
+	for ds in get_tree().get_nodes_in_group("dig_spot"):
+		if ds.has_method("sync_to_client"):
+			ds.sync_to_client(peer_id)
+
+# === World Harvestable Objects ===
+
+var harvestable_scene = preload("res://scenes/world/harvestable_object.tscn")
+
+func _generate_harvestables() -> void:
+	var harvestables_node = Node3D.new()
+	harvestables_node.name = "Harvestables"
+	add_child(harvestables_node)
+
+	# Trees: axe, 3 hits, 120s respawn
+	var tree_positions = [
+		Vector3(-8, 0, -12), Vector3(8, 0, -12),
+		Vector3(-14, 0, -32), Vector3(14, 0, -32),
+		Vector3(-14, 0, -45), Vector3(14, 0, -45),
+	]
+	for pos in tree_positions:
+		var h = harvestable_scene.instantiate()
+		h.harvestable_type = "tree"
+		h.required_tool = "axe"
+		h.max_health = 3
+		h.respawn_time = 120.0
+		h.drops = [
+			{"item_id": "wood", "min": 1, "max": 3, "weight": 1.0},
+			{"item_id": "herb_basil", "min": 1, "max": 1, "weight": 0.2},
+		]
+		h.position = pos
+		h.name = "Tree_%d_%d" % [int(pos.x), int(pos.z)]
+		harvestables_node.add_child(h)
+
+	# Rocks: axe, 4 hits, 150s respawn
+	var rock_positions = [
+		Vector3(-16, 0, -18), Vector3(16, 0, -18),
+		Vector3(-12, 0, -50), Vector3(12, 0, -50),
+	]
+	for pos in rock_positions:
+		var h = harvestable_scene.instantiate()
+		h.harvestable_type = "rock"
+		h.required_tool = "axe"
+		h.max_health = 4
+		h.respawn_time = 150.0
+		h.drops = [
+			{"item_id": "stone", "min": 1, "max": 2, "weight": 1.0},
+			{"item_id": "spicy_essence", "min": 1, "max": 1, "weight": 0.1},
+		]
+		h.position = pos
+		h.name = "Rock_%d_%d" % [int(pos.x), int(pos.z)]
+		harvestables_node.add_child(h)
+
+	# Bushes: no tool (hands), 1 hit, 90s respawn
+	var bush_positions = [
+		Vector3(-10, 0, -14), Vector3(10, 0, -14),
+		Vector3(-16, 0, -38), Vector3(16, 0, -38),
+	]
+	for pos in bush_positions:
+		var h = harvestable_scene.instantiate()
+		h.harvestable_type = "bush"
+		h.required_tool = ""
+		h.max_health = 1
+		h.respawn_time = 90.0
+		h.drops = [
+			{"item_id": "berry", "min": 1, "max": 2, "weight": 1.0},
+		]
+		h.position = pos
+		h.name = "Bush_%d_%d" % [int(pos.x), int(pos.z)]
+		harvestables_node.add_child(h)
+
+# === Dig Spots ===
+
+func _generate_dig_spots() -> void:
+	var digs_node = Node3D.new()
+	digs_node.name = "DigSpots"
+	add_child(digs_node)
+
+	var dig_spot_script = load("res://scripts/world/dig_spot.gd")
+	var spots = [
+		# Herb Garden (2)
+		{"pos": Vector3(-14, 0, -13), "id": "herb_1", "loot": [{"item_id": "herbal_dew", "weight": 0.6, "min": 1, "max": 1}, {"item_id": "herb_basil", "weight": 0.4, "min": 1, "max": 2}]},
+		{"pos": Vector3(-10, 0, -17), "id": "herb_2", "loot": [{"item_id": "herbal_dew", "weight": 0.5, "min": 1, "max": 1}, {"item_id": "herb_basil", "weight": 0.5, "min": 1, "max": 2}]},
+		# Flame Kitchen (2)
+		{"pos": Vector3(14, 0, -13), "id": "flame_1", "loot": [{"item_id": "spicy_essence", "weight": 0.5, "min": 1, "max": 1}, {"item_id": "chili_pepper", "weight": 0.5, "min": 1, "max": 2}]},
+		{"pos": Vector3(10, 0, -17), "id": "flame_2", "loot": [{"item_id": "spicy_essence", "weight": 0.6, "min": 1, "max": 1}, {"item_id": "chili_pepper", "weight": 0.4, "min": 1, "max": 1}]},
+		# Frost Pantry (2)
+		{"pos": Vector3(-20, 0, -33), "id": "frost_1", "loot": [{"item_id": "mint", "weight": 0.6, "min": 1, "max": 2}]},
+		{"pos": Vector3(-16, 0, -37), "id": "frost_2", "loot": [{"item_id": "mint", "weight": 0.5, "min": 1, "max": 1}]},
+		# Harvest Field (2)
+		{"pos": Vector3(20, 0, -33), "id": "harvest_1", "loot": [{"item_id": "wheat", "weight": 0.6, "min": 1, "max": 2}, {"item_id": "grain_core", "weight": 0.3, "min": 1, "max": 1}]},
+		{"pos": Vector3(16, 0, -37), "id": "harvest_2", "loot": [{"item_id": "wheat", "weight": 0.5, "min": 1, "max": 2}, {"item_id": "grain_core", "weight": 0.4, "min": 1, "max": 1}]},
+		# Sour Springs (1)
+		{"pos": Vector3(20, 0, -46), "id": "sour_1", "loot": [{"item_id": "mushroom", "weight": 0.5, "min": 1, "max": 2}]},
+		# Fusion Kitchen (1)
+		{"pos": Vector3(-20, 0, -46), "id": "fusion_1", "loot": [{"item_id": "sweet_crystal", "weight": 0.4, "min": 1, "max": 1}, {"item_id": "umami_extract", "weight": 0.3, "min": 1, "max": 1}]},
+	]
+
+	for spot in spots:
+		var ds = Area3D.new()
+		ds.set_script(dig_spot_script)
+		ds.name = "DigSpot_" + str(spot["id"])
+		ds.position = spot["pos"]
+		ds.spot_id = str(spot["id"])
+		ds.loot_table = spot["loot"]
+		digs_node.add_child(ds)

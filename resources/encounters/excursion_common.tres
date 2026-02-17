@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="EncounterTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/encounter_table.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+table_id = "excursion_common"
+display_name = "Excursion Common"
+entries = [{"species_id": "herb_guardian", "weight": 20, "min_level": 12, "max_level": 18}, {"species_id": "onigiri_knight", "weight": 18, "min_level": 10, "max_level": 16}, {"species_id": "tofu_block", "weight": 22, "min_level": 10, "max_level": 15}, {"species_id": "pumpkin_guard", "weight": 20, "min_level": 10, "max_level": 16}, {"species_id": "sourdough_sentinel", "weight": 18, "min_level": 12, "max_level": 18}, {"species_id": "taffy_serpent", "weight": 15, "min_level": 10, "max_level": 16}, {"species_id": "blaze_wyvern", "weight": 8, "min_level": 14, "max_level": 20}, {"species_id": "citrus_fiend", "weight": 8, "min_level": 14, "max_level": 20}]
+season_bonus = {"spring": "herb_guardian", "summer": "blaze_wyvern", "autumn": "pumpkin_guard", "winter": "tofu_block"}

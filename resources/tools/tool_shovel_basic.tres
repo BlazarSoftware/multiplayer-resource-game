@@ -4,10 +4,10 @@
 
 [resource]
 script = ExtResource("1")
-tool_id = "tool_axe_basic"
-display_name = "Basic Axe"
-description = "A basic axe for chopping wood."
-tool_type = "axe"
+tool_id = "tool_shovel_basic"
+display_name = "Basic Shovel"
+description = "A basic shovel for digging."
+tool_type = "shovel"
 tier = 0
-icon_color = Color(0.6, 0.4, 0.2, 1)
+icon_color = Color(0.45, 0.35, 0.2, 1)
 effectiveness = {"speed_mult": 1.0}

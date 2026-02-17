@@ -16,6 +16,15 @@ const BUFF_CHECK_INTERVAL = 5.0
 const MAX_RPCS_PER_SECOND = 20
 var _rpc_timestamps: Dictionary = {} # peer_id → Array of timestamps (msec)
 
+# Tool cooldown system (server-side)
+var tool_cooldowns: Dictionary = {} # peer_id -> {action_type -> last_action_ticks_ms}
+
+const BASE_COOLDOWNS: Dictionary = {
+	"farm_clear": 1.0, "farm_till": 0.8, "farm_plant": 0.5,
+	"farm_water": 0.5, "farm_harvest": 0.5,
+	"chop": 1.5, "mine": 1.5, "dig": 2.0,
+}
+
 var player_info: Dictionary = {"name": "Player"}
 var players: Dictionary = {} # peer_id -> player_info
 
@@ -139,6 +148,8 @@ func _on_peer_disconnected(id: int) -> void:
 	print("Peer disconnected: ", id)
 	# Clean up rate limit tracking
 	_rpc_timestamps.erase(id)
+	# Clean up tool cooldowns
+	tool_cooldowns.erase(id)
 	# Clear busy state
 	server_clear_busy(id)
 	# Clean up active name tracking
@@ -340,7 +351,9 @@ func _finalize_join(sender_id: int, player_name: String, data: Dictionary) -> vo
 		data["player_color"] = _generate_player_color(sender_id)
 	# Backfill equipped_tools for old saves
 	if not data.has("equipped_tools") or not data["equipped_tools"] is Dictionary or data["equipped_tools"].is_empty():
-		data["equipped_tools"] = {"hoe": "tool_hoe_basic", "axe": "tool_axe_basic", "watering_can": "tool_watering_can_basic"}
+		data["equipped_tools"] = {"hoe": "tool_hoe_basic", "axe": "tool_axe_basic", "watering_can": "tool_watering_can_basic", "shovel": "tool_shovel_basic"}
+	elif not data["equipped_tools"].has("shovel"):
+		data["equipped_tools"]["shovel"] = "tool_shovel_basic"
 	# Backfill known_recipes/active_buffs/storage
 	if not data.has("known_recipes"):
 		data["known_recipes"] = []
@@ -383,7 +396,7 @@ func _finalize_join(sender_id: int, player_name: String, data: Dictionary) -> vo
 	_prune_expired_requests(data)
 	# Backfill basic tools in inventory
 	var inv = data.get("inventory", {})
-	for tool_id in ["tool_hoe_basic", "tool_axe_basic", "tool_watering_can_basic"]:
+	for tool_id in ["tool_hoe_basic", "tool_axe_basic", "tool_watering_can_basic", "tool_shovel_basic"]:
 		if tool_id not in inv:
 			inv[tool_id] = 1
 	data["inventory"] = inv
@@ -490,6 +503,7 @@ func _create_default_player_data(player_name: String) -> Dictionary:
 			"tool_hoe_basic": 1,
 			"tool_axe_basic": 1,
 			"tool_watering_can_basic": 1,
+			"tool_shovel_basic": 1,
 		},
 		"party": [starter],
 		"position": {},
@@ -501,6 +515,7 @@ func _create_default_player_data(player_name: String) -> Dictionary:
 			"hoe": "tool_hoe_basic",
 			"axe": "tool_axe_basic",
 			"watering_can": "tool_watering_can_basic",
+			"shovel": "tool_shovel_basic",
 		},
 		"known_recipes": [],
 		"active_buffs": [],
@@ -698,6 +713,62 @@ func server_check_friendship_recipe_unlock(_peer_id: int, _npc_id: String) -> vo
 	pass
 
 # === Utility ===
+
+## Check tool cooldown. Returns true if action is allowed (cooldown elapsed), false if still on cooldown.
+## Automatically stamps the time if allowed.
+func check_tool_cooldown(peer_id: int, action_type: String, tool_type: String) -> bool:
+	var base_cd: float = BASE_COOLDOWNS.get(action_type, 0.0)
+	if base_cd <= 0.0:
+		return true
+	# Get speed_mult from equipped tool
+	var speed_mult := 1.0
+	if peer_id in player_data_store and tool_type != "":
+		DataRegistry.ensure_loaded()
+		var et = player_data_store[peer_id].get("equipped_tools", {})
+		var tool_id: String = str(et.get(tool_type, ""))
+		if tool_id != "":
+			var tool_def = DataRegistry.get_tool(tool_id)
+			if tool_def:
+				speed_mult = float(tool_def.effectiveness.get("speed_mult", 1.0))
+	var effective_cd: float = base_cd / maxf(speed_mult, 0.1)
+	var now = Time.get_ticks_msec()
+	if peer_id not in tool_cooldowns:
+		tool_cooldowns[peer_id] = {}
+	if not tool_cooldowns[peer_id].has(action_type):
+		# First time performing this action — always allowed
+		tool_cooldowns[peer_id][action_type] = now
+		return true
+	var last_time: int = int(tool_cooldowns[peer_id][action_type])
+	var elapsed_ms: float = float(now - last_time)
+	if elapsed_ms < effective_cd * 1000.0:
+		return false
+	tool_cooldowns[peer_id][action_type] = now
+	return true
+
+## Get remaining cooldown in milliseconds for a specific action.
+func get_remaining_cooldown_ms(peer_id: int, action_type: String, tool_type: String) -> int:
+	var base_cd: float = BASE_COOLDOWNS.get(action_type, 0.0)
+	if base_cd <= 0.0:
+		return 0
+	var speed_mult := 1.0
+	if peer_id in player_data_store and tool_type != "":
+		DataRegistry.ensure_loaded()
+		var et = player_data_store[peer_id].get("equipped_tools", {})
+		var tool_id: String = str(et.get(tool_type, ""))
+		if tool_id != "":
+			var tool_def = DataRegistry.get_tool(tool_id)
+			if tool_def:
+				speed_mult = float(tool_def.effectiveness.get("speed_mult", 1.0))
+	var effective_cd: float = base_cd / maxf(speed_mult, 0.1)
+	var now = Time.get_ticks_msec()
+	if peer_id not in tool_cooldowns:
+		return 0
+	if not tool_cooldowns[peer_id].has(action_type):
+		return 0
+	var last_time: int = int(tool_cooldowns[peer_id][action_type])
+	var elapsed_ms: float = float(now - last_time)
+	var remaining_ms: int = int(effective_cd * 1000.0 - elapsed_ms)
+	return maxi(remaining_ms, 0)
 
 func is_server() -> bool:
 	return multiplayer.multiplayer_peer != null and multiplayer.is_server()

@@ -83,6 +83,11 @@ func try_pickup(peer_id: int, uid: int) -> void:
 		return
 	if uid not in world_items:
 		return
+	# Excursion shared pickup: delegate to ExcursionManager for all-member distribution
+	var excursion_mgr = get_node_or_null("../ExcursionManager")
+	if excursion_mgr and excursion_mgr.is_player_in_excursion(peer_id):
+		excursion_mgr._on_excursion_item_pickup(peer_id, uid)
+		return
 	var item_data = world_items[uid]
 	var item_id = item_data["item_id"]
 	var amount = item_data["amount"]

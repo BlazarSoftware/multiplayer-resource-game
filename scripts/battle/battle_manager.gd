@@ -1206,12 +1206,17 @@ func _check_battle_outcome(battle: Dictionary, turn_log: Array) -> void:
 		turn_log.append({"type": "victory", "drops": all_drops})
 		_send_turn_result.rpc_id(peer_id, turn_log, player_creature.hp, player_creature.get("pp", []), enemy.hp)
 		_send_state_to_peer(battle, peer_id)
-		_grant_battle_rewards.rpc_id(peer_id, all_drops)
-		for item_id in all_drops:
-			NetworkManager.server_add_inventory(peer_id, item_id, all_drops[item_id])
-			# Check for fragment auto-combine
-			if item_id.begins_with("fragment_"):
-				NetworkManager._check_fragment_combine(peer_id, item_id)
+		# Excursion shared loot: distribute drops to all party members
+		var excursion_mgr = get_node_or_null("/root/Main/GameWorld/ExcursionManager")
+		if excursion_mgr and excursion_mgr.is_player_in_excursion(peer_id):
+			excursion_mgr.distribute_excursion_battle_rewards(peer_id, all_drops)
+		else:
+			_grant_battle_rewards.rpc_id(peer_id, all_drops)
+			for item_id in all_drops:
+				NetworkManager.server_add_inventory(peer_id, item_id, all_drops[item_id])
+				# Check for fragment auto-combine
+				if item_id.begins_with("fragment_"):
+					NetworkManager._check_fragment_combine(peer_id, item_id)
 
 		# Trainer rewards
 		if battle.mode == BattleMode.TRAINER and battle.trainer_id != "":

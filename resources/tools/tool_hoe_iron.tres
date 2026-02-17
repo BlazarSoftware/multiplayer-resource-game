@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1")
-tool_id = "hoe_iron"
+tool_id = "tool_hoe_iron"
 display_name = "Iron Hoe"
 description = "A sturdy iron hoe. Tills 60% faster."
 tool_type = "hoe"

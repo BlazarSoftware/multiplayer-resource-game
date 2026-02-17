@@ -4,10 +4,10 @@
 
 [resource]
 script = ExtResource("1")
-tool_id = "tool_axe_iron"
-display_name = "Iron Axe"
-description = "A sturdy iron axe. Chops 60% faster."
-tool_type = "axe"
+tool_id = "tool_shovel_iron"
+display_name = "Iron Shovel"
+description = "An iron-forged shovel. Digs 60% faster."
+tool_type = "shovel"
 tier = 2
-icon_color = Color(0.7, 0.7, 0.7, 1)
+icon_color = Color(0.6, 0.6, 0.65, 1)
 effectiveness = {"speed_mult": 1.6}

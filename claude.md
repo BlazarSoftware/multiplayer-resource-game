@@ -163,6 +163,25 @@ See `docs/friend-party-system.md` for full details: data model, RPC reference, o
 
 See `docs/social-quests.md` for full details (prereq types, NPC indicators, exploit prevention).
 
+## Excursion System
+- **Party-gated procedural zones**: 80x80 terrain, 15-minute timer, per-party isolated instances
+- **ExcursionManager**: No `class_name`, child of GameWorld. Instance lifecycle, entry/exit, shared loot routing, timeout.
+- **ExcursionGenerator**: `class_name`, static functions. Deterministic terrain from seed + season using FastNoiseLite. Server gets collision only; clients reconstruct visuals from seed.
+- **Entrance**: Portal Area3D at `Vector3(-15, 0, 0)`. Party leader triggers entry. Non-leaders see "waiting" message. Solo players told to form a party.
+- **Entry validation**: Party required, leader only, all members online + not busy/in-battle/in-restaurant/in-excursion, max 10 instances.
+- **Shared loot**: Battle drops + world item pickups + harvestable drops + dig spot finds distributed to ALL current `instance.members`. XP not shared (battling player only). Excursion bonus drops: 15% chance ingredient, 5% chance seed per battle victory.
+- **Harvestables**: ~8-12 per instance (trees/rocks/bushes), biome-based placement, richer drop tables than overworld. Shared loot via `_on_excursion_harvest()`. Deterministic from seed (created on both server and client).
+- **Dig spots**: 3-5 per instance in valleys, require shovel, excursion-exclusive rare loot. Shared loot via `_on_excursion_dig()`. Unique spot_ids prevent overworld cooldown conflicts.
+- **Late-join**: New party members added to `allowed_player_ids`. `request_excursion_late_join` RPC. Loot only from join moment forward.
+- **Exit triggers**: Voluntary (button/portal), disconnect, timeout (15 min), party kick/disband. Overworld position restored.
+- **FriendManager signals**: `party_member_removed(party_id, player_id, reason)`, `party_member_added(party_id, player_id)` — used by ExcursionManager.
+- **Encounter tables**: `excursion_common` (Lv 10-20, uncommon species), `excursion_rare` (Lv 18-35, rare/legendary species including Sushi Samurai).
+- **Excursion-exclusive items**: golden_seed, mystic_herb, starfruit_essence, truffle_shaving, ancient_grain_seed, wild_honey, rainbow_creature (food), excursion_berry (food).
+- **ExcursionHUD**: CanvasLayer (layer 6). Timer countdown, member count, leave button. Time warnings at 2 min and 30 sec.
+- **RPCs**: Client→Server: `request_enter/exit_excursion`, `request_excursion_late_join`. Server→Client: `_enter/_exit_excursion_client`, `_excursion_status_update`, `_excursion_time_warning`, `_grant_excursion_battle_rewards`, `_notify_excursion_harvest`, `_notify_excursion_dig`.
+
+See `docs/excursion-system.md` for full details.
+
 ## Networking Rules (IMPORTANT)
 
 This is a server-authoritative multiplayer game. **Every gameplay change — new feature, new action, new resource, any UI that affects game state — must be evaluated for networking impact.** If the user does not specify whether a change should be networked, always ask before implementing.
@@ -203,6 +222,9 @@ This is a server-authoritative multiplayer game. **Every gameplay change — new
 | Compass/minimap rendering | Client only | Reads local camera_yaw + cached LocationDef positions |
 | Stats/compendium | Server (StatTracker static calls) | On-demand `_sync_compendium_client` RPC when UI opens |
 | Save/load | Server only (SaveManager → Express API → MongoDB) | Data sent to client via `_receive_player_data` |
+| Excursion entry/exit | Server (ExcursionManager) | `_enter/_exit_excursion_client` RPCs, seed+season for terrain |
+| Excursion loot | Server (ExcursionManager routes) | `_grant_excursion_battle_rewards` + `_notify_pickup` RPCs per member |
+| Excursion terrain visuals | Client (ExcursionGenerator from seed) | No sync needed |
 
 ### Never do this
 - **Never deduct resources client-side before server confirms.** Always let the server deduct first, then sync to client via RPC. The old planting flow had this bug — client removed seed, then told server, creating desync on disconnect.

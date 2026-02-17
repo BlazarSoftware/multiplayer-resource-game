@@ -49,6 +49,29 @@ func request_farm_action(plot_index: int, action: String, extra: String) -> void
 	var sender = multiplayer.get_remote_sender_id()
 	if plot_index < 0 or plot_index >= plots.size():
 		return
+	# Cooldown check
+	var cd_action := ""
+	var cd_tool := ""
+	match action:
+		"clear":
+			cd_action = "farm_clear"
+			cd_tool = "axe"
+		"till":
+			cd_action = "farm_till"
+			cd_tool = "hoe"
+		"plant":
+			cd_action = "farm_plant"
+			cd_tool = ""
+		"water":
+			cd_action = "farm_water"
+			cd_tool = "watering_can"
+		"harvest":
+			cd_action = "farm_harvest"
+			cd_tool = ""
+	if cd_action != "" and not NetworkManager.check_tool_cooldown(sender, cd_action, cd_tool):
+		var remaining = NetworkManager.get_remaining_cooldown_ms(sender, cd_action, cd_tool)
+		_farm_cooldown_rejected.rpc_id(sender, action, remaining)
+		return
 	var plot = plots[plot_index]
 	var success = false
 	var result = {}
@@ -95,6 +118,11 @@ func request_farm_action(plot_index: int, action: String, extra: String) -> void
 @rpc("authority", "reliable")
 func _farm_action_result(_plot_index: int, _action: String, _success: bool) -> void:
 	# Client receives result - could show feedback
+	pass
+
+@rpc("authority", "reliable")
+func _farm_cooldown_rejected(_action: String, _remaining_ms: int) -> void:
+	# Client receives cooldown rejection — hotbar UI handles visual feedback
 	pass
 
 @rpc("authority", "reliable")
