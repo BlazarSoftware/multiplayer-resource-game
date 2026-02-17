@@ -261,6 +261,42 @@ static func _seed_locations() -> void:
 	loc3.icon_color = Color.GREEN
 	DataRegistry.locations["test_wild"] = loc3
 
+	var loc4 = LocationDef.new()
+	loc4.location_id = "test_crafting"
+	loc4.display_name = "Test Workbench"
+	loc4.world_position = Vector3(10, 0, 10)
+	loc4.discovery_radius = 5.0
+	loc4.category = "crafting"
+	loc4.icon_color = Color.ORANGE
+	DataRegistry.locations["test_crafting"] = loc4
+
+	var loc5 = LocationDef.new()
+	loc5.location_id = "test_trainer"
+	loc5.display_name = "Test Trainer Spot"
+	loc5.world_position = Vector3(-15, 0, 5)
+	loc5.discovery_radius = 6.0
+	loc5.category = "trainer"
+	loc5.icon_color = Color.RED
+	DataRegistry.locations["test_trainer"] = loc5
+
+	var loc6 = LocationDef.new()
+	loc6.location_id = "test_social_npc"
+	loc6.display_name = "Test NPC House"
+	loc6.world_position = Vector3(5, 0, -10)
+	loc6.discovery_radius = 5.0
+	loc6.category = "social_npc"
+	loc6.icon_color = Color.PINK
+	DataRegistry.locations["test_social_npc"] = loc6
+
+	var loc7 = LocationDef.new()
+	loc7.location_id = "test_landmark"
+	loc7.display_name = "Test Landmark"
+	loc7.world_position = Vector3(-20, 0, -20)
+	loc7.discovery_radius = 10.0
+	loc7.category = "landmark"
+	loc7.icon_color = Color.YELLOW
+	DataRegistry.locations["test_landmark"] = loc7
+
 static func _seed_quests() -> void:
 	# Side quest: collect (cumulative)
 	var QDef = load("res://scripts/data/quest_def.gd")

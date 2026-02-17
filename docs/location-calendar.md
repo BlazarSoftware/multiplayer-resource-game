@@ -6,9 +6,9 @@
 - **LocationManager** (`scripts/world/location_manager.gd`): Server-side, no `class_name`. Checks player proximity to undiscovered locations every 10 physics frames. Skips players in restaurants.
 - **Discovery flow**: Server detects proximity -> appends to `player_data_store[peer_id]["discovered_locations"]` -> `_notify_location_discovered` RPC -> client updates `PlayerData.discovered_locations` + HUD toast
 - **Persistence**: `discovered_locations` array saved in player_data_store -> MongoDB. Backfilled to `[]` for old saves.
-- **Compass UI** (`scripts/ui/compass_ui.gd`): CanvasLayer (layer 5), always-visible horizontal strip at top-center. Cardinal markers scroll based on `camera_yaw`. Target dropdown lists discovered locations by category. Hides when in restaurant.
+- **Compass UI** (`scripts/ui/compass_ui.gd`): CanvasLayer (layer 5), always-visible horizontal strip at top-center. Cardinal markers scroll based on `camera_yaw`. Undiscovered locations shown as dimmed markers (6x4 px, `icon_color` at 40% alpha) at the top of the strip; discovered locations use the target dropdown system. Target dropdown lists discovered locations by category. Hides when in restaurant.
 - **Compass math**: North = -Z (toward wild zones) = `camera_yaw` at PI. Target bearing: `atan2(dx, dz)` matches `forward = Vector3(sin(yaw), 0, cos(yaw))`.
-- **Minimap** (`scripts/ui/minimap_ui.gd`): `Control._draw()` based, renders discovered locations as colored circles, player triangle at center. Scroll wheel zoom. Click to set compass target.
+- **Minimap** (`scripts/ui/minimap_ui.gd`): `Control._draw()` based, renders all locations — discovered as filled category-shaped icons, undiscovered as outlined shapes with "???" labels. Category legend in bottom-left corner. Player triangle at center. Scroll wheel zoom. Click to set compass target (discovered only).
 - **Pause Overlay** (`scripts/ui/pause_overlay.gd`): CanvasLayer (layer 15), toggled by Escape or M key (`open_map` action). Shows minimap, sets busy state. Won't open if other UIs are active.
 - **PlayerData additions**: `discovered_locations: Array`, `compass_target_id: String`, signals `discovered_locations_changed`, `compass_target_changed`
 - **RPCs**: `_notify_location_discovered(location_id, display_name)`, `_sync_discovered_locations(location_ids)` — both server->client

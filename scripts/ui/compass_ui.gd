@@ -27,9 +27,12 @@ var strip: Control
 var target_label: Label
 var target_dropdown: MenuButton
 var _indoor: bool = false
+var _locations_cache: Array = [] # Array of LocationDef
 
 func _ready() -> void:
 	layer = 5
+	DataRegistry.ensure_loaded()
+	_locations_cache = DataRegistry.locations.values()
 	_build_ui()
 	PlayerData.compass_target_changed.connect(_on_target_changed)
 	PlayerData.discovered_locations_changed.connect(_rebuild_dropdown)
@@ -113,12 +116,29 @@ func _draw_compass(camera_yaw: float) -> void:
 		lbl.size = Vector2(24, 20)
 		strip.add_child(lbl)
 
+	# Draw undiscovered location markers (dimmed, at top of strip)
+	var player_pos = _get_player_position()
+	for loc in _locations_cache:
+		if loc.location_id in PlayerData.discovered_locations:
+			continue
+		var dx = loc.world_position.x - player_pos.x
+		var dz = loc.world_position.z - player_pos.z
+		var loc_yaw = atan2(dx, dz)
+		var rel = _normalize_angle(loc_yaw - camera_yaw)
+		var px = center_x + rel * PIXELS_PER_RADIAN
+		if px < -4 or px > STRIP_WIDTH + 4:
+			continue
+		var marker = ColorRect.new()
+		marker.color = Color(loc.icon_color.r, loc.icon_color.g, loc.icon_color.b, 0.4)
+		marker.position = Vector2(px - 3, 2)
+		marker.size = Vector2(6, 4)
+		strip.add_child(marker)
+
 	# Draw target marker
 	if PlayerData.compass_target_id != "":
 		DataRegistry.ensure_loaded()
 		var loc = DataRegistry.get_location(PlayerData.compass_target_id)
 		if loc:
-			var player_pos = _get_player_position()
 			var dx = loc.world_position.x - player_pos.x
 			var dz = loc.world_position.z - player_pos.z
 			var target_yaw = atan2(dx, dz)

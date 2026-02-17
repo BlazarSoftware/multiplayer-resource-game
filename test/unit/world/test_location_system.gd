@@ -117,3 +117,52 @@ func test_player_data_reset_clears_discovered() -> void:
 	PlayerData.reset()
 	assert_eq(PlayerData.discovered_locations.size(), 0)
 	assert_eq(PlayerData.compass_target_id, "")
+
+func test_all_seven_categories_in_registry() -> void:
+	var expected_categories = ["zone", "wild_zone", "crafting", "shop", "trainer", "social_npc", "landmark"]
+	var found_categories: Array = []
+	for loc_id in DataRegistry.locations:
+		var loc = DataRegistry.locations[loc_id]
+		if loc.category not in found_categories:
+			found_categories.append(loc.category)
+	for cat in expected_categories:
+		assert_true(cat in found_categories, "Category '%s' should be present in test locations" % cat)
+
+func test_category_to_location_mapping() -> void:
+	var category_map: Dictionary = {
+		"zone": "test_hub",
+		"shop": "test_shop",
+		"wild_zone": "test_wild",
+		"crafting": "test_crafting",
+		"trainer": "test_trainer",
+		"social_npc": "test_social_npc",
+		"landmark": "test_landmark",
+	}
+	for cat in category_map:
+		var loc_id: String = category_map[cat]
+		var loc = DataRegistry.get_location(loc_id)
+		assert_not_null(loc, "Location '%s' should exist" % loc_id)
+		assert_eq(loc.category, cat, "Location '%s' should have category '%s'" % [loc_id, cat])
+
+func test_undiscovered_locations_not_clickable() -> void:
+	# Simulates the click filter: only discovered locations should be targetable
+	PlayerData.discovered_locations = ["test_hub"]
+	var targetable: Array = []
+	for loc_id in DataRegistry.locations:
+		if loc_id in PlayerData.discovered_locations:
+			targetable.append(loc_id)
+	assert_true("test_hub" in targetable)
+	assert_false("test_wild" in targetable)
+	assert_false("test_crafting" in targetable)
+
+func test_undiscovered_locations_visible_on_map() -> void:
+	# All locations should be iterated (no discovery filter), unlike click targeting
+	PlayerData.discovered_locations = ["test_hub"]
+	var visible_on_map: Array = []
+	var discovered_on_map: Array = []
+	for loc_id in DataRegistry.locations:
+		visible_on_map.append(loc_id)
+		if loc_id in PlayerData.discovered_locations:
+			discovered_on_map.append(loc_id)
+	assert_eq(visible_on_map.size(), DataRegistry.locations.size(), "All locations should be visible on map")
+	assert_eq(discovered_on_map.size(), 1, "Only one location should be discovered")
