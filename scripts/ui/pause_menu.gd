@@ -8,6 +8,7 @@ var is_open: bool = false
 
 # UI structure
 var bg: ColorRect
+var main_hbox: HBoxContainer
 var sidebar: VBoxContainer
 var content_container: Control
 var tab_buttons: Array[Button] = []
@@ -61,16 +62,20 @@ func _build_ui() -> void:
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
+	# Main layout container
+	main_hbox = HBoxContainer.new()
+	main_hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	main_hbox.add_theme_constant_override("separation", 0)
+	add_child(main_hbox)
+
 	# Sidebar panel (left side)
-	var sidebar_bg := PanelContainer.new()
-	sidebar_bg.anchor_left = 0.0
-	sidebar_bg.anchor_top = 0.0
-	sidebar_bg.anchor_right = 0.0
-	sidebar_bg.anchor_bottom = 1.0
 	var sidebar_w := UITheme.scaled(SIDEBAR_WIDTH)
-	sidebar_bg.offset_right = sidebar_w
+	var sidebar_bg := PanelContainer.new()
+	sidebar_bg.custom_minimum_size.x = sidebar_w
+	sidebar_bg.size_flags_horizontal = Control.SIZE_FILL
+	sidebar_bg.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	sidebar_bg.add_theme_stylebox_override("panel", UITheme.make_sidebar_style())
-	add_child(sidebar_bg)
+	main_hbox.add_child(sidebar_bg)
 
 	sidebar = VBoxContainer.new()
 	sidebar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -124,16 +129,10 @@ func _build_ui() -> void:
 
 	# Content area (right of sidebar) — wrapped in a PanelContainer for paper background
 	var content_panel := PanelContainer.new()
-	content_panel.anchor_left = 0.0
-	content_panel.anchor_top = 0.0
-	content_panel.anchor_right = 1.0
-	content_panel.anchor_bottom = 1.0
-	content_panel.offset_left = sidebar_w + 10
-	content_panel.offset_top = 10
-	content_panel.offset_right = -10
-	content_panel.offset_bottom = -10
+	content_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	UITheme.style_card(content_panel)
-	add_child(content_panel)
+	main_hbox.add_child(content_panel)
 
 	content_container = Control.new()
 	content_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -299,8 +298,7 @@ func _set_visible(v: bool) -> void:
 	# CanvasLayer visible=false does NOT propagate to children.
 	# Explicitly toggle each child.
 	bg.visible = v
-	sidebar.get_parent().visible = v # The sidebar PanelContainer
-	content_container.get_parent().visible = v # The content PanelContainer
+	main_hbox.visible = v
 	if not v:
 		for tab in tabs:
 			tab.visible = false

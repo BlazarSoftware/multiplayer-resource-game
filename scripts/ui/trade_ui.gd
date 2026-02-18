@@ -563,6 +563,9 @@ func _refresh_inventory() -> void:
 		if available <= 0:
 			continue
 		var info = DataRegistry.get_item_display_info(item_id)
+		# Skip non-tradeable items (recipe scrolls, fragments)
+		if not DataRegistry.is_item_tradeable(str(item_id)):
+			continue
 		var hbox = HBoxContainer.new()
 		my_inventory_list.add_child(hbox)
 

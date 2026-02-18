@@ -260,10 +260,10 @@ func _populate_gift_list() -> void:
 		var count: int = PlayerData.inventory[item_id]
 		if count <= 0:
 			continue
-		# Skip tools from gift list
-		var info = DataRegistry.get_item_display_info(item_id)
-		if info.get("category", "") == "tool":
+		# Skip non-giftable items (tools, recipe scrolls, fragments)
+		if not DataRegistry.is_item_giftable(str(item_id)):
 			continue
+		var info = DataRegistry.get_item_display_info(item_id)
 
 		var btn = Button.new()
 		var display_name: String = info.get("display_name", item_id)

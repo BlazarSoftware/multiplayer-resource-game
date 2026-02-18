@@ -17,6 +17,7 @@ func _build_ui() -> void:
 	minimap = Control.new()
 	minimap.set_script(minimap_script)
 	minimap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	minimap.clip_contents = true
 	add_child(minimap)
 
 	# Indoor label (shown when in restaurant)

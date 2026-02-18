@@ -223,6 +223,12 @@ func handle_gift_request(peer_id: int, npc_id: String, item_id: String) -> void:
 		_gift_response.rpc_id(peer_id, "You don't have that item.", 0)
 		return
 
+	# Reject non-giftable items (tools, recipe scrolls, fragments)
+	DataRegistry.ensure_loaded()
+	if not DataRegistry.is_item_giftable(item_id):
+		_gift_response.rpc_id(peer_id, "That item can't be given as a gift.", 0)
+		return
+
 	# Determine gift tier
 	DataRegistry.ensure_loaded()
 	var npc_def = DataRegistry.get_npc(npc_id)

@@ -176,3 +176,17 @@ static func get_item_display_info(item_id: String) -> Dictionary:
 		return {"display_name": item_id.replace("_", " ").capitalize(), "category": "fragment", "icon_color": Color(0.7, 0.6, 0.2)}
 	# Unknown item
 	return {"display_name": item_id.replace("_", " ").capitalize(), "category": "unknown", "icon_color": Color.GRAY}
+
+static func is_item_giftable(item_id: String) -> bool:
+	ensure_loaded()
+	var info := get_item_display_info(item_id)
+	var category: String = info.get("category", "unknown")
+	# Tools, recipe scrolls, fragments cannot be gifted
+	return category not in ["tool", "recipe_scroll", "fragment", "unknown"]
+
+static func is_item_tradeable(item_id: String) -> bool:
+	ensure_loaded()
+	var info := get_item_display_info(item_id)
+	var category: String = info.get("category", "unknown")
+	# Recipe scrolls and fragments cannot be P2P traded
+	return category not in ["recipe_scroll", "fragment", "unknown"]

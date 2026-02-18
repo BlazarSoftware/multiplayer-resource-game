@@ -1416,6 +1416,10 @@ func update_trade_offer(item_id: String, count: int) -> void:
 	if count > 0:
 		if not server_has_inventory(sender, item_id, count):
 			return
+		# Reject non-tradeable items (recipe scrolls, fragments)
+		DataRegistry.ensure_loaded()
+		if not DataRegistry.is_item_tradeable(item_id):
+			return
 		trade[offer_key][item_id] = count
 	else:
 		trade[offer_key].erase(item_id)

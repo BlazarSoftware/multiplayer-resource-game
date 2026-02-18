@@ -7,9 +7,9 @@ const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 const DEFAULT_ZOOM: float = 3.0 # pixels per world unit
 const MIN_ZOOM: float = 1.0 # ~120 unit view
 const MAX_ZOOM: float = 8.0 # ~20 unit view
-const ICON_RADIUS: float = 6.0
-const PLAYER_SIZE: float = 8.0
-const LEGEND_ICON_SIZE: float = 5.0
+const ICON_RADIUS: float = 8.0
+const PLAYER_SIZE: float = 10.0
+const LEGEND_ICON_SIZE: float = 7.0
 
 var zoom_level: float = DEFAULT_ZOOM
 var _locations_cache: Array = [] # Array of LocationDef
@@ -96,7 +96,7 @@ func _draw() -> void:
 
 		# Label
 		var font = ThemeDB.fallback_font
-		var font_size = 10
+		var font_size = 12
 		var label_text: String
 		var label_color: Color
 		if is_discovered:
@@ -122,7 +122,7 @@ func _draw() -> void:
 
 	# Compass rose in top-right corner
 	var rose_pos = Vector2(size.x - 30, 30)
-	var rose_font_size = 12
+	var rose_font_size = 14
 	draw_string(ThemeDB.fallback_font, rose_pos + Vector2(-4, -15), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, rose_font_size, UITokens.STAMP_RED)
 	draw_string(ThemeDB.fallback_font, rose_pos + Vector2(-4, 22), "S", HORIZONTAL_ALIGNMENT_LEFT, -1, rose_font_size, UITokens.INK_MEDIUM)
 	draw_string(ThemeDB.fallback_font, rose_pos + Vector2(12, 4), "E", HORIZONTAL_ALIGNMENT_LEFT, -1, rose_font_size, UITokens.INK_MEDIUM)
@@ -229,9 +229,9 @@ func _draw_location_icon(center: Vector2, category: String, color: Color, filled
 
 func _draw_legend() -> void:
 	var font = ThemeDB.fallback_font
-	var font_size = 9
-	var line_height: float = 14.0
-	var legend_x: float = 8.0
+	var font_size = 12
+	var line_height: float = 18.0
+	var legend_x: float = 12.0
 	var legend_y: float = size.y - (CATEGORY_LABELS.size() * line_height) - 8.0
 	var icon_size: float = LEGEND_ICON_SIZE
 	var label_color = Color(UITokens.INK_DARK.r, UITokens.INK_DARK.g, UITokens.INK_DARK.b, 0.75)
@@ -241,7 +241,7 @@ func _draw_legend() -> void:
 	var bg_rect = Rect2(
 		legend_x - bg_padding,
 		legend_y - bg_padding - 2,
-		80 + bg_padding * 2,
+		110 + bg_padding * 2,
 		CATEGORY_LABELS.size() * line_height + bg_padding * 2 + 2
 	)
 	draw_rect(bg_rect, Color(UITokens.PARCHMENT_DARK.r, UITokens.PARCHMENT_DARK.g, UITokens.PARCHMENT_DARK.b, 0.82))

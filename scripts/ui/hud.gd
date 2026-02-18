@@ -3,10 +3,10 @@ extends CanvasLayer
 const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 @onready var top_panel: PanelContainer = $TopPanel
-@onready var season_label: Label = $TopPanel/TopBar/LeftInfo/SeasonLabel
-@onready var weather_label: Label = $TopPanel/TopBar/LeftInfo/WeatherLabel
-@onready var money_label: Label = $TopPanel/TopBar/RightInfo/MoneyLabel
-@onready var location_label: Label = $TopPanel/TopBar/RightInfo/LocationLabel
+@onready var season_label: Label = $TopPanel/TopBar/SeasonLabel
+@onready var weather_label: Label = $TopPanel/TopBar/WeatherLabel
+@onready var money_label: Label = $TopPanel/TopBar/MoneyLabel
+@onready var location_label: Label = $TopPanel/TopBar/LocationLabel
 @onready var grass_indicator: ColorRect = $GrassIndicator
 @onready var grass_hint_label: Label = $GrassHintLabel
 @onready var battle_transition: ColorRect = $BattleTransition
@@ -21,27 +21,25 @@ func _ready() -> void:
 	# Style the top panel with semi-transparent parchment background
 	var panel_bg := Color(UITokens.PAPER_TAN.r, UITokens.PAPER_TAN.g, UITokens.PAPER_TAN.b, 0.85)
 	var panel_style := UITheme.make_panel_style(panel_bg, UITokens.STAMP_BROWN, UITokens.CORNER_RADIUS_SM, 1)
-	panel_style.content_margin_left = 10
-	panel_style.content_margin_top = 6
-	panel_style.content_margin_right = 10
-	panel_style.content_margin_bottom = 6
+	panel_style.content_margin_left = 12
+	panel_style.content_margin_top = 4
+	panel_style.content_margin_right = 12
+	panel_style.content_margin_bottom = 4
 	top_panel.add_theme_stylebox_override("panel", panel_style)
 
-	# Left info: date line (body size, primary ink)
-	UITheme.style_body(season_label)
-	_add_text_shadow(season_label)
-	# Weather line (caption, gold)
+	# All labels use caption size for the thin bar
+	UITheme.style_caption(season_label)
+	season_label.add_theme_color_override("font_color", UITokens.INK_DARK)
+
 	UITheme.style_caption(weather_label)
 	weather_label.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
-	_add_text_shadow(weather_label)
-	# Right info: money (section heading, gold — large and prominent)
-	UITheme.style_section(money_label)
-	money_label.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
-	_add_text_shadow(money_label)
-	# Location (caption, muted)
+
 	UITheme.style_caption(location_label)
 	location_label.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
-	_add_text_shadow(location_label)
+
+	# Money gets body size and gold color — slightly larger for prominence
+	UITheme.style_body(money_label)
+	money_label.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 
 	UITheme.style_small(grass_hint_label)
 	var legend = get_node_or_null("WildZoneLegend")
@@ -61,8 +59,8 @@ func _ready() -> void:
 	buff_label.anchor_top = 0.0
 	buff_label.anchor_bottom = 0.0
 	buff_label.offset_left = 12.0
-	buff_label.offset_top = 68.0
-	buff_label.offset_bottom = 88.0
+	buff_label.offset_top = 38.0
+	buff_label.offset_bottom = 58.0
 	add_child(buff_label)
 
 	# Trainer interaction prompt
@@ -76,11 +74,6 @@ func _ready() -> void:
 	trainer_prompt_label.anchor_top = 0.82
 	trainer_prompt_label.anchor_bottom = 0.88
 	add_child(trainer_prompt_label)
-
-func _add_text_shadow(label: Label) -> void:
-	label.add_theme_constant_override("shadow_offset_x", 1)
-	label.add_theme_constant_override("shadow_offset_y", 1)
-	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.3))
 
 func _process(delta: float) -> void:
 	# Auto-hide stale trainer prompt

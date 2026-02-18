@@ -49,11 +49,16 @@ func _try_interact() -> void:
 	if calendar and calendar.has_method("request_open_calendar"):
 		calendar.request_open_calendar.rpc_id(1)
 		return
-	# Check for social NPC proximity (E key to talk)
+	# Check for social NPC proximity (E key to talk, or gift equipped item)
 	var social_npc = _find_nearest_area("social_npc", pos, 3.0)
-	if social_npc and social_npc.has_method("request_talk"):
-		social_npc.request_talk.rpc_id(1)
-		return
+	if social_npc:
+		var gift_item_id := _get_equipped_giftable_item()
+		if gift_item_id != "" and social_npc.has_method("request_give_gift"):
+			social_npc.request_give_gift.rpc_id(1, gift_item_id)
+			return
+		elif social_npc.has_method("request_talk"):
+			social_npc.request_talk.rpc_id(1)
+			return
 	# Check for shop NPC proximity (E key to open shop)
 	var shop = _find_nearest_area("shop_npc", pos, 3.0)
 	if shop and shop.has_method("request_open_shop"):
@@ -277,6 +282,23 @@ func _open_storage_ui() -> void:
 	var ui = get_node_or_null("/root/Main/GameWorld/UI/StorageUI")
 	if ui and ui.has_method("open"):
 		ui.open()
+
+func _get_equipped_giftable_item() -> String:
+	if PlayerData.selected_hotbar_slot >= PlayerData.hotbar.size():
+		return ""
+	var slot_data: Dictionary = PlayerData.hotbar[PlayerData.selected_hotbar_slot]
+	if slot_data.is_empty():
+		return ""
+	var item_type: String = str(slot_data.get("item_type", ""))
+	if item_type == "tool_slot" or item_type == "seed":
+		return ""
+	var item_id: String = str(slot_data.get("item_id", ""))
+	if item_id == "":
+		return ""
+	DataRegistry.ensure_loaded()
+	if DataRegistry.is_item_giftable(item_id):
+		return item_id
+	return ""
 
 func _open_crafting_ui(station: Area3D = null) -> void:
 	var ui = get_node_or_null("/root/Main/GameWorld/UI/CraftingUI")

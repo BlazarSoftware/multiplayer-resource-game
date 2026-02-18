@@ -4,15 +4,14 @@ const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 const SLOT_SIZE := 64
 const SLOT_COUNT := 8
-const SLOT_GAP := 0
-const KEY_LABELS = ["1", "2", "3", "4", "5", "6", "7", "8"]
+const SLOT_GAP := 4
 
 var slots: Array[PanelContainer] = []
 var slot_icons: Array[ColorRect] = []
 var slot_labels: Array[Label] = []
-var slot_key_labels: Array[Label] = []
 var cooldown_overlays: Array[ColorRect] = []
 var water_bars: Array[ColorRect] = []
+var slot_arrows: Array[Label] = []
 
 # Client-side cooldown tracking for visual feedback
 var _cooldown_ends: Dictionary = {} # slot_index -> end_time_ms
@@ -25,7 +24,7 @@ var _empty_style: StyleBox
 func _ready() -> void:
 	layer = 2
 	UITheme.init()
-	_selected_style = _make_hotbar_style(UITokens.PAPER_CREAM, UITokens.STAMP_GOLD, 2)
+	_selected_style = _make_hotbar_style(UITokens.PAPER_CREAM, UITokens.STAMP_GOLD, 3)
 	_normal_style = _make_hotbar_style(UITokens.PAPER_BASE, UITokens.STAMP_BROWN, 1)
 	_empty_style = _make_hotbar_style(UITokens.PARCHMENT_DARK, UITokens.INK_LIGHT, 1)
 
@@ -50,6 +49,29 @@ func _build_ui() -> void:
 	add_child(container)
 
 	var total_width = SLOT_COUNT * SLOT_SIZE + (SLOT_COUNT - 1) * SLOT_GAP
+	var pad_h := 12
+	var pad_v := 8
+
+	# Background panel behind slots
+	var bg_panel = Panel.new()
+	bg_panel.name = "BgPanel"
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = Color(UITokens.PARCHMENT_DARK.r, UITokens.PARCHMENT_DARK.g, UITokens.PARCHMENT_DARK.b, 0.85)
+	bg_style.border_color = UITokens.STAMP_BROWN
+	bg_style.set_border_width_all(2)
+	bg_style.set_corner_radius_all(8)
+	bg_panel.add_theme_stylebox_override("panel", bg_style)
+	bg_panel.anchor_left = 0.5
+	bg_panel.anchor_right = 0.5
+	bg_panel.anchor_top = 0.0
+	bg_panel.anchor_bottom = 0.0
+	bg_panel.offset_left = -total_width / 2.0 - pad_h
+	bg_panel.offset_right = total_width / 2.0 + pad_h
+	bg_panel.offset_top = -pad_v
+	bg_panel.offset_bottom = SLOT_SIZE + pad_v
+	bg_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(bg_panel)
+
 	var hbox = HBoxContainer.new()
 	hbox.name = "SlotRow"
 	hbox.anchor_left = 0.5
@@ -66,6 +88,8 @@ func _build_ui() -> void:
 	for i in SLOT_COUNT:
 		var panel = PanelContainer.new()
 		panel.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
+		panel.clip_contents = true
+		panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		hbox.add_child(panel)
 		slots.append(panel)
@@ -93,16 +117,6 @@ func _build_ui() -> void:
 		panel.add_child(label)
 		slot_labels.append(label)
 
-		# Key number label (top-left)
-		var key_label = Label.new()
-		key_label.text = KEY_LABELS[i]
-		UITheme.style_small(key_label)
-		key_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
-		key_label.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
-		key_label.position = Vector2(3, 1)
-		key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel.add_child(key_label)
-		slot_key_labels.append(key_label)
 
 		# Cooldown overlay (dark bar that shrinks from top)
 		var cd_overlay = ColorRect.new()
@@ -123,6 +137,25 @@ func _build_ui() -> void:
 		water_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_child(water_bar)
 		water_bars.append(water_bar)
+
+	# Selection arrows — children of container (not panel) so clip_contents doesn't hide them
+	for i in SLOT_COUNT:
+		var arrow = Label.new()
+		arrow.text = "\u25bc"
+		arrow.add_theme_font_size_override("font_size", UITheme.scaled(14))
+		arrow.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
+		arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var slot_x = -total_width / 2.0 + i * (SLOT_SIZE + SLOT_GAP)
+		arrow.anchor_left = 0.5
+		arrow.anchor_right = 0.5
+		arrow.offset_left = slot_x
+		arrow.offset_right = slot_x + SLOT_SIZE
+		arrow.offset_top = -14
+		arrow.offset_bottom = 2
+		arrow.visible = false
+		arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		container.add_child(arrow)
+		slot_arrows.append(arrow)
 
 func _refresh_all() -> void:
 	PlayerData._init_hotbar()
@@ -216,21 +249,24 @@ func _make_hotbar_style(bg_color: Color, border_color: Color, border_width: int)
 	style.border_color = border_color
 	style.set_corner_radius_all(4)
 	style.set_border_width_all(border_width)
-	style.content_margin_left = 4
-	style.content_margin_top = 4
-	style.content_margin_right = 4
-	style.content_margin_bottom = 4
+	style.content_margin_left = 0
+	style.content_margin_top = 0
+	style.content_margin_right = 0
+	style.content_margin_bottom = 0
 	return style
 
 func _update_selection() -> void:
 	for i in SLOT_COUNT:
 		var slot_data: Dictionary = PlayerData.hotbar[i] if i < PlayerData.hotbar.size() else {}
-		if i == PlayerData.selected_hotbar_slot:
+		var is_selected := i == PlayerData.selected_hotbar_slot
+		if is_selected:
 			slots[i].add_theme_stylebox_override("panel", _selected_style)
 		elif slot_data.is_empty():
 			slots[i].add_theme_stylebox_override("panel", _empty_style)
 		else:
 			slots[i].add_theme_stylebox_override("panel", _normal_style)
+		if i < slot_arrows.size():
+			slot_arrows[i].visible = is_selected
 
 func _on_selection_changed(_slot_index: int) -> void:
 	_update_selection()
@@ -240,6 +276,12 @@ func _on_tool_changed(_tool_name: String) -> void:
 	_refresh_all()
 
 func _process(_delta: float) -> void:
+	# Bob the selection arrow
+	var ticks := float(Time.get_ticks_msec())
+	for i in slot_arrows.size():
+		if slot_arrows[i].visible:
+			slot_arrows[i].offset_top = -14.0 + sin(ticks / 300.0) * 2.0
+
 	# Update cooldown overlays
 	var now = Time.get_ticks_msec()
 	for i in _cooldown_ends:

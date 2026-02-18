@@ -1,13 +1,15 @@
 extends CanvasLayer
 
-# Always-visible compass strip at top-center of screen.
+# Always-visible compass strip below the top HUD bar.
 # Client-only — no server interaction.
 
 const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
-const STRIP_WIDTH: float = 600.0
 const STRIP_HEIGHT: float = 36.0
-const PIXELS_PER_RADIAN: float = STRIP_WIDTH / (PI * 1.0) # ~191 px per radian, shows ~PI range
+const STRIP_Y: float = 40.0 # Below the 36px HUD top bar + 4px gap
+
+var strip_width: float = 600.0
+var pixels_per_radian: float = 600.0 / PI
 
 # Cardinal directions: yaw value when camera faces that direction
 # North = -Z (toward wild zones), camera_yaw = PI
@@ -40,13 +42,15 @@ func _ready() -> void:
 	PlayerData.location_changed.connect(_on_location_changed)
 
 func _build_ui() -> void:
+	_compute_strip_width()
+
 	# Background strip
 	strip = Control.new()
 	strip.clip_contents = true
-	strip.custom_minimum_size = Vector2(STRIP_WIDTH, STRIP_HEIGHT)
-	strip.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	strip.position = Vector2(-STRIP_WIDTH / 2.0, 8)
-	strip.size = Vector2(STRIP_WIDTH, STRIP_HEIGHT)
+	strip.custom_minimum_size = Vector2(strip_width, STRIP_HEIGHT)
+	var vw: float = get_viewport().get_visible_rect().size.x
+	strip.position = Vector2((vw - strip_width) / 2.0, STRIP_Y)
+	strip.size = Vector2(strip_width, STRIP_HEIGHT)
 	add_child(strip)
 
 	# Dark background for strip
@@ -58,7 +62,7 @@ func _build_ui() -> void:
 	# Center tick mark
 	var tick = ColorRect.new()
 	tick.color = Color(UITokens.STAMP_GOLD.r, UITokens.STAMP_GOLD.g, UITokens.STAMP_GOLD.b, 0.95)
-	tick.position = Vector2(STRIP_WIDTH / 2.0 - 1, 0)
+	tick.position = Vector2(strip_width / 2.0 - 1, 0)
 	tick.size = Vector2(2, STRIP_HEIGHT)
 	strip.add_child(tick)
 
@@ -68,10 +72,30 @@ func _build_ui() -> void:
 	UITheme.style_small(target_label)
 	target_label.add_theme_color_override("font_color", UITokens.STAMP_BLUE)
 	target_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	target_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	target_label.position = Vector2(-100, STRIP_HEIGHT + 10)
+	var strip_center_x: float = vw / 2.0
+	target_label.position = Vector2(strip_center_x - 100, STRIP_Y + STRIP_HEIGHT + 2)
 	target_label.size = Vector2(200, 20)
 	add_child(target_label)
+
+	get_viewport().size_changed.connect(_on_viewport_resized)
+
+func _compute_strip_width() -> void:
+	var vw: float = get_viewport().get_visible_rect().size.x
+	strip_width = clampf(vw * 0.5, 300.0, 700.0)
+	pixels_per_radian = strip_width / PI
+
+func _on_viewport_resized() -> void:
+	_compute_strip_width()
+	var vw: float = get_viewport().get_visible_rect().size.x
+	if strip:
+		strip.position = Vector2((vw - strip_width) / 2.0, STRIP_Y)
+		strip.custom_minimum_size = Vector2(strip_width, STRIP_HEIGHT)
+		strip.size = Vector2(strip_width, STRIP_HEIGHT)
+		var tick = strip.get_child(1)
+		if tick:
+			tick.position = Vector2(strip_width / 2.0 - 1, 0)
+	if target_label:
+		target_label.position = Vector2(vw / 2.0 - 100, STRIP_Y + STRIP_HEIGHT + 2)
 
 func _process(_delta: float) -> void:
 	if _indoor:
@@ -87,13 +111,13 @@ func _draw_compass(camera_yaw: float) -> void:
 		strip.remove_child(child)
 		child.queue_free()
 
-	var center_x = STRIP_WIDTH / 2.0
+	var center_x = strip_width / 2.0
 
 	# Draw cardinal markers
 	for card in CARDINALS:
 		var rel = _normalize_angle(card.yaw - camera_yaw)
-		var px = center_x + rel * PIXELS_PER_RADIAN
-		if px < -30 or px > STRIP_WIDTH + 30:
+		var px = center_x + rel * pixels_per_radian
+		if px < -30 or px > strip_width + 30:
 			continue
 		var lbl = Label.new()
 		lbl.text = card.label
@@ -113,8 +137,8 @@ func _draw_compass(camera_yaw: float) -> void:
 		var dz = loc.world_position.z - player_pos.z
 		var loc_yaw = atan2(dx, dz)
 		var rel = _normalize_angle(loc_yaw - camera_yaw)
-		var px = center_x + rel * PIXELS_PER_RADIAN
-		if px < -4 or px > STRIP_WIDTH + 4:
+		var px = center_x + rel * pixels_per_radian
+		if px < -4 or px > strip_width + 4:
 			continue
 		var marker = ColorRect.new()
 		marker.color = Color(loc.icon_color.r, loc.icon_color.g, loc.icon_color.b, 0.4)
@@ -132,7 +156,7 @@ func _draw_compass(camera_yaw: float) -> void:
 			var target_yaw = atan2(dx, dz)
 			var rel_angle = _normalize_angle(target_yaw - camera_yaw)
 			# Clamp to strip edges
-			var clamped_px = clampf(center_x + rel_angle * PIXELS_PER_RADIAN, 4, STRIP_WIDTH - 4)
+			var clamped_px = clampf(center_x + rel_angle * pixels_per_radian, 4, strip_width - 4)
 
 			var marker = ColorRect.new()
 			marker.color = loc.icon_color
@@ -182,4 +206,3 @@ func _on_location_changed(zone: String, _owner_name: String) -> void:
 
 func _on_target_changed(_target_id: String) -> void:
 	pass # Compass updates in _process anyway
-
