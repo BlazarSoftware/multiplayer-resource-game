@@ -14,9 +14,24 @@ var _exit_cooldown: Dictionary = {} # peer_id -> timestamp (prevent immediate re
 
 @onready var restaurant_row: Node3D = get_node_or_null("../Zones/RestaurantRow")
 
+var _indicator_time: float = 0.0
+
 func _ready() -> void:
 	if not multiplayer.is_server():
 		return
+
+func _process(delta: float) -> void:
+	# Animate floating indicators on all door nodes (both server and client)
+	_indicator_time += delta
+	var bounce_y: float = sin(_indicator_time * 3.0) * 0.3
+	var spin: float = _indicator_time * 90.0
+	var doors_dict: Dictionary = door_nodes if multiplayer.is_server() else _client_door_nodes
+	for player_name in doors_dict:
+		var door_node: Node3D = doors_dict[player_name]
+		var indicator = door_node.get_node_or_null("FloatingIndicator")
+		if indicator:
+			indicator.position.y = 4.2 + bounce_y
+			indicator.rotation_degrees.y = spin
 
 func allocate_restaurant_index(player_name: String) -> int:
 	if player_name in restaurant_index_map:
@@ -185,37 +200,85 @@ func spawn_overworld_door(player_name: String) -> void:
 	door.set_meta("owner_name", player_name)
 	# Position doors along the row, spaced apart
 	door.position = Vector3(rest_index * DOOR_SPACING, 0, 0)
-	# Add collision shape
+	# Add collision shape (enlarged to match bigger door)
 	var shape = CollisionShape3D.new()
 	var box = BoxShape3D.new()
-	box.size = Vector3(2, 3, 2)
+	box.size = Vector3(2.5, 3.5, 2.5)
 	shape.shape = box
 	door.add_child(shape)
-	# Add visual door mesh
-	var mesh_inst = MeshInstance3D.new()
-	var box_mesh = BoxMesh.new()
-	box_mesh.size = Vector3(1.5, 2.5, 0.3)
-	mesh_inst.mesh = box_mesh
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.5, 0.3, 0.15)
-	mesh_inst.material_override = mat
-	mesh_inst.position = Vector3(0, 1.25, 0)
-	door.add_child(mesh_inst)
-	# Add label
-	var label = Label3D.new()
-	label.text = player_name + "'s\nRestaurant"
-	label.font_size = 42
-	label.outline_size = 10
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.position = Vector3(0, 3.2, 0)
-	label.modulate = Color(1, 0.9, 0.5)
-	door.add_child(label)
+	# Add door visuals (server needs mesh for collision reference)
+	_add_door_visuals(door, player_name)
 	restaurant_row.add_child(door)
 	door_nodes[player_name] = door
 	# Connect body_entered for server-side teleport
 	door.body_entered.connect(_on_overworld_door_entered.bind(player_name))
 	# Replicate visual door to all clients
 	_spawn_door_client.rpc(player_name, rest_index)
+
+func _add_door_visuals(parent: Node3D, player_name: String) -> void:
+	# Door frame (slightly larger, contrasting color)
+	var frame_mesh = MeshInstance3D.new()
+	var frame_box = BoxMesh.new()
+	frame_box.size = Vector3(2.4, 3.4, 0.15)
+	frame_mesh.mesh = frame_box
+	var frame_mat = StandardMaterial3D.new()
+	frame_mat.albedo_color = Color(0.9, 0.75, 0.2)
+	frame_mat.emission_enabled = true
+	frame_mat.emission = Color(1.0, 0.85, 0.3)
+	frame_mat.emission_energy_multiplier = 0.5
+	frame_mesh.material_override = frame_mat
+	frame_mesh.position = Vector3(0, 1.5, 0)
+	parent.add_child(frame_mesh)
+	# Main door mesh (larger, richer color with glow)
+	var mesh_inst = MeshInstance3D.new()
+	var box_mesh = BoxMesh.new()
+	box_mesh.size = Vector3(2.0, 3.0, 0.4)
+	mesh_inst.mesh = box_mesh
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.65, 0.12, 0.08)
+	mat.emission_enabled = true
+	mat.emission = Color(0.7, 0.15, 0.1)
+	mat.emission_energy_multiplier = 0.3
+	mesh_inst.material_override = mat
+	mesh_inst.position = Vector3(0, 1.5, 0.05)
+	parent.add_child(mesh_inst)
+	# Ground highlight mat in front of door
+	var ground_mesh = MeshInstance3D.new()
+	var ground_box = BoxMesh.new()
+	ground_box.size = Vector3(2.5, 0.06, 2.0)
+	ground_mesh.mesh = ground_box
+	var ground_mat = StandardMaterial3D.new()
+	ground_mat.albedo_color = Color(1.0, 0.85, 0.2)
+	ground_mat.emission_enabled = true
+	ground_mat.emission = Color(1.0, 0.8, 0.1)
+	ground_mat.emission_energy_multiplier = 0.6
+	ground_mesh.material_override = ground_mat
+	ground_mesh.position = Vector3(0, 0.03, -1.2)
+	parent.add_child(ground_mesh)
+	# Floating diamond indicator above door
+	var indicator = MeshInstance3D.new()
+	indicator.name = "FloatingIndicator"
+	var diamond_mesh = BoxMesh.new()
+	diamond_mesh.size = Vector3(0.4, 0.4, 0.4)
+	indicator.mesh = diamond_mesh
+	var ind_mat = StandardMaterial3D.new()
+	ind_mat.albedo_color = Color(1.0, 0.9, 0.1)
+	ind_mat.emission_enabled = true
+	ind_mat.emission = Color(1.0, 0.95, 0.3)
+	ind_mat.emission_energy_multiplier = 2.0
+	indicator.material_override = ind_mat
+	indicator.position = Vector3(0, 4.2, 0)
+	indicator.rotation_degrees = Vector3(0, 0, 45)
+	parent.add_child(indicator)
+	# Label (larger, brighter)
+	var label = Label3D.new()
+	label.text = player_name + "'s\nRestaurant"
+	label.font_size = 64
+	label.outline_size = 14
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.position = Vector3(0, 3.6, -0.3)
+	label.modulate = Color(1, 0.95, 0.5)
+	parent.add_child(label)
 
 func remove_overworld_door(player_name: String) -> void:
 	if player_name in door_nodes:
@@ -390,25 +453,8 @@ func _spawn_door_client(player_name: String, rest_index: int) -> void:
 	door.position = Vector3(rest_index * DOOR_SPACING, 0, 0)
 	door.add_to_group("restaurant_door")
 	door.set_meta("owner_name", player_name)
-	# Door mesh
-	var mesh_inst = MeshInstance3D.new()
-	var box_mesh = BoxMesh.new()
-	box_mesh.size = Vector3(1.5, 2.5, 0.3)
-	mesh_inst.mesh = box_mesh
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.5, 0.3, 0.15)
-	mesh_inst.material_override = mat
-	mesh_inst.position = Vector3(0, 1.25, 0)
-	door.add_child(mesh_inst)
-	# Label
-	var label = Label3D.new()
-	label.text = player_name + "'s\nRestaurant"
-	label.font_size = 42
-	label.outline_size = 10
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.position = Vector3(0, 3.2, 0)
-	label.modulate = Color(1, 0.9, 0.5)
-	door.add_child(label)
+	# Add shared door visuals
+	_add_door_visuals(door, player_name)
 	row.add_child(door)
 	_client_door_nodes[player_name] = door
 

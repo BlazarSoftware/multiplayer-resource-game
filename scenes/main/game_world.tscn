@@ -129,6 +129,43 @@ radius = 2.0
 [sub_resource type="BoxShape3D" id="grass_area_shape"]
 size = Vector3(8, 2, 8)
 
+; --- Restaurant Row landmark meshes & materials ---
+[sub_resource type="BoxMesh" id="archway_box_mesh"]
+size = Vector3(14, 1.5, 0.6)
+
+[sub_resource type="StandardMaterial3D" id="archway_material"]
+albedo_color = Color(0.7, 0.15, 0.1, 1)
+emission_enabled = true
+emission = Color(0.8, 0.2, 0.1, 1)
+emission_energy_multiplier = 0.6
+
+[sub_resource type="BoxMesh" id="pillar_mesh"]
+size = Vector3(1.2, 5, 1.2)
+
+[sub_resource type="StandardMaterial3D" id="pillar_material"]
+albedo_color = Color(0.75, 0.55, 0.15, 1)
+emission_enabled = true
+emission = Color(0.9, 0.7, 0.2, 1)
+emission_energy_multiplier = 0.4
+
+[sub_resource type="BoxMesh" id="carpet_mesh"]
+size = Vector3(10, 0.05, 6)
+
+[sub_resource type="StandardMaterial3D" id="carpet_material"]
+albedo_color = Color(0.7, 0.1, 0.1, 1)
+emission_enabled = true
+emission = Color(0.6, 0.05, 0.05, 1)
+emission_energy_multiplier = 0.3
+
+[sub_resource type="BoxMesh" id="gold_trim_mesh"]
+size = Vector3(14, 0.08, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="gold_trim_material"]
+albedo_color = Color(1, 0.85, 0.2, 1)
+emission_enabled = true
+emission = Color(1, 0.8, 0.1, 1)
+emission_energy_multiplier = 0.8
+
 [node name="GameWorld" type="Node3D"]
 script = ExtResource("1")
 
@@ -645,12 +682,52 @@ npc_id = "npc_librarian"
 [node name="RestaurantRow" type="Node3D" parent="Zones"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 12)
 
+; --- Large archway backdrop (visible from spawn) ---
+[node name="Archway" type="MeshInstance3D" parent="Zones/RestaurantRow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 1)
+mesh = SubResource("archway_box_mesh")
+material_override = SubResource("archway_material")
+
+; --- Archway left pillar ---
+[node name="PillarLeft" type="MeshInstance3D" parent="Zones/RestaurantRow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 2.5, 0.5)
+mesh = SubResource("pillar_mesh")
+material_override = SubResource("pillar_material")
+
+; --- Archway right pillar ---
+[node name="PillarRight" type="MeshInstance3D" parent="Zones/RestaurantRow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 2.5, 0.5)
+mesh = SubResource("pillar_mesh")
+material_override = SubResource("pillar_material")
+
+; --- Red carpet leading to doors ---
+[node name="Carpet" type="MeshInstance3D" parent="Zones/RestaurantRow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -2)
+mesh = SubResource("carpet_mesh")
+material_override = SubResource("carpet_material")
+
+; --- Gold trim strip along front ---
+[node name="GoldTrim" type="MeshInstance3D" parent="Zones/RestaurantRow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -0.5)
+mesh = SubResource("gold_trim_mesh")
+material_override = SubResource("gold_trim_material")
+
+; --- Enhanced sign (much larger, emissive) ---
 [node name="SignLabel" type="Label3D" parent="Zones/RestaurantRow"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 3, -1)
-text = "Restaurant Row"
-font_size = 56
-outline_size = 8
-modulate = Color(1, 0.85, 0.4, 1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.5, 0.5)
+text = "RESTAURANT ROW"
+font_size = 96
+outline_size = 16
+modulate = Color(1, 0.9, 0.3, 1)
+billboard = 1
+
+; --- Sub-sign with arrow ---
+[node name="SubSign" type="Label3D" parent="Zones/RestaurantRow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.6, 0.5)
+text = "▼ ENTER BELOW ▼"
+font_size = 48
+outline_size = 10
+modulate = Color(1, 0.6, 0.2, 1)
 billboard = 1
 
 ; === Restaurant Manager ===

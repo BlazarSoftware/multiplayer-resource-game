@@ -8,10 +8,7 @@ var current_station: String = "" # "kitchen", "workbench", "cauldron", "" for al
 var title_label: Label = null
 
 func _ready() -> void:
-	close_button.pressed.connect(func():
-		visible = false
-		NetworkManager.request_set_busy.rpc_id(1, false)
-	)
+	close_button.pressed.connect(_close)
 	# Create title label
 	title_label = Label.new()
 	title_label.text = "Crafting"
@@ -20,6 +17,16 @@ func _ready() -> void:
 	var vbox = $Panel/VBox
 	vbox.add_child(title_label)
 	vbox.move_child(title_label, 0)
+
+func _close() -> void:
+	visible = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	NetworkManager.request_set_busy.rpc_id(1, false)
+
+func _input(event: InputEvent) -> void:
+	if visible and event.is_action_pressed("ui_cancel"):
+		_close()
+		get_viewport().set_input_as_handled()
 
 func setup(craft_sys: Node) -> void:
 	crafting_system = craft_sys
@@ -39,6 +46,7 @@ func open_for_station(station: String) -> void:
 			_:
 				title_label.text = "Crafting"
 	visible = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	NetworkManager.request_set_busy.rpc_id(1, true)
 	refresh()
 

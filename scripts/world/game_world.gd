@@ -273,7 +273,6 @@ func _spawn_excursion_entrance() -> void:
 		coll.position = Vector3(0, 2, 0)
 		area.add_child(coll)
 
-		area.body_entered.connect(_on_excursion_portal_entered)
 		entrance.add_child(area)
 
 	# Hint label for clients
@@ -285,52 +284,6 @@ func _spawn_excursion_entrance() -> void:
 	hint.outline_size = 4
 	hint.position = Vector3(0, 2.5, 0)
 	entrance.add_child(hint)
-
-
-var _excursion_portal_cooldown: Dictionary = {} # peer_id -> timestamp
-
-func _on_excursion_portal_entered(body: Node3D) -> void:
-	if not multiplayer.is_server():
-		return
-	if not body is CharacterBody3D:
-		return
-	var peer_id = body.name.to_int()
-	if peer_id <= 0:
-		return
-
-	# Cooldown to prevent spam
-	var now = Time.get_ticks_msec()
-	if peer_id in _excursion_portal_cooldown and now - _excursion_portal_cooldown[peer_id] < 5000:
-		return
-	_excursion_portal_cooldown[peer_id] = now
-
-	# Check if player is party leader
-	var friend_mgr = get_node_or_null("FriendManager")
-	var excursion_mgr = get_node_or_null("ExcursionManager")
-	if friend_mgr == null or excursion_mgr == null:
-		return
-
-	var player_id = NetworkManager.get_player_id_for_peer(peer_id)
-	if player_id == "":
-		return
-
-	if player_id not in friend_mgr.player_party_map:
-		# Solo player — allow direct entry
-		excursion_mgr._create_excursion_from_portal(peer_id)
-		return
-
-	var party_id = friend_mgr.player_party_map[player_id]
-	var party = friend_mgr.parties.get(party_id, {})
-	if party.is_empty():
-		return
-
-	if str(party["leader_id"]) != player_id:
-		# Not the leader
-		excursion_mgr._excursion_action_result.rpc_id(peer_id, "enter", false, "Waiting for party leader to start the excursion.")
-		return
-
-	# Party leader — auto-trigger entry
-	excursion_mgr._create_excursion_from_portal(peer_id)
 
 
 # === WORLD DECORATION GENERATION ===

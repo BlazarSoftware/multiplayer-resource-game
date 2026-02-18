@@ -3,6 +3,8 @@ extends Node
 # Attached to each player - handles interactions with world objects
 var peer_id: int = 0
 var parent_body: CharacterBody3D = null
+var _showing_restaurant_prompt: bool = false
+const RESTAURANT_DOOR_RANGE: float = 4.5
 
 func _ready() -> void:
 	parent_body = get_parent() as CharacterBody3D
@@ -12,6 +14,8 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if peer_id != multiplayer.get_unique_id():
 		return
+	# Update restaurant door proximity prompt
+	_update_restaurant_prompt()
 	# Busy lock: block all interactions (defense-in-depth; server also validates)
 	var player = get_parent()
 	if player and player.get("is_busy"):
@@ -70,7 +74,7 @@ func _try_interact() -> void:
 			return
 	# Check for restaurant door proximity (interact key as alternative to walk-over)
 	# Uses _find_nearest_in_group to find both server Area3D doors and client Node3D doors
-	var door = _find_nearest_in_group("restaurant_door", pos, 3.0)
+	var door = _find_nearest_in_group("restaurant_door", pos, RESTAURANT_DOOR_RANGE)
 	if door:
 		var door_owner = door.get_meta("owner_name", "") if door.has_meta("owner_name") else ""
 		if door_owner != "":
@@ -143,6 +147,34 @@ func _interact_with_plot(farm_mgr: Node, plot_idx: int) -> void:
 			action = "harvest"
 	if action != "":
 		farm_mgr.request_farm_action.rpc_id(1, plot_idx, action, extra)
+
+func _update_restaurant_prompt() -> void:
+	if parent_body == null:
+		return
+	# Only show prompt when in overworld (not already in a restaurant)
+	if PlayerData.current_zone == "restaurant":
+		if _showing_restaurant_prompt:
+			_hide_restaurant_prompt()
+		return
+	var pos = parent_body.global_position
+	var door = _find_nearest_in_group("restaurant_door", pos, RESTAURANT_DOOR_RANGE)
+	if door:
+		var door_owner = door.get_meta("owner_name", "") if door.has_meta("owner_name") else ""
+		if door_owner != "" and not _showing_restaurant_prompt:
+			var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
+			if hud and hud.trainer_prompt_label:
+				hud.trainer_prompt_label.text = "Press E to enter %s's Restaurant" % door_owner
+				hud.trainer_prompt_label.visible = true
+				hud._trainer_prompt_timer = 0.0  # Don't auto-hide, we manage it
+				_showing_restaurant_prompt = true
+	elif _showing_restaurant_prompt:
+		_hide_restaurant_prompt()
+
+func _hide_restaurant_prompt() -> void:
+	_showing_restaurant_prompt = false
+	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
+	if hud and hud.has_method("hide_trainer_prompt"):
+		hud.hide_trainer_prompt()
 
 func _try_pvp_challenge() -> void:
 	if parent_body == null:

@@ -239,11 +239,6 @@ func get_level_boost_for_peer(peer_id: int) -> int:
 
 # === Entry Flow ===
 
-func _create_excursion_from_portal(peer_id: int) -> void:
-	## Called by game_world.gd when party leader walks into portal Area3D.
-	## Runs on server — performs same validation as request_enter_excursion.
-	_validate_and_enter(peer_id)
-
 @rpc("any_peer", "reliable")
 func request_enter_excursion() -> void:
 	if not multiplayer.is_server():
@@ -508,12 +503,6 @@ func _exit_member(peer_id: int) -> void:
 	var rest_mgr := get_node_or_null("../RestaurantManager")
 	if rest_mgr:
 		rest_mgr.player_location[peer_id] = {"zone": "overworld", "owner": ""}
-
-	# Toggle monitoring on overworld excursion portal to reset body_entered tracking after teleport
-	var portal_area := get_node_or_null("../ExcursionEntrance/ExcursionPortalArea")
-	if portal_area and portal_area is Area3D:
-		portal_area.monitoring = false
-		portal_area.set_deferred("monitoring", true)
 
 	# Remove from instance members
 	var inst: Dictionary = excursion_instances.get(instance_id, {})
