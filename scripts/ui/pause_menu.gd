@@ -2,7 +2,7 @@ extends CanvasLayer
 
 # Unified pause menu with tabbed sidebar. Consolidates Map, Inventory, Party,
 # Quests, Compendium, Friends, and Settings into one overlay.
-# Hotkeys: M/Esc=Map, I=Inventory, P=Party, J=Quests, K=Compendium, F=Friends.
+# Hotkeys: M/Esc=Map, I=Inventory, P=Party, J=Quests, K=Compendium, F=Friends, N=NPCs.
 
 var is_open: bool = false
 
@@ -31,15 +31,18 @@ const TAB_DEFS: Array = [
 	["Quests", "quest_log", "res://scripts/ui/tabs/quest_tab.gd"],
 	["Compendium", "compendium", "res://scripts/ui/tabs/compendium_tab.gd"],
 	["Friends", "friend_list", "res://scripts/ui/tabs/friend_tab.gd"],
+	["NPCs", "open_npcs", "res://scripts/ui/tabs/npc_tab.gd"],
 	["Settings", "", "res://scripts/ui/tabs/settings_tab.gd"],
 ]
 
 const SIDEBAR_WIDTH := 120
 const BLOCKING_UIS := ["BattleUI", "CraftingUI", "StorageUI", "ShopUI", "TradeUI", "DialogueUI", "CalendarUI", "CreatureDestinationUI"]
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 func _ready() -> void:
 	layer = 15
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	UITheme.init()
 	_build_ui()
 	_build_invite_popup()
 	_set_visible(false)
@@ -54,7 +57,7 @@ func _connect_invite_signal() -> void:
 func _build_ui() -> void:
 	# Dark semi-transparent background
 	bg = ColorRect.new()
-	bg.color = Color(0, 0, 0, 0.6)
+	bg.color = UITokens.SCRIM
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -64,7 +67,9 @@ func _build_ui() -> void:
 	sidebar_bg.anchor_top = 0.0
 	sidebar_bg.anchor_right = 0.0
 	sidebar_bg.anchor_bottom = 1.0
-	sidebar_bg.offset_right = SIDEBAR_WIDTH
+	var sidebar_w := UITheme.scaled(SIDEBAR_WIDTH)
+	sidebar_bg.offset_right = sidebar_w
+	sidebar_bg.add_theme_stylebox_override("panel", UITheme.make_sidebar_style())
 	add_child(sidebar_bg)
 
 	sidebar = VBoxContainer.new()
@@ -74,8 +79,8 @@ func _build_ui() -> void:
 	# Title
 	var title := Label.new()
 	title.text = "MENU"
-	title.add_theme_font_size_override("font_size", 18)
-	title.add_theme_color_override("font_color", Color(1, 0.9, 0.5))
+	UITheme.style_subheading(title)
+	title.add_theme_color_override("font_color", UITokens.SIDEBAR_TEXT)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sidebar.add_child(title)
 
@@ -87,7 +92,8 @@ func _build_ui() -> void:
 		var def = TAB_DEFS[i]
 		var btn := Button.new()
 		btn.text = def[0]
-		btn.custom_minimum_size.y = 32
+		btn.custom_minimum_size.y = UITheme.scaled(32)
+		UITheme.style_sidebar_button(btn)
 		btn.pressed.connect(_on_tab_button_pressed.bind(i))
 		sidebar.add_child(btn)
 		tab_buttons.append(btn)
@@ -103,27 +109,35 @@ func _build_ui() -> void:
 
 	var menu_btn := Button.new()
 	menu_btn.text = "Main Menu"
-	menu_btn.custom_minimum_size.y = 32
+	menu_btn.custom_minimum_size.y = UITheme.scaled(32)
+	UITheme.style_sidebar_button(menu_btn)
 	menu_btn.pressed.connect(_on_return_to_menu)
 	sidebar.add_child(menu_btn)
 
 	var quit_btn := Button.new()
 	quit_btn.text = "Quit"
-	quit_btn.custom_minimum_size.y = 32
+	quit_btn.custom_minimum_size.y = UITheme.scaled(32)
+	UITheme.style_sidebar_button(quit_btn)
+	quit_btn.add_theme_color_override("font_color", UITokens.ACCENT_TOMATO)
 	quit_btn.pressed.connect(_on_quit)
 	sidebar.add_child(quit_btn)
 
-	# Content area (right of sidebar)
+	# Content area (right of sidebar) — wrapped in a PanelContainer for paper background
+	var content_panel := PanelContainer.new()
+	content_panel.anchor_left = 0.0
+	content_panel.anchor_top = 0.0
+	content_panel.anchor_right = 1.0
+	content_panel.anchor_bottom = 1.0
+	content_panel.offset_left = sidebar_w + 10
+	content_panel.offset_top = 10
+	content_panel.offset_right = -10
+	content_panel.offset_bottom = -10
+	UITheme.style_card(content_panel)
+	add_child(content_panel)
+
 	content_container = Control.new()
-	content_container.anchor_left = 0.0
-	content_container.anchor_top = 0.0
-	content_container.anchor_right = 1.0
-	content_container.anchor_bottom = 1.0
-	content_container.offset_left = SIDEBAR_WIDTH + 10
-	content_container.offset_top = 10
-	content_container.offset_right = -10
-	content_container.offset_bottom = -10
-	add_child(content_container)
+	content_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content_panel.add_child(content_container)
 
 	# Create tab content controls
 	for i in range(TAB_DEFS.size()):
@@ -142,6 +156,7 @@ func _build_invite_popup() -> void:
 	invite_popup.anchor_top = 0.35
 	invite_popup.anchor_bottom = 0.5
 	invite_popup.visible = false
+	UITheme.apply_panel(invite_popup)
 	add_child(invite_popup)
 
 	var vbox := VBoxContainer.new()
@@ -149,7 +164,7 @@ func _build_invite_popup() -> void:
 
 	invite_label = Label.new()
 	invite_label.text = "Party invite from ..."
-	invite_label.add_theme_font_size_override("font_size", 18)
+	UITheme.style_subheading(invite_label)
 	invite_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(invite_label)
 
@@ -159,11 +174,13 @@ func _build_invite_popup() -> void:
 
 	invite_accept_btn = Button.new()
 	invite_accept_btn.text = "Accept"
+	UITheme.style_button(invite_accept_btn, "secondary")
 	invite_accept_btn.pressed.connect(_on_invite_accept)
 	hbox.add_child(invite_accept_btn)
 
 	invite_decline_btn = Button.new()
 	invite_decline_btn.text = "Decline"
+	UITheme.style_button(invite_decline_btn, "danger")
 	invite_decline_btn.pressed.connect(_on_invite_decline)
 	hbox.add_child(invite_decline_btn)
 
@@ -199,6 +216,11 @@ func _input(event: InputEvent) -> void:
 
 	if event.is_action_pressed("friend_list"):
 		_handle_hotkey(5)
+		get_viewport().set_input_as_handled()
+		return
+
+	if event.is_action_pressed("open_npcs"):
+		_handle_hotkey(6)
 		get_viewport().set_input_as_handled()
 		return
 
@@ -268,10 +290,7 @@ func _switch_tab(tab_index: int) -> void:
 
 func _update_sidebar_highlights() -> void:
 	for i in range(tab_buttons.size()):
-		if i == active_tab_index:
-			tab_buttons[i].add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
-		else:
-			tab_buttons[i].remove_theme_color_override("font_color")
+		UITheme.style_sidebar_button(tab_buttons[i], i == active_tab_index)
 
 func _on_tab_button_pressed(index: int) -> void:
 	_switch_tab(index)
@@ -280,8 +299,8 @@ func _set_visible(v: bool) -> void:
 	# CanvasLayer visible=false does NOT propagate to children.
 	# Explicitly toggle each child.
 	bg.visible = v
-	sidebar.get_parent().visible = v # The PanelContainer
-	content_container.visible = v
+	sidebar.get_parent().visible = v # The sidebar PanelContainer
+	content_container.get_parent().visible = v # The content PanelContainer
 	if not v:
 		for tab in tabs:
 			tab.visible = false
@@ -303,6 +322,11 @@ func _is_other_ui_open() -> bool:
 		elif child is Control and child.visible:
 			for sub in child.get_children():
 				if sub is Control and sub.visible:
+					return true
+		else:
+			# Plain Node (e.g. BattleArenaUI): check for visible CanvasLayer children
+			for sub in child.get_children():
+				if sub is CanvasLayer and sub.visible:
 					return true
 	return false
 

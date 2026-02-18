@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 # StatusEffects, FieldEffects available via class_name
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 # === Scene node refs (from .tscn) ===
 @onready var weather_bar: PanelContainer = $WeatherBar
@@ -50,12 +51,12 @@ var _is_animating_log: bool = false
 var _initial_setup: bool = false
 
 const TYPE_COLORS = {
-	"spicy": Color(0.9, 0.2, 0.1),
-	"sweet": Color(0.9, 0.5, 0.7),
-	"sour": Color(0.7, 0.8, 0.2),
-	"herbal": Color(0.2, 0.7, 0.2),
-	"umami": Color(0.5, 0.3, 0.2),
-	"grain": Color(0.8, 0.7, 0.3),
+	"spicy": UITokens.TYPE_SPICY,
+	"sweet": UITokens.TYPE_SWEET,
+	"sour": UITokens.TYPE_SOUR,
+	"herbal": UITokens.TYPE_HERBAL,
+	"umami": UITokens.TYPE_UMAMI,
+	"grain": UITokens.TYPE_GRAIN,
 }
 
 const WEATHER_NAMES = {
@@ -78,21 +79,42 @@ const STATUS_MAX_TURNS = {
 }
 
 const STATUS_COLORS = {
-	"burned": Color(0.9, 0.4, 0.1),
-	"frozen": Color(0.3, 0.7, 1.0),
-	"poisoned": Color(0.6, 0.2, 0.8),
-	"drowsy": Color(0.7, 0.6, 0.9),
-	"wilted": Color(0.5, 0.6, 0.3),
-	"soured": Color(0.8, 0.8, 0.2),
-	"brined": Color(0.2, 0.8, 0.8),
+	"burned": UITokens.TEXT_DANGER,
+	"frozen": UITokens.TEXT_INFO,
+	"poisoned": UITokens.ACCENT_BERRY,
+	"drowsy": Color("9A84A9"),
+	"wilted": UITokens.TYPE_HERBAL,
+	"soured": UITokens.TYPE_SOUR,
+	"brined": UITokens.STAMP_BLUE,
 }
 
 func _ready() -> void:
+	UITheme.init()
+	UITheme.apply_panel(weather_bar)
+	UITheme.style_small(weather_label)
+	UITheme.style_subheading(enemy_name)
+	UITheme.style_small(enemy_type_label)
+	UITheme.style_small(enemy_status)
+	UITheme.style_small(enemy_stat_label)
+	UITheme.style_small(enemy_hazard_label)
+	UITheme.style_subheading(player_name)
+	UITheme.style_small(player_type_label)
+	UITheme.style_small(player_status)
+	UITheme.style_small(player_ability_label)
+	UITheme.style_small(player_item_label)
+	UITheme.style_small(player_stat_label)
+	UITheme.style_small(player_hazard_label)
+	UITheme.style_richtext_defaults(battle_log)
+
 	for i in range(move_buttons.size()):
 		var idx = i
+		UITheme.style_button(move_buttons[i], "primary")
 		move_buttons[i].pressed.connect(func(): _on_move_pressed(idx))
 		move_buttons[i].mouse_entered.connect(func(): _on_move_hover(idx, true))
 		move_buttons[i].mouse_exited.connect(func(): _on_move_hover(idx, false))
+	UITheme.style_button(flee_button, "danger")
+	UITheme.style_button(item_button, "secondary")
+	UITheme.style_button(switch_button, "secondary")
 	flee_button.pressed.connect(_on_flee_pressed)
 	item_button.pressed.connect(_on_item_pressed)
 	switch_button.pressed.connect(_on_switch_pressed)
@@ -102,6 +124,7 @@ func _create_dynamic_ui() -> void:
 	# Waiting for opponent label (PvP)
 	waiting_label = Label.new()
 	waiting_label.text = "Waiting for opponent..."
+	UITheme.style_toast(waiting_label)
 	waiting_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	waiting_label.anchors_preset = Control.PRESET_CENTER
 	waiting_label.visible = false
@@ -346,14 +369,15 @@ func _tween_hp_bar(bar: ProgressBar, new_value: float, duration: float = 0.5) ->
 	tween.tween_property(bar, "value", new_value, duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	# Color tint based on percentage
 	var pct = new_value / bar.max_value if bar.max_value > 0 else 0.0
-	var color: Color
-	if pct > 0.5:
-		color = Color(0.2, 0.8, 0.2)
-	elif pct > 0.25:
-		color = Color(0.9, 0.8, 0.1)
-	else:
-		color = Color(0.9, 0.2, 0.1)
+	var color: Color = _hp_tint_color(pct)
 	tween.parallel().tween_property(bar, "modulate", color, duration * 0.5)
+
+func _hp_tint_color(pct: float) -> Color:
+	if pct > 0.5:
+		return UITokens.STAMP_GREEN
+	if pct > 0.25:
+		return UITokens.STAMP_GOLD
+	return UITokens.STAMP_RED
 
 # === HIT FLASH ===
 
@@ -394,18 +418,19 @@ func _screen_shake(duration: float = 0.3, intensity: float = 8.0) -> void:
 func _spawn_damage_number(amount: int, target: String, effectiveness: String = "") -> void:
 	var lbl = Label.new()
 	lbl.text = str(amount)
-	lbl.add_theme_font_size_override("font_size", 28)
+	UITheme.style_heading(lbl)
+	lbl.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_H2))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.z_index = 100
 
 	# Color based on effectiveness
 	match effectiveness:
 		"super_effective":
-			lbl.add_theme_color_override("font_color", Color(0.2, 1.0, 0.2))
+			lbl.add_theme_color_override("font_color", UITokens.STAMP_GREEN)
 		"not_very_effective":
-			lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.0))
+			lbl.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 		_:
-			lbl.add_theme_color_override("font_color", Color.WHITE)
+			lbl.add_theme_color_override("font_color", UITokens.PAPER_CREAM)
 
 	# Position over target
 	if target == "enemy":
@@ -455,7 +480,7 @@ func _refresh_ui() -> void:
 		enemy_hp_bar.value = enemy.get("hp", 0)
 		# Reset HP bar color on initial setup
 		var pct = float(enemy.get("hp", 0)) / enemy_max_hp if enemy_max_hp > 0 else 0.0
-		enemy_hp_bar.modulate = Color(0.2, 0.8, 0.2) if pct > 0.5 else (Color(0.9, 0.8, 0.1) if pct > 0.25 else Color(0.9, 0.2, 0.1))
+		enemy_hp_bar.modulate = _hp_tint_color(pct)
 	# Enemy types
 	var species = DataRegistry.get_species(enemy.get("species_id", ""))
 	var enemy_types: Array = enemy.get("types", [])
@@ -479,7 +504,7 @@ func _refresh_ui() -> void:
 		if _initial_setup:
 			player_hp_bar.value = creature.get("hp", 0)
 			var php = float(creature.get("hp", 0)) / max_hp if max_hp > 0 else 0.0
-			player_hp_bar.modulate = Color(0.2, 0.8, 0.2) if php > 0.5 else (Color(0.9, 0.8, 0.1) if php > 0.25 else Color(0.9, 0.2, 0.1))
+			player_hp_bar.modulate = _hp_tint_color(php)
 		# Player types
 		var p_species = DataRegistry.get_species(creature.get("species_id", ""))
 		var p_types: Array = creature.get("types", [])
@@ -580,11 +605,13 @@ func _show_item_panel() -> void:
 	item_panel = PanelContainer.new()
 	item_panel.anchors_preset = Control.PRESET_CENTER
 	item_panel.custom_minimum_size = Vector2(350, 0)
+	UITheme.apply_panel(item_panel)
 	var vbox = VBoxContainer.new()
 	item_panel.add_child(vbox)
 
 	var title = Label.new()
 	title.text = "Use Item"
+	UITheme.style_subheading(title)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
@@ -600,6 +627,7 @@ func _show_item_panel() -> void:
 		var btn = Button.new()
 		btn.text = "%s x%d — %s" % [bi.display_name, PlayerData.inventory[item_id], bi.description]
 		btn.custom_minimum_size.y = 32
+		UITheme.style_button(btn, "secondary")
 		var iid = item_id
 		var effect = bi.effect_type
 		btn.pressed.connect(func(): _on_item_selected(iid, effect))
@@ -608,11 +636,13 @@ func _show_item_panel() -> void:
 	if not has_items:
 		var empty_label = Label.new()
 		empty_label.text = "No battle items in inventory."
+		UITheme.style_small(empty_label)
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vbox.add_child(empty_label)
 
 	var cancel = Button.new()
 	cancel.text = "Cancel"
+	UITheme.style_button(cancel, "danger")
 	cancel.pressed.connect(func():
 		item_panel.queue_free()
 		item_panel = null
@@ -633,11 +663,13 @@ func _show_item_target_panel(item_id: String, effect_type: String) -> void:
 	item_panel = PanelContainer.new()
 	item_panel.anchors_preset = Control.PRESET_CENTER
 	item_panel.custom_minimum_size = Vector2(350, 0)
+	UITheme.apply_panel(item_panel)
 	var vbox = VBoxContainer.new()
 	item_panel.add_child(vbox)
 
 	var title = Label.new()
 	title.text = "Select Target"
+	UITheme.style_subheading(title)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
@@ -654,6 +686,7 @@ func _show_item_target_panel(item_id: String, effect_type: String) -> void:
 		var btn = Button.new()
 		btn.text = "%s — HP: %d/%d" % [creature.get("nickname", "???"), hp, max_hp]
 		btn.custom_minimum_size.y = 28
+		UITheme.style_button(btn, "secondary")
 		var cidx = i
 		var iid = item_id
 		btn.pressed.connect(func():
@@ -668,6 +701,7 @@ func _show_item_target_panel(item_id: String, effect_type: String) -> void:
 
 	var cancel = Button.new()
 	cancel.text = "Cancel"
+	UITheme.style_button(cancel, "danger")
 	cancel.pressed.connect(func():
 		item_panel.queue_free()
 		item_panel = null
@@ -688,11 +722,13 @@ func _show_switch_panel() -> void:
 	switch_panel = PanelContainer.new()
 	switch_panel.anchors_preset = Control.PRESET_CENTER
 	switch_panel.custom_minimum_size = Vector2(400, 0)
+	UITheme.apply_panel(switch_panel)
 	var vbox = VBoxContainer.new()
 	switch_panel.add_child(vbox)
 
 	var title = Label.new()
 	title.text = "Switch Creature"
+	UITheme.style_subheading(title)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
@@ -708,6 +744,7 @@ func _show_switch_panel() -> void:
 		var btn = Button.new()
 		btn.text = "%s Lv.%d — HP: %d/%d%s" % [c.get("nickname", "???"), c.get("level", 1), hp, max_hp, status_text]
 		btn.custom_minimum_size.y = 36
+		UITheme.style_button(btn, "secondary")
 		if i == current or hp <= 0:
 			btn.disabled = true
 		else:
@@ -726,10 +763,12 @@ func _show_switch_panel() -> void:
 	if not found_any:
 		var lbl = Label.new()
 		lbl.text = "No other creatures available!"
+		UITheme.style_small(lbl)
 		vbox.add_child(lbl)
 
 	var cancel_btn = Button.new()
 	cancel_btn.text = "Cancel"
+	UITheme.style_button(cancel_btn, "danger")
 	cancel_btn.pressed.connect(func():
 		switch_panel.queue_free()
 		switch_panel = null
@@ -751,22 +790,26 @@ func _show_move_replace_dialog(creature_idx: int, new_move_id: String) -> void:
 	move_replace_panel = PanelContainer.new()
 	move_replace_panel.anchors_preset = Control.PRESET_CENTER
 	move_replace_panel.custom_minimum_size = Vector2(450, 0)
+	UITheme.apply_panel(move_replace_panel)
 	var vbox = VBoxContainer.new()
 	move_replace_panel.add_child(vbox)
 
 	var title = Label.new()
 	title.text = "Learn %s?" % new_move.display_name
+	UITheme.style_subheading(title)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
 	var desc = Label.new()
 	var power_text = "Pwr:%d" % new_move.power if new_move.power > 0 else "Status"
 	desc.text = "%s | %s | %s | Acc:%d%%" % [new_move.type.capitalize(), new_move.category.capitalize(), power_text, new_move.accuracy]
+	UITheme.style_small(desc)
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(desc)
 
 	var sep = Label.new()
 	sep.text = "Replace which move?"
+	UITheme.style_body(sep)
 	sep.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(sep)
 
@@ -783,6 +826,7 @@ func _show_move_replace_dialog(creature_idx: int, new_move_id: String) -> void:
 		var old_power_text = "Pwr:%d" % old_move.power if old_move.power > 0 else "Status"
 		btn.text = "%s — %s | %s | %d/%d PP" % [old_move.display_name, old_move.type.capitalize(), old_power_text, old_pp, old_move.pp]
 		btn.custom_minimum_size.y = 36
+		UITheme.style_button(btn, "secondary")
 		var move_idx = i
 		var nid = new_move_id
 		var cidx = creature_idx
@@ -802,7 +846,7 @@ func _show_move_replace_dialog(creature_idx: int, new_move_id: String) -> void:
 				if move_idx < pp_arr.size():
 					pp_arr[move_idx] = new_move.pp
 					PlayerData.party[cidx]["pp"] = pp_arr
-			battle_log.append_text("[color=green]Replaced with %s![/color]\n" % new_move.display_name)
+			battle_log.append_text("[color=#3F6A47]Replaced with %s![/color]\n" % new_move.display_name)
 			move_replace_panel.queue_free()
 			move_replace_panel = null
 			_refresh_ui()
@@ -811,6 +855,7 @@ func _show_move_replace_dialog(creature_idx: int, new_move_id: String) -> void:
 
 	var skip_btn = Button.new()
 	skip_btn.text = "Don't learn %s" % new_move.display_name
+	UITheme.style_button(skip_btn, "danger")
 	skip_btn.pressed.connect(func():
 		battle_mgr.skip_move_learn.rpc_id(1)
 		battle_log.append_text("Chose not to learn %s.\n" % new_move.display_name)
@@ -834,6 +879,7 @@ func _show_summary_screen() -> void:
 
 	summary_panel = PanelContainer.new()
 	summary_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	summary_panel.add_theme_stylebox_override("panel", UITheme.make_panel_style(UITokens.PAPER_CREAM, UITokens.STAMP_BROWN, 10, 3))
 	# Start invisible for slide-in animation
 	summary_panel.modulate.a = 0.0
 	summary_panel.visible = true
@@ -848,19 +894,19 @@ func _show_summary_screen() -> void:
 	var title = Label.new()
 	if _summary_victory:
 		title.text = "Victory!"
-		title.add_theme_color_override("font_color", Color(0.2, 0.9, 0.2))
+		title.add_theme_color_override("font_color", UITokens.STAMP_GREEN)
 	else:
 		title.text = "Defeat..."
-		title.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2))
+		title.add_theme_color_override("font_color", UITokens.STAMP_RED)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 24)
+	UITheme.style_heading(title)
 	vbox.add_child(title)
 
 	# XP section
 	if battle_mgr.summary_xp_results.size() > 0:
 		var xp_header = Label.new()
 		xp_header.text = "Experience:"
-		xp_header.add_theme_font_size_override("font_size", 16)
+		UITheme.style_body(xp_header)
 		vbox.add_child(xp_header)
 		for r in battle_mgr.summary_xp_results:
 			var idx = r.get("creature_idx", 0)
@@ -873,8 +919,9 @@ func _show_summary_screen() -> void:
 				text += " (Level %d!)" % lvl
 			var lbl = Label.new()
 			lbl.text = text
+			UITheme.style_small(lbl)
 			if r.get("level_ups", []).size() > 0:
-				lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.0))
+				lbl.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 			vbox.add_child(lbl)
 
 	# Evolutions
@@ -884,7 +931,8 @@ func _show_summary_screen() -> void:
 			var new_species = DataRegistry.get_species(evo.get("new_species_id", ""))
 			var evo_name = new_species.display_name if new_species else evo.get("new_species_id", "")
 			lbl.text = "  Evolved into %s!" % evo_name
-			lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.8))
+			UITheme.style_small(lbl)
+			lbl.add_theme_color_override("font_color", UITokens.TYPE_SWEET)
 			vbox.add_child(lbl)
 
 	# New moves
@@ -895,27 +943,30 @@ func _show_summary_screen() -> void:
 				var move_name = move_def.display_name if move_def else nm.get("move_id", "???")
 				var lbl = Label.new()
 				lbl.text = "  Learned %s!" % move_name
-				lbl.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3))
+				UITheme.style_small(lbl)
+				lbl.add_theme_color_override("font_color", UITokens.STAMP_GREEN)
 				vbox.add_child(lbl)
 
 	# Drops section
 	if battle_mgr.summary_drops.size() > 0:
 		var drop_header = Label.new()
 		drop_header.text = "Items received:"
-		drop_header.add_theme_font_size_override("font_size", 16)
+		UITheme.style_body(drop_header)
 		vbox.add_child(drop_header)
 		for item_id in battle_mgr.summary_drops:
 			var ingredient = DataRegistry.get_ingredient(item_id)
 			var item_name = ingredient.display_name if ingredient else item_id
 			var lbl = Label.new()
 			lbl.text = "  %s x%d" % [item_name, battle_mgr.summary_drops[item_id]]
+			UITheme.style_small(lbl)
 			vbox.add_child(lbl)
 
 	# Trainer rewards
 	if battle_mgr.summary_trainer_money > 0:
 		var lbl = Label.new()
 		lbl.text = "$%d earned!" % battle_mgr.summary_trainer_money
-		lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.0))
+		UITheme.style_small(lbl)
+		lbl.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 		vbox.add_child(lbl)
 	if battle_mgr.summary_trainer_ingredients.size() > 0:
 		for item_id in battle_mgr.summary_trainer_ingredients:
@@ -923,32 +974,37 @@ func _show_summary_screen() -> void:
 			var item_name = ingredient.display_name if ingredient else item_id
 			var lbl = Label.new()
 			lbl.text = "  Bonus: %s x%d" % [item_name, battle_mgr.summary_trainer_ingredients[item_id]]
+			UITheme.style_small(lbl)
 			vbox.add_child(lbl)
 
 	# PvP loss
 	if battle_mgr.summary_pvp_loss.size() > 0:
 		var pvp_header = Label.new()
 		pvp_header.text = "Items lost:"
-		pvp_header.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
+		UITheme.style_body(pvp_header)
+		pvp_header.add_theme_color_override("font_color", UITokens.STAMP_RED)
 		vbox.add_child(pvp_header)
 		for item_id in battle_mgr.summary_pvp_loss:
 			var ingredient = DataRegistry.get_ingredient(item_id)
 			var item_name = ingredient.display_name if ingredient else item_id
 			var lbl = Label.new()
 			lbl.text = "  %s x%d" % [item_name, battle_mgr.summary_pvp_loss[item_id]]
+			UITheme.style_small(lbl)
 			vbox.add_child(lbl)
 
 	# Defeat penalty
 	if battle_mgr.summary_defeat_penalty > 0:
 		var lbl = Label.new()
 		lbl.text = "Lost $%d. Returned to camp." % battle_mgr.summary_defeat_penalty
-		lbl.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
+		UITheme.style_small(lbl)
+		lbl.add_theme_color_override("font_color", UITokens.STAMP_RED)
 		vbox.add_child(lbl)
 
 	# Continue button
 	var continue_btn = Button.new()
 	continue_btn.text = "Continue"
 	continue_btn.custom_minimum_size.y = 40
+	UITheme.style_button(continue_btn, "primary")
 	continue_btn.pressed.connect(_dismiss_summary)
 	vbox.add_child(continue_btn)
 
@@ -972,26 +1028,26 @@ func _on_battle_rewards(drops: Dictionary) -> void:
 			var ingredient = DataRegistry.get_ingredient(item_id)
 			var item_name = ingredient.display_name if ingredient else item_id
 			drop_text += "%s x%d  " % [item_name, drops[item_id]]
-		battle_log.append_text("[color=cyan]Drops: %s[/color]\n" % drop_text.strip_edges())
+		battle_log.append_text("[color=#3E5C7A]Drops: %s[/color]\n" % drop_text.strip_edges())
 
 func _on_trainer_rewards(money: int, ingredients: Dictionary) -> void:
 	battle_mgr.summary_trainer_money = money
 	battle_mgr.summary_trainer_ingredients = ingredients
-	battle_log.append_text("[color=yellow]Trainer reward: $%d[/color]\n" % money)
+	battle_log.append_text("[color=#9C6A1A]Trainer reward: $%d[/color]\n" % money)
 	for item_id in ingredients:
 		var ingredient = DataRegistry.get_ingredient(item_id)
 		var item_name = ingredient.display_name if ingredient else item_id
-		battle_log.append_text("[color=yellow]  + %s x%d[/color]\n" % [item_name, ingredients[item_id]])
+		battle_log.append_text("[color=#9C6A1A]  + %s x%d[/color]\n" % [item_name, ingredients[item_id]])
 
 func _on_pvp_loss(lost_items: Dictionary) -> void:
 	battle_mgr.summary_pvp_loss = lost_items
-	battle_log.append_text("[color=red]Lost items in PvP defeat![/color]\n")
+	battle_log.append_text("[color=#A6473F]Lost items in PvP defeat![/color]\n")
 
 func _on_defeat_penalty(money_lost: int) -> void:
 	battle_mgr.summary_defeat_penalty = money_lost
 	if money_lost > 0:
-		battle_log.append_text("[color=red]Lost $%d![/color]\n" % money_lost)
-	battle_log.append_text("[color=red]Returned to camp.[/color]\n")
+		battle_log.append_text("[color=#A6473F]Lost $%d![/color]\n" % money_lost)
+	battle_log.append_text("[color=#A6473F]Returned to camp.[/color]\n")
 
 # === TURN RESULT + XP ===
 
@@ -1049,24 +1105,24 @@ func _on_xp_result(results: Dictionary) -> void:
 		battle_mgr.summary_xp_results.append(r)
 		var xp = r.get("xp_gained", 0)
 		if xp > 0:
-			battle_log.append_text("[color=cyan]+%d XP[/color]\n" % xp)
+			battle_log.append_text("[color=#3E5C7A]+%d XP[/color]\n" % xp)
 		for lvl in r.get("level_ups", []):
-			battle_log.append_text("[color=yellow]Level up! Now Lv.%d![/color]\n" % lvl)
+			battle_log.append_text("[color=#9C6A1A]Level up! Now Lv.%d![/color]\n" % lvl)
 		for m in r.get("new_moves", []):
 			battle_mgr.summary_new_moves.append(m)
 			var move_def = DataRegistry.get_move(m.get("move_id", ""))
 			var move_name = move_def.display_name if move_def else m.get("move_id", "???")
 			if m.get("auto", false):
-				battle_log.append_text("[color=green]Learned %s![/color]\n" % move_name)
+				battle_log.append_text("[color=#3F6A47]Learned %s![/color]\n" % move_name)
 			else:
-				battle_log.append_text("[color=yellow]Wants to learn %s! (Full moveset)[/color]\n" % move_name)
+				battle_log.append_text("[color=#9C6A1A]Wants to learn %s! (Full moveset)[/color]\n" % move_name)
 				# Show move-replace dialog
 				_show_move_replace_dialog(r.get("creature_idx", 0), m.get("move_id", ""))
 		if r.get("evolved", false):
 			battle_mgr.summary_evolutions.append({"creature_idx": r.get("creature_idx", 0), "new_species_id": r.get("new_species_id", "")})
 			var new_species = DataRegistry.get_species(r.get("new_species_id", ""))
 			var evo_name = new_species.display_name if new_species else r.get("new_species_id", "")
-			battle_log.append_text("[color=magenta]Evolved into %s![/color]\n" % evo_name)
+			battle_log.append_text("[color=#B56A7A]Evolved into %s![/color]\n" % evo_name)
 
 	# Tween XP bar
 	var active_idx = battle_mgr.client_active_creature_idx if battle_mgr else 0
@@ -1088,7 +1144,7 @@ func _on_trainer_dialogue(trainer_name: String, text: String, _is_before: bool) 
 	if ui and ui.has_method("show_dialogue"):
 		ui.show_dialogue(trainer_name, text)
 	else:
-		battle_log.append_text("[color=orange]%s: %s[/color]\n" % [trainer_name, text])
+		battle_log.append_text("[color=#9C6A1A]%s: %s[/color]\n" % [trainer_name, text])
 
 # === LOG FORMATTING ===
 
@@ -1110,17 +1166,17 @@ func _format_log_entry(entry: Dictionary) -> String:
 			if entry.get("blocked", false):
 				return "%s's attack %s" % [actor_name, entry.get("message", "was blocked!")]
 			if entry.get("immune", false):
-				return text + " [color=gray]It doesn't affect the target...[/color]"
+				return text + " [color=#7A6A59]It doesn't affect the target...[/color]"
 			if entry.has("damage"):
 				text += " Dealt %d damage." % entry.damage
 			if entry.get("hit_count", 1) > 1:
 				text += " Hit %d times!" % entry.hit_count
 			if entry.get("effectiveness") == "super_effective":
-				text += " [color=green]Super effective![/color]"
+				text += " [color=#3F6A47]Super effective![/color]"
 			elif entry.get("effectiveness") == "not_very_effective":
-				text += " [color=yellow]Not very effective...[/color]"
+				text += " [color=#9C6A1A]Not very effective...[/color]"
 			elif entry.get("effectiveness") == "immune":
-				text += " [color=gray]No effect![/color]"
+				text += " [color=#7A6A59]No effect![/color]"
 			if entry.get("critical", false):
 				text += " Critical hit!"
 			if entry.has("recoil"):
@@ -1160,9 +1216,9 @@ func _format_log_entry(entry: Dictionary) -> String:
 			if entry.has("knocked_off_item"):
 				text += " Knocked off %s!" % entry.knocked_off_item
 			if entry.get("focus_sash_triggered", false):
-				text += " [color=cyan]Held on with Focus Spatula![/color]"
+				text += " [color=#3E5C7A]Held on with Focus Spatula![/color]"
 			if entry.get("bond_endure_triggered", false):
-				text += " [color=yellow]Toughed it out from the bond with its trainer![/color]"
+				text += " [color=#9C6A1A]Toughed it out from the bond with its trainer![/color]"
 			if entry.has("life_orb_recoil"):
 				text += " Lost %d HP from Flavor Crystal!" % entry.life_orb_recoil
 			if entry.get("switch_after", false):
@@ -1180,15 +1236,15 @@ func _format_log_entry(entry: Dictionary) -> String:
 			# Ability messages
 			if entry.has("ability_messages"):
 				for amsg in entry.ability_messages:
-					text += "\n  [color=purple]%s[/color]" % amsg
+					text += "\n  [color=#6B4E38]%s[/color]" % amsg
 			# Item messages
 			if entry.has("item_messages"):
 				for imsg in entry.item_messages:
-					text += "\n  [color=cyan]%s[/color]" % imsg
+					text += "\n  [color=#3E5C7A]%s[/color]" % imsg
 			return text
 		"ability_trigger":
 			var actor_name = "Your creature" if entry.get("actor") == "player" else "Enemy"
-			return "[color=purple]%s's %s[/color]" % [actor_name, entry.get("message", "")]
+			return "[color=#6B4E38]%s's %s[/color]" % [actor_name, entry.get("message", "")]
 		"status_damage":
 			var actor_name = "Your creature" if entry.get("actor") == "player" else "Enemy"
 			return "%s %s (%d damage)" % [actor_name, entry.get("message", ""), entry.get("damage", 0)]
@@ -1208,9 +1264,9 @@ func _format_log_entry(entry: Dictionary) -> String:
 			var actor_name = "Your creature" if entry.get("actor") == "player" else "Enemy"
 			return "%s was affected by %s!" % [actor_name, entry.get("hazard", "hazards")]
 		"trick_room_set":
-			return "[color=purple]Trick Room distorted the dimensions![/color]"
+			return "[color=#6B4E38]Trick Room distorted the dimensions![/color]"
 		"trick_room_ended":
-			return "[color=purple]Trick Room wore off.[/color]"
+			return "[color=#6B4E38]Trick Room wore off.[/color]"
 		"taunt_applied":
 			var target_name = "Your creature" if entry.get("actor") == "enemy" else "Enemy"
 			return "%s was taunted!" % target_name
@@ -1236,7 +1292,7 @@ func _format_log_entry(entry: Dictionary) -> String:
 			return "But it failed!"
 		"bond_cured":
 			var actor_name2 = "Your creature" if entry.get("actor") == "player" else "Enemy"
-			return "[color=yellow]%s's bond cured its %s![/color]" % [actor_name2, entry.get("status", "status")]
+			return "[color=#9C6A1A]%s's bond cured its %s![/color]" % [actor_name2, entry.get("status", "status")]
 		"sleep_talk_move":
 			var actor_name2 = "Your creature" if entry.get("actor") == "player" else "Enemy"
 			return "%s used a move in its sleep!" % actor_name2
@@ -1244,19 +1300,19 @@ func _format_log_entry(entry: Dictionary) -> String:
 			var item_name = entry.get("item_name", "Item")
 			var creature_name = entry.get("creature_name", "creature")
 			var msg = entry.get("message", "")
-			return "[color=cyan]Used %s on %s! %s[/color]" % [item_name, creature_name, msg]
+			return "[color=#3E5C7A]Used %s on %s! %s[/color]" % [item_name, creature_name, msg]
 		"trainer_switch":
 			return "Trainer sent out the next creature!"
 		"victory":
-			return "[color=green]Victory![/color]"
+			return "[color=#3F6A47]Victory![/color]"
 		"defeat":
-			return "[color=red]All your creatures fainted![/color]"
+			return "[color=#A6473F]All your creatures fainted![/color]"
 		"fled":
 			return "Got away safely!"
 		"flee_failed":
 			return "Couldn't escape!"
 		"fainted":
-			return "[color=red]Your creature fainted![/color] Switch to another!"
+			return "[color=#A6473F]Your creature fainted![/color] Switch to another!"
 		"switch":
 			return "Switched creature!"
 	return ""

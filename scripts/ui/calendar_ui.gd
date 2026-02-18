@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
+
 var is_open: bool = false
 var current_month: int = 3
 var current_day: int = 1
@@ -27,6 +29,7 @@ const MONTH_NAMES = [
 
 func _ready() -> void:
 	layer = 10
+	UITheme.init()
 	_build_ui()
 	visible = false
 
@@ -37,13 +40,7 @@ func _build_ui() -> void:
 	panel.anchor_right = 0.85
 	panel.anchor_top = 0.05
 	panel.anchor_bottom = 0.95
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.12, 0.1, 0.08, 0.95)
-	style.border_color = Color(0.45, 0.35, 0.2)
-	style.set_border_width_all(3)
-	style.set_corner_radius_all(8)
-	style.set_content_margin_all(16)
-	panel.add_theme_stylebox_override("panel", style)
+	UITheme.style_modal(panel)
 	add_child(panel)
 
 	var vbox = VBoxContainer.new()
@@ -59,6 +56,7 @@ func _build_ui() -> void:
 	prev_btn = Button.new()
 	prev_btn.text = "<"
 	prev_btn.custom_minimum_size = Vector2(40, 40)
+	UITheme.style_button(prev_btn, "secondary")
 	prev_btn.pressed.connect(_on_prev_month)
 	header.add_child(prev_btn)
 
@@ -69,19 +67,21 @@ func _build_ui() -> void:
 
 	month_label = Label.new()
 	month_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	month_label.add_theme_font_size_override("font_size", 28)
-	month_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
+	UITheme.style_title(month_label)
+	month_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_H2))
+	month_label.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 	title_box.add_child(month_label)
 
 	year_label = Label.new()
 	year_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	year_label.add_theme_font_size_override("font_size", 16)
-	year_label.add_theme_color_override("font_color", Color(0.7, 0.65, 0.55))
+	UITheme.style_caption(year_label)
+	year_label.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
 	title_box.add_child(year_label)
 
 	next_btn = Button.new()
 	next_btn.text = ">"
 	next_btn.custom_minimum_size = Vector2(40, 40)
+	UITheme.style_button(next_btn, "secondary")
 	next_btn.pressed.connect(_on_next_month)
 	header.add_child(next_btn)
 
@@ -92,8 +92,8 @@ func _build_ui() -> void:
 		var lbl = Label.new()
 		lbl.text = d
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.add_theme_font_size_override("font_size", 14)
-		lbl.add_theme_color_override("font_color", Color(0.6, 0.55, 0.45))
+		UITheme.style_small(lbl)
+		lbl.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		day_header.add_child(lbl)
 	vbox.add_child(day_header)
@@ -108,6 +108,7 @@ func _build_ui() -> void:
 		btn.custom_minimum_size = Vector2(50, 50)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		btn.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		UITheme.style_button(btn, "secondary")
 		var day_num = i + 1
 		btn.pressed.connect(_on_day_clicked.bind(day_num))
 		grid.add_child(btn)
@@ -116,26 +117,22 @@ func _build_ui() -> void:
 
 	# Event detail panel
 	event_panel = PanelContainer.new()
-	event_panel.custom_minimum_size = Vector2(0, 120)
-	var ev_style = StyleBoxFlat.new()
-	ev_style.bg_color = Color(0.15, 0.12, 0.1, 0.9)
-	ev_style.set_border_width_all(1)
-	ev_style.border_color = Color(0.3, 0.25, 0.2)
-	ev_style.set_corner_radius_all(4)
-	ev_style.set_content_margin_all(8)
-	event_panel.add_theme_stylebox_override("panel", ev_style)
+	event_panel.custom_minimum_size = UITheme.scaled_vec(Vector2(0, 120))
+	UITheme.style_card(event_panel)
 	vbox.add_child(event_panel)
 
 	event_label = RichTextLabel.new()
 	event_label.bbcode_enabled = true
-	event_label.text = "Click a day to see events."
+	UITheme.style_richtext_defaults(event_label)
+	event_label.text = "[color=#%s]Click a day to see events.[/color]" % UITokens.INK_MEDIUM.to_html(false)
 	event_label.fit_content = true
 	event_panel.add_child(event_label)
 
 	# Close button
 	close_btn = Button.new()
 	close_btn.text = "Close"
-	close_btn.custom_minimum_size = Vector2(100, 36)
+	close_btn.custom_minimum_size = UITheme.scaled_vec(Vector2(100, 36))
+	UITheme.style_button(close_btn, "secondary")
 	close_btn.pressed.connect(close_calendar)
 	vbox.add_child(close_btn)
 
@@ -182,19 +179,32 @@ func _on_next_month() -> void:
 func _on_day_clicked(day_num: int) -> void:
 	var events = CalendarEvents.get_events_for_day(viewing_month, day_num)
 	if events.is_empty():
-		event_label.text = "%s %d - No events." % [MONTH_NAMES[viewing_month - 1], day_num]
+		event_label.text = "[color=#%s]%s %d - No events.[/color]" % [
+			UITokens.INK_MEDIUM.to_html(false),
+			MONTH_NAMES[viewing_month - 1],
+			day_num
+		]
 	else:
-		var text = "[b]%s %d[/b]\n" % [MONTH_NAMES[viewing_month - 1], day_num]
+		var text = "[b][color=#%s]%s %d[/color][/b]\n" % [
+			UITokens.INK_DARK.to_html(false),
+			MONTH_NAMES[viewing_month - 1],
+			day_num
+		]
 		for ev in events:
 			var icon = ""
 			match str(ev.get("type", "")):
 				"birthday":
-					icon = "[color=pink]B[/color] "
+					icon = "[color=#%s]B[/color] " % UITokens.TYPE_SWEET.to_html(false)
 				"festival":
-					icon = "[color=gold]*[/color] "
+					icon = "[color=#%s]*[/color] " % UITokens.STAMP_GOLD.to_html(false)
 				"holiday":
-					icon = "[color=cyan]*[/color] "
-			text += icon + "[b]" + str(ev["name"]) + "[/b] - " + str(ev["description"]) + "\n"
+					icon = "[color=#%s]*[/color] " % UITokens.STAMP_BLUE.to_html(false)
+			text += icon + "[b][color=#%s]%s[/color][/b] [color=#%s]- %s[/color]\n" % [
+				UITokens.INK_DARK.to_html(false),
+				str(ev["name"]),
+				UITokens.INK_MEDIUM.to_html(false),
+				str(ev["description"])
+			]
 		event_label.text = text
 
 func _refresh_display() -> void:
@@ -215,18 +225,22 @@ func _refresh_display() -> void:
 		var day_num = i + 1
 		var btn: Button = day_buttons[i]
 		btn.text = str(day_num)
+		btn.add_theme_color_override("font_color", UITokens.INK_DARK)
+		btn.add_theme_color_override("font_hover_color", UITokens.INK_DARK)
+		btn.add_theme_color_override("font_pressed_color", UITokens.INK_DARK)
 
 		# Reset style
-		var style = StyleBoxFlat.new()
-		style.bg_color = Color(0.2, 0.18, 0.15)
-		style.set_corner_radius_all(4)
-		style.set_content_margin_all(4)
+		var style = UITheme.make_panel_style(UITokens.PAPER_TAN, UITokens.STAMP_BROWN, 4, 1)
+		style.content_margin_left = 4
+		style.content_margin_top = 4
+		style.content_margin_right = 4
+		style.content_margin_bottom = 4
 
 		# Current day highlight
 		if viewing_month == current_month and viewing_year == current_year and day_num == current_day:
-			style.bg_color = Color(0.3, 0.5, 0.3)
-			style.border_color = Color(0.5, 0.8, 0.5)
-			style.set_border_width_all(2)
+			style.bg_color = UITokens.PAPER_CREAM
+			style.border_color = UITokens.STAMP_GOLD
+			style.set_border_width_all(3)
 
 		# Event markers
 		if day_num in event_days:
@@ -235,16 +249,22 @@ func _refresh_display() -> void:
 			for ev in events:
 				match str(ev.get("type", "")):
 					"birthday":
-						style.bg_color = Color(0.35, 0.2, 0.3)
+						style.bg_color = UITokens.PAPER_TAN
+						style.border_color = UITokens.TYPE_SWEET
 						marker += " B"
 					"festival":
-						style.bg_color = Color(0.35, 0.3, 0.15)
+						style.bg_color = UITokens.PAPER_TAN
+						style.border_color = UITokens.STAMP_GOLD
 						marker += " *"
 					"holiday":
-						style.bg_color = Color(0.2, 0.25, 0.35)
+						style.bg_color = UITokens.PAPER_TAN
+						style.border_color = UITokens.STAMP_BLUE
 						marker += " *"
 			btn.text = str(day_num) + marker
 
 		btn.add_theme_stylebox_override("normal", style)
+		btn.add_theme_stylebox_override("hover", style)
+		btn.add_theme_stylebox_override("pressed", style)
+		btn.add_theme_stylebox_override("focus", style)
 
-	event_label.text = "Click a day to see events."
+	event_label.text = "[color=#%s]Click a day to see events.[/color]" % UITokens.INK_MEDIUM.to_html(false)

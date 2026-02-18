@@ -50,6 +50,7 @@ var client_player_choice_locked: String = ""
 var client_enemy_taunt_turns: int = 0
 var client_enemy_encore_turns: int = 0
 var client_enemy_substitute_hp: int = 0
+var client_opponent_name: String = ""
 
 # Summary accumulation (client-side)
 var summary_xp_results: Array = []
@@ -2116,7 +2117,7 @@ func skip_move_learn() -> void:
 
 # === CLIENT ACTIONS ===
 
-func start_battle_client(enemy_data: Dictionary, battle_mode: int = BattleMode.WILD, _opponent_name: String = "") -> void:
+func start_battle_client(enemy_data: Dictionary, battle_mode: int = BattleMode.WILD, opponent_name: String = "") -> void:
 	if in_battle:
 		print("[BattleManager] Client: ignoring duplicate _start_battle_client (already in battle)")
 		return
@@ -2125,6 +2126,7 @@ func start_battle_client(enemy_data: Dictionary, battle_mode: int = BattleMode.W
 	client_active_creature_idx = PlayerData.get_first_alive_creature()
 	awaiting_action = true
 	client_battle_mode = battle_mode
+	client_opponent_name = opponent_name
 	# Reset client state
 	client_weather = ""
 	client_weather_turns = 0

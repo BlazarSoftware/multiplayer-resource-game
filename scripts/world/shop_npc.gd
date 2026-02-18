@@ -37,9 +37,7 @@ func _create_visual() -> void:
 
 	# Label
 	var label = Label3D.new()
-	label.text = display_name
-	label.font_size = 24
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	UITheme.style_label3d(label, display_name, "npc_name")
 	label.position.y = 2.0
 	add_child(label)
 

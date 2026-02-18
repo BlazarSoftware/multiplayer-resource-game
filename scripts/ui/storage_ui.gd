@@ -1,5 +1,9 @@
 extends CanvasLayer
 
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
+
+@onready var panel: PanelContainer = $Panel
+@onready var title_label: Label = $Panel/MarginContainer/VBox/Title
 @onready var party_label: Label = $Panel/MarginContainer/VBox/HBox/PartyPanel/PartyLabel
 @onready var party_list: VBoxContainer = $Panel/MarginContainer/VBox/HBox/PartyPanel/PartyScroll/PartyList
 @onready var storage_label: Label = $Panel/MarginContainer/VBox/HBox/StoragePanel/StorageLabel
@@ -9,6 +13,8 @@ extends CanvasLayer
 
 func _ready() -> void:
 	visible = false
+	UITheme.init()
+	_apply_theme()
 	close_button.pressed.connect(func(): _close())
 	upgrade_button.pressed.connect(func(): _request_upgrade())
 	PlayerData.party_changed.connect(_on_data_changed)
@@ -30,6 +36,7 @@ func _close() -> void:
 	NetworkManager.request_set_busy.rpc_id(1, false)
 
 func _refresh() -> void:
+	_apply_theme()
 	# Party side
 	party_label.text = "Party (%d/%d)" % [PlayerData.party.size(), PlayerData.MAX_PARTY_SIZE]
 	for child in party_list.get_children():
@@ -42,6 +49,7 @@ func _refresh() -> void:
 		var btn = Button.new()
 		btn.text = "Deposit >"
 		btn.disabled = PlayerData.party.size() <= 1 or PlayerData.creature_storage.size() >= PlayerData.storage_capacity
+		UITheme.style_button(btn, "secondary")
 		var idx = i
 		btn.pressed.connect(func(): NetworkManager.request_deposit_creature.rpc_id(1, idx))
 		row.add_child(btn)
@@ -58,6 +66,7 @@ func _refresh() -> void:
 		var btn = Button.new()
 		btn.text = "< Withdraw"
 		btn.disabled = PlayerData.party.size() >= PlayerData.MAX_PARTY_SIZE
+		UITheme.style_button(btn, "secondary")
 		var idx = i
 		btn.pressed.connect(func(): NetworkManager.request_withdraw_creature.rpc_id(1, idx))
 		row.add_child(btn)
@@ -85,6 +94,8 @@ func _create_creature_row(creature: Dictionary) -> HBoxContainer:
 	var types = creature.get("types", [])
 	if types.size() > 0:
 		label.text += "  [%s]" % ", ".join(PackedStringArray(types))
+	UITheme.style_small(label)
+	label.add_theme_color_override("font_color", UITokens.INK_DARK)
 	hbox.add_child(label)
 	return hbox
 
@@ -122,3 +133,13 @@ func _request_upgrade() -> void:
 	var next_tier = _get_current_tier() + 1
 	if next_tier < NetworkManager.STORAGE_TIERS.size():
 		NetworkManager.request_upgrade_storage.rpc_id(1, next_tier)
+
+func _apply_theme() -> void:
+	UITheme.style_modal(panel)
+	UITheme.style_heading(title_label)
+	title_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_H2))
+	title_label.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
+	UITheme.style_subheading(party_label)
+	UITheme.style_subheading(storage_label)
+	UITheme.style_button(upgrade_button, "primary")
+	UITheme.style_button(close_button, "secondary")

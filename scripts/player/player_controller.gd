@@ -31,6 +31,23 @@ var is_busy: bool = false:
 		is_busy = value
 		if busy_indicator:
 			busy_indicator.visible = value
+		_update_busy_transparency()
+
+func _update_busy_transparency() -> void:
+	if mesh == null or mesh.material_override == null:
+		return
+	var local_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else -1
+	if peer_id == local_id:
+		return
+	var mat = mesh.material_override as StandardMaterial3D
+	if mat == null:
+		return
+	if is_busy:
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.albedo_color.a = 0.35
+	else:
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+		mat.albedo_color.a = 1.0
 
 var peer_id: int = 1
 
@@ -110,6 +127,9 @@ func _apply_visuals() -> void:
 		mesh.material_override = mat
 	if nameplate:
 		nameplate.text = player_name_display
+		UITheme.style_label3d(nameplate, "", "npc_name")
+	if busy_indicator:
+		UITheme.style_label3d(busy_indicator, "", "interaction_hint")
 		# Hide own nameplate and busy indicator
 		var local_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else -1
 		if peer_id == local_id:

@@ -272,12 +272,10 @@ func _add_door_visuals(parent: Node3D, player_name: String) -> void:
 	parent.add_child(indicator)
 	# Label (larger, brighter)
 	var label = Label3D.new()
-	label.text = player_name + "'s\nRestaurant"
+	UITheme.style_label3d(label, player_name + "'s\nRestaurant", "landmark")
 	label.font_size = 64
 	label.outline_size = 14
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.position = Vector3(0, 3.6, -0.3)
-	label.modulate = Color(1, 0.95, 0.5)
 	parent.add_child(label)
 
 func remove_overworld_door(player_name: String) -> void:

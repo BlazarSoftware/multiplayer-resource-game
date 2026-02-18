@@ -128,7 +128,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0.5)
 text = "Exit"
 font_size = 64
 outline_size = 8
-modulate = Color(1, 0.3, 0.3, 1)
 
 ; === FARM AREA (left side of restaurant) ===
 [node name="FarmArea" type="Node3D" parent="."]
@@ -156,7 +155,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 text = "Water"
 font_size = 36
 outline_size = 6
-modulate = Color(0.3, 0.6, 1, 1)
 
 ; === KITCHEN AREA (right side, Phase 2 appliances) ===
 [node name="KitchenArea" type="Node3D" parent="."]
@@ -178,4 +176,3 @@ text = "Player's Restaurant"
 font_size = 64
 outline_size = 8
 billboard = 1
-modulate = Color(1, 0.9, 0.5, 1)

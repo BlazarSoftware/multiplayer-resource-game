@@ -59,6 +59,11 @@ func _try_interact() -> void:
 	if shop and shop.has_method("request_open_shop"):
 		shop.request_open_shop.rpc_id(1)
 		return
+	# Check for bank NPC proximity (E key to open bank)
+	var bank = _find_nearest_area("bank_npc", pos, 3.0)
+	if bank and bank.has_method("request_open_bank"):
+		bank.request_open_bank.rpc_id(1)
+		return
 	# Check for trainer NPC proximity (E key to challenge)
 	var trainer = _find_nearest_area("trainer_npc", pos, 4.0)
 	if trainer and trainer.has_method("request_challenge"):

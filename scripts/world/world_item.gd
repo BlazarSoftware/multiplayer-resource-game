@@ -27,6 +27,7 @@ func setup(uid: int, p_item_id: String, p_amount: int, pos: Vector3) -> void:
 			item_label.text = "%s x%d" % [display_name, p_amount]
 		else:
 			item_label.text = display_name
+		UITheme.style_label3d(item_label, "", "world_item")
 		item_label.modulate = icon_color
 
 	if item_mesh:

@@ -1,6 +1,7 @@
 extends Control
 
 # Friends & party tab content for PauseMenu. Ported from friend_list_ui.gd.
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 var tab_bar: TabBar
 var content_scroll: ScrollContainer
@@ -10,6 +11,7 @@ var send_request_btn: Button
 var _current_tab: int = 0
 
 func _ready() -> void:
+	UITheme.init()
 	_build_ui()
 	PlayerData.player_friends_changed.connect(_refresh)
 	PlayerData.player_party_updated.connect(_refresh)
@@ -44,10 +46,12 @@ func _build_ui() -> void:
 	search_bar = LineEdit.new()
 	search_bar.placeholder_text = "Player name..."
 	search_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UITheme.style_input(search_bar)
 	bottom.add_child(search_bar)
 
 	send_request_btn = Button.new()
 	send_request_btn.text = "Send Request"
+	UITheme.style_button(send_request_btn, "secondary")
 	send_request_btn.pressed.connect(_on_send_request)
 	bottom.add_child(send_request_btn)
 
@@ -91,22 +95,26 @@ func _build_friends_tab() -> void:
 		lbl.text = status_icon + name_str
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if online:
-			lbl.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3))
+			lbl.add_theme_color_override("font_color", UITokens.TEXT_SUCCESS)
 		else:
-			lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+			lbl.add_theme_color_override("font_color", UITokens.TEXT_MUTED)
+		UITheme.style_small(lbl)
 		hbox.add_child(lbl)
 		var friend_id = str(friend.get("player_id", ""))
 		if online and PlayerData.group_party_id >= 0 and PlayerData.group_party_leader_id == _get_my_player_id():
 			var invite_btn := Button.new()
 			invite_btn.text = "Invite"
+			UITheme.style_button(invite_btn, "secondary")
 			invite_btn.pressed.connect(_on_invite_friend.bind(friend_id))
 			hbox.add_child(invite_btn)
 		var remove_btn := Button.new()
 		remove_btn.text = "Remove"
+		UITheme.style_button(remove_btn, "danger")
 		remove_btn.pressed.connect(_on_remove_friend.bind(friend_id))
 		hbox.add_child(remove_btn)
 		var block_btn := Button.new()
 		block_btn.text = "Block"
+		UITheme.style_button(block_btn, "danger")
 		block_btn.pressed.connect(_on_block_player.bind(name_str))
 		hbox.add_child(block_btn)
 
@@ -121,14 +129,17 @@ func _build_requests_tab() -> void:
 			var lbl := Label.new()
 			lbl.text = str(req.get("from_name", "Unknown"))
 			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			UITheme.style_small(lbl)
 			hbox.add_child(lbl)
 			var from_id = str(req.get("from_id", ""))
 			var accept_btn := Button.new()
 			accept_btn.text = "Accept"
+			UITheme.style_button(accept_btn, "primary")
 			accept_btn.pressed.connect(_on_accept_request.bind(from_id))
 			hbox.add_child(accept_btn)
 			var decline_btn := Button.new()
 			decline_btn.text = "Decline"
+			UITheme.style_button(decline_btn, "danger")
 			decline_btn.pressed.connect(_on_decline_request.bind(from_id))
 			hbox.add_child(decline_btn)
 
@@ -140,11 +151,13 @@ func _build_requests_tab() -> void:
 			var lbl := Label.new()
 			lbl.text = str(req.get("to_name", "Unknown")) + " (pending)"
 			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.5))
+			UITheme.style_small(lbl)
+			lbl.add_theme_color_override("font_color", UITokens.TEXT_WARNING)
 			hbox.add_child(lbl)
 			var to_id = str(req.get("to_id", ""))
 			var cancel_btn := Button.new()
 			cancel_btn.text = "Cancel"
+			UITheme.style_button(cancel_btn, "danger")
 			cancel_btn.pressed.connect(_on_cancel_request.bind(to_id))
 			hbox.add_child(cancel_btn)
 
@@ -159,6 +172,7 @@ func _build_party_tab() -> void:
 		_add_label("Not in a party.")
 		var create_btn := Button.new()
 		create_btn.text = "Create Party"
+		UITheme.style_button(create_btn, "primary")
 		create_btn.pressed.connect(_on_create_party)
 		content_list.add_child(create_btn)
 		return
@@ -176,23 +190,27 @@ func _build_party_tab() -> void:
 		lbl.text = prefix + name_str + status
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if is_leader:
-			lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+			lbl.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 		elif online:
-			lbl.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3))
+			lbl.add_theme_color_override("font_color", UITokens.TEXT_SUCCESS)
+		UITheme.style_small(lbl)
 		hbox.add_child(lbl)
 		if my_id == PlayerData.group_party_leader_id and mid != my_id:
 			var kick_btn := Button.new()
 			kick_btn.text = "Kick"
+			UITheme.style_button(kick_btn, "danger")
 			kick_btn.pressed.connect(_on_kick_member.bind(mid))
 			hbox.add_child(kick_btn)
 			var transfer_btn := Button.new()
 			transfer_btn.text = "Promote"
+			UITheme.style_button(transfer_btn, "secondary")
 			transfer_btn.pressed.connect(_on_transfer_leader.bind(mid))
 			hbox.add_child(transfer_btn)
-	var leave_btn := Button.new()
-	leave_btn.text = "Leave Party"
-	leave_btn.pressed.connect(_on_leave_party)
-	content_list.add_child(leave_btn)
+		var leave_btn := Button.new()
+		leave_btn.text = "Leave Party"
+		UITheme.style_button(leave_btn, "danger")
+		leave_btn.pressed.connect(_on_leave_party)
+		content_list.add_child(leave_btn)
 
 # === Blocked Tab ===
 
@@ -206,9 +224,11 @@ func _build_blocked_tab() -> void:
 		var lbl := Label.new()
 		lbl.text = str(blocked_id).substr(0, 12) + "..."
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.style_small(lbl)
 		hbox.add_child(lbl)
 		var unblock_btn := Button.new()
 		unblock_btn.text = "Unblock"
+		UITheme.style_button(unblock_btn, "secondary")
 		unblock_btn.pressed.connect(_on_unblock.bind(str(blocked_id)))
 		hbox.add_child(unblock_btn)
 
@@ -217,7 +237,7 @@ func _build_blocked_tab() -> void:
 func _add_label(text: String) -> void:
 	var lbl := Label.new()
 	lbl.text = text
-	lbl.add_theme_font_size_override("font_size", 16)
+	UITheme.style_small(lbl)
 	content_list.add_child(lbl)
 
 func _get_my_player_id() -> String:

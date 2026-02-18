@@ -1,11 +1,13 @@
 extends Control
 
 # Creature party tab content for PauseMenu. Ported from party_ui.gd.
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 var creature_list: VBoxContainer
 var scroll_container: ScrollContainer
 
 func _ready() -> void:
+	UITheme.init()
 	_build_ui()
 	PlayerData.party_changed.connect(_refresh)
 
@@ -31,6 +33,7 @@ func _refresh() -> void:
 	for i in range(PlayerData.party.size()):
 		var creature = PlayerData.party[i]
 		var panel := PanelContainer.new()
+		UITheme.style_card(panel)
 		creature_list.add_child(panel)
 		var hbox := HBoxContainer.new()
 		panel.add_child(hbox)
@@ -45,15 +48,18 @@ func _refresh() -> void:
 		hbox.add_child(vbox)
 		var name_label := Label.new()
 		name_label.text = "%s  Lv.%d" % [creature.get("nickname", "???"), creature.get("level", 1)]
+		UITheme.style_body(name_label)
 		vbox.add_child(name_label)
 		var hp_label := Label.new()
 		hp_label.text = "HP: %d/%d" % [creature.get("hp", 0), creature.get("max_hp", 1)]
+		UITheme.style_small(hp_label)
 		vbox.add_child(hp_label)
 		# XP bar
 		var xp_hbox := HBoxContainer.new()
 		vbox.add_child(xp_hbox)
 		var xp_label := Label.new()
 		xp_label.text = "XP: "
+		UITheme.style_small(xp_label)
 		xp_hbox.add_child(xp_label)
 		var xp_bar := ProgressBar.new()
 		xp_bar.custom_minimum_size = Vector2(100, 12)
@@ -64,6 +70,7 @@ func _refresh() -> void:
 		xp_hbox.add_child(xp_bar)
 		var xp_num := Label.new()
 		xp_num.text = "%d/%d" % [creature.get("xp", 0), creature.get("xp_to_next", 100)]
+		UITheme.style_small(xp_num)
 		xp_hbox.add_child(xp_num)
 		# Stats
 		var stats_label := Label.new()
@@ -71,11 +78,13 @@ func _refresh() -> void:
 			creature.get("attack", 0), creature.get("defense", 0),
 			creature.get("sp_attack", 0), creature.get("sp_defense", 0),
 			creature.get("speed", 0)]
+		UITheme.style_small(stats_label)
 		vbox.add_child(stats_label)
 		# Types
 		var types_label := Label.new()
 		var types = creature.get("types", [])
 		types_label.text = "Types: %s" % ", ".join(PackedStringArray(types))
+		UITheme.style_small(types_label)
 		vbox.add_child(types_label)
 		# Ability
 		var ability_id = creature.get("ability_id", "")
@@ -83,6 +92,7 @@ func _refresh() -> void:
 			var ability = DataRegistry.get_ability(ability_id)
 			var ability_label := Label.new()
 			ability_label.text = "Ability: %s" % (ability.display_name if ability else ability_id)
+			UITheme.style_small(ability_label)
 			vbox.add_child(ability_label)
 		# Held item
 		var held_item_id = creature.get("held_item_id", "")
@@ -96,15 +106,18 @@ func _refresh() -> void:
 			item_label.text = "Held: (none)"
 		item_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		item_hbox.add_child(item_label)
+		UITheme.style_small(item_label)
 		if held_item_id != "":
 			var unequip_btn := Button.new()
 			unequip_btn.text = "Unequip"
+			UITheme.style_button(unequip_btn, "secondary")
 			var cidx = i
 			unequip_btn.pressed.connect(func(): _unequip_item(cidx))
 			item_hbox.add_child(unequip_btn)
 		else:
 			var equip_btn := Button.new()
 			equip_btn.text = "Equip"
+			UITheme.style_button(equip_btn, "primary")
 			var cidx = i
 			equip_btn.pressed.connect(func(): _show_equip_options(cidx))
 			item_hbox.add_child(equip_btn)
@@ -117,6 +130,7 @@ func _refresh() -> void:
 				moves_text += move.display_name + ", "
 		var moves_label := Label.new()
 		moves_label.text = moves_text.rstrip(", ")
+		UITheme.style_small(moves_label)
 		vbox.add_child(moves_label)
 		# IVs
 		var ivs = creature.get("ivs", {})
@@ -125,8 +139,9 @@ func _refresh() -> void:
 			iv_label.text = "IVs: HP:%d ATK:%d DEF:%d SPA:%d SPD:%d SPE:%d" % [
 				int(ivs.get("hp", 0)), int(ivs.get("attack", 0)), int(ivs.get("defense", 0)),
 				int(ivs.get("sp_attack", 0)), int(ivs.get("sp_defense", 0)), int(ivs.get("speed", 0))]
-			iv_label.add_theme_font_size_override("font_size", 12)
-			iv_label.add_theme_color_override("font_color", Color(0.6, 0.8, 1.0))
+			UITheme.style_small(iv_label)
+			iv_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+			iv_label.add_theme_color_override("font_color", UITokens.TEXT_INFO)
 			vbox.add_child(iv_label)
 		# EVs
 		var evs = creature.get("evs", {})
@@ -135,10 +150,12 @@ func _refresh() -> void:
 			for stat in evs:
 				if int(evs[stat]) > 0:
 					ev_text += "%s:%d " % [stat, int(evs[stat])]
-			var ev_label := Label.new()
-			ev_label.text = ev_text
-			ev_label.add_theme_font_size_override("font_size", 12)
-			vbox.add_child(ev_label)
+			if ev_text != "EVs: ":
+				var ev_label := Label.new()
+				ev_label.text = ev_text
+				UITheme.style_small(ev_label)
+				ev_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+				vbox.add_child(ev_label)
 		# Bond
 		var bond_pts = int(creature.get("bond_points", 0))
 		var bond_lvl = int(creature.get("bond_level", 0))
@@ -158,13 +175,15 @@ func _refresh() -> void:
 					"speed": "Speedster", "hp": "Endurance"}
 				personality_text = " - %s" % aff_names.get(highest_stat, highest_stat.capitalize())
 		bond_label.text = "Bond: Level %d (%d pts)%s" % [bond_lvl, bond_pts, personality_text]
-		bond_label.add_theme_font_size_override("font_size", 12)
-		bond_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+		UITheme.style_small(bond_label)
+		bond_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+		bond_label.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 		vbox.add_child(bond_label)
 		# Relearn Move button
 		var relearn_btn := Button.new()
 		relearn_btn.text = "Relearn Move"
 		relearn_btn.custom_minimum_size.y = 28
+		UITheme.style_button(relearn_btn, "secondary")
 		var cidx_relearn = i
 		relearn_btn.pressed.connect(func(): _show_relearn_overlay(cidx_relearn))
 		vbox.add_child(relearn_btn)
@@ -216,18 +235,21 @@ func _show_relearn_overlay(creature_idx: int) -> void:
 	_relearn_panel = PanelContainer.new()
 	_relearn_panel.anchors_preset = Control.PRESET_CENTER
 	_relearn_panel.custom_minimum_size = Vector2(450, 0)
+	UITheme.style_modal(_relearn_panel)
 	var vbox := VBoxContainer.new()
 	_relearn_panel.add_child(vbox)
 
 	var title := Label.new()
 	title.text = "Relearn Move for %s" % creature.get("nickname", "???")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_subheading(title)
 	vbox.add_child(title)
 
 	var sub := Label.new()
 	sub.text = "Select a move to learn, then pick a slot to replace."
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_font_size_override("font_size", 12)
+	UITheme.style_small(sub)
+	sub.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
 	vbox.add_child(sub)
 
 	for move_id in learnable:
@@ -238,6 +260,7 @@ func _show_relearn_overlay(creature_idx: int) -> void:
 		var power_text = "Pwr:%d" % move.power if move.power > 0 else "Status"
 		btn.text = "%s — %s | %s | %s" % [move.display_name, move.type.capitalize(), move.category.capitalize(), power_text]
 		btn.custom_minimum_size.y = 32
+		UITheme.style_button(btn, "secondary")
 		var mid = move_id
 		var cidx = creature_idx
 		btn.pressed.connect(func(): _show_relearn_replace(cidx, mid))
@@ -245,6 +268,7 @@ func _show_relearn_overlay(creature_idx: int) -> void:
 
 	var cancel := Button.new()
 	cancel.text = "Cancel"
+	UITheme.style_button(cancel, "danger")
 	cancel.pressed.connect(func():
 		_relearn_panel.queue_free()
 		_relearn_panel = null
@@ -268,12 +292,14 @@ func _show_relearn_replace(creature_idx: int, new_move_id: String) -> void:
 	_relearn_panel = PanelContainer.new()
 	_relearn_panel.anchors_preset = Control.PRESET_CENTER
 	_relearn_panel.custom_minimum_size = Vector2(450, 0)
+	UITheme.style_modal(_relearn_panel)
 	var vbox := VBoxContainer.new()
 	_relearn_panel.add_child(vbox)
 
 	var title := Label.new()
 	title.text = "Replace which move with %s?" % new_move.display_name
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_subheading(title)
 	vbox.add_child(title)
 
 	for i in range(current_moves.size()):
@@ -284,6 +310,7 @@ func _show_relearn_replace(creature_idx: int, new_move_id: String) -> void:
 		var old_power = "Pwr:%d" % old_move.power if old_move.power > 0 else "Status"
 		btn.text = "%s — %s | %s" % [old_move.display_name, old_move.type.capitalize(), old_power]
 		btn.custom_minimum_size.y = 32
+		UITheme.style_button(btn, "secondary")
 		var replace_idx = i
 		var mid = new_move_id
 		var cidx = creature_idx
@@ -296,6 +323,7 @@ func _show_relearn_replace(creature_idx: int, new_move_id: String) -> void:
 
 	var cancel := Button.new()
 	cancel.text = "Cancel"
+	UITheme.style_button(cancel, "danger")
 	cancel.pressed.connect(func():
 		_relearn_panel.queue_free()
 		_relearn_panel = null

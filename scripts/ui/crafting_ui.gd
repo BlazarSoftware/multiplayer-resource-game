@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
+
 @onready var recipe_list: VBoxContainer = $Panel/VBox/RecipeList
 @onready var close_button: Button = $Panel/VBox/CloseButton
 
@@ -8,12 +10,15 @@ var current_station: String = "" # "kitchen", "workbench", "cauldron", "" for al
 var title_label: Label = null
 
 func _ready() -> void:
+	UITheme.init()
+	UITheme.style_modal($Panel)
+	UITheme.style_button(close_button, "danger")
 	close_button.pressed.connect(_close)
 	# Create title label
 	title_label = Label.new()
 	title_label.text = "Crafting"
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.add_theme_font_size_override("font_size", 20)
+	UITheme.style_heading(title_label)
 	var vbox = $Panel/VBox
 	vbox.add_child(title_label)
 	vbox.move_child(title_label, 0)
@@ -100,6 +105,7 @@ func _add_section_header(text: String) -> void:
 	var header = Label.new()
 	header.text = text
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_subheading(header)
 	recipe_list.add_child(header)
 
 func _add_recipe_row(recipe: Dictionary) -> void:
@@ -110,40 +116,42 @@ func _add_recipe_row(recipe: Dictionary) -> void:
 	if recipe.get("locked", false):
 		var lock_label = Label.new()
 		lock_label.text = "[Locked] "
-		lock_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		UITheme.style_small(lock_label)
+		lock_label.add_theme_color_override("font_color", UITokens.INK_LIGHT)
 		hbox.add_child(lock_label)
 
 	# Recipe name
 	var label = Label.new()
 	label.text = recipe.display_name
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UITheme.style_small(label)
 	if recipe.get("locked", false):
-		label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		label.add_theme_color_override("font_color", UITokens.INK_LIGHT)
 	hbox.add_child(label)
 
 	# Ingredients
 	var ing_label = Label.new()
+	UITheme.style_small(ing_label)
 	var ing_text = ""
 	DataRegistry.ensure_loaded()
 	for ing_id in recipe.ingredients:
 		var info = recipe.ingredients[ing_id]
 		var item_info = DataRegistry.get_item_display_info(ing_id)
 		var ing_name = item_info.get("display_name", ing_id)
-		var color = "green" if info.have >= info.needed else "red"
-		ing_text += "[%s] %s: %d/%d  " % [color, ing_name, info.have, info.needed]
+		ing_text += "%s: %d/%d  " % [ing_name, info.have, info.needed]
 	# Show tool requirement
 	if recipe.get("requires_tool_ingredient", "") != "":
 		var tool_info = DataRegistry.get_item_display_info(recipe.requires_tool_ingredient)
 		var tool_name = tool_info.get("display_name", recipe.requires_tool_ingredient)
 		var has_it = recipe.get("has_tool_ingredient", false)
-		var color = "green" if has_it else "red"
-		ing_text += "[%s] %s: %s  " % [color, tool_name, "OK" if has_it else "Need"]
+		ing_text += "%s: %s  " % [tool_name, "OK" if has_it else "Need"]
 	ing_label.text = ing_text
 	hbox.add_child(ing_label)
 
 	# Craft button
 	var btn = Button.new()
 	btn.text = "Craft"
+	UITheme.style_button(btn, "primary")
 	btn.disabled = not recipe.can_craft
 	var rid = recipe.recipe_id
 	btn.pressed.connect(func(): _craft(rid))

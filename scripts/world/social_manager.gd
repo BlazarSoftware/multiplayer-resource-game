@@ -249,6 +249,11 @@ func handle_gift_request(peer_id: int, npc_id: String, item_id: String) -> void:
 	fs["last_interaction_day"] = current_day
 	fs["points"] = clampi(int(fs["points"]) + points_change, MIN_FRIENDSHIP, MAX_FRIENDSHIP)
 
+	# Record gift preference discovery
+	if "gift_history" not in fs:
+		fs["gift_history"] = {}
+	fs["gift_history"][item_id] = gift_tier
+
 	# Build response message
 	var response_msg: String = _get_gift_response(npc_def, gift_tier)
 	if multiplier > 1:
@@ -503,6 +508,7 @@ static func _create_default_friendship() -> Dictionary:
 		"gifted_today": false,
 		"last_interaction_day": 0,
 		"gifts_received": [],
+		"gift_history": {},
 	}
 
 static func _get_gift_tier(npc_def: Resource, item_id: String) -> String:

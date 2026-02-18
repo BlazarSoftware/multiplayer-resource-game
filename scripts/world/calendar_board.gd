@@ -40,11 +40,8 @@ func _ready() -> void:
 
 	# Label
 	var label = Label3D.new()
-	label.text = "Town Calendar"
+	UITheme.style_label3d(label, "Town Calendar", "station")
 	label.font_size = 32
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = Color(1.0, 0.95, 0.8)
-	label.outline_size = 6
 	label.position = Vector3(0, 2.5, 0)
 	add_child(label)
 

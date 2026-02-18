@@ -221,10 +221,11 @@ func load_from_server(data: Dictionary) -> void:
 		else:
 			hotbar.append({})
 	_init_hotbar()
+	# Restore selected hotbar slot from server data
+	selected_hotbar_slot = clampi(int(data.get("selected_hotbar_slot", 0)), 0, HOTBAR_SIZE - 1)
 	# Reset tool
 	current_tool_slot = ""
 	selected_seed_id = ""
-	selected_hotbar_slot = 0
 	compass_target_id = ""
 	# Reset party group (ephemeral, not persisted)
 	group_party_id = -1
@@ -266,6 +267,7 @@ func to_dict() -> Dictionary:
 		"stats": stats.duplicate(true),
 		"compendium": compendium.duplicate(true),
 		"hotbar": hotbar.duplicate(true),
+		"selected_hotbar_slot": selected_hotbar_slot,
 	}
 
 func reset() -> void:
@@ -379,11 +381,16 @@ func _init_hotbar() -> void:
 	while hotbar.size() < HOTBAR_SIZE:
 		hotbar.append({})
 
+func _sync_hotbar_to_server() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server() and multiplayer.get_unique_id() != 1:
+		NetworkManager.request_sync_hotbar.rpc_id(1, hotbar, selected_hotbar_slot)
+
 func select_hotbar_slot(index: int) -> void:
 	if index < 0 or index >= HOTBAR_SIZE:
 		return
 	selected_hotbar_slot = index
 	hotbar_selection_changed.emit(index)
+	_sync_hotbar_to_server()
 	# Translate to existing tool system for backward compat
 	var slot_data = hotbar[index]
 	if slot_data.is_empty():
@@ -404,6 +411,7 @@ func assign_hotbar_slot(index: int, item_id: String, item_type: String) -> void:
 		return
 	hotbar[index] = {"item_id": item_id, "item_type": item_type}
 	hotbar_changed.emit()
+	_sync_hotbar_to_server()
 	# Re-apply selection if this was the active slot
 	if index == selected_hotbar_slot:
 		select_hotbar_slot(index)
@@ -413,6 +421,7 @@ func clear_hotbar_slot(index: int) -> void:
 		return
 	hotbar[index] = {}
 	hotbar_changed.emit()
+	_sync_hotbar_to_server()
 	if index == selected_hotbar_slot:
 		select_hotbar_slot(index)
 

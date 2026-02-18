@@ -1,6 +1,7 @@
 extends Control
 
 # Compendium tab content for PauseMenu. Ported from compendium_ui.gd.
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 var tab_bar: TabBar
 var count_label: Label
@@ -58,6 +59,7 @@ const STAT_SECTIONS = {
 }
 
 func _ready() -> void:
+	UITheme.init()
 	_build_ui()
 	PlayerData.compendium_changed.connect(_refresh)
 	PlayerData.stats_changed.connect(_refresh)
@@ -72,12 +74,12 @@ func _build_ui() -> void:
 	main_vbox.add_child(title_row)
 	var title := Label.new()
 	title.text = "Compendium"
-	title.add_theme_font_size_override("font_size", 18)
+	UITheme.style_subheading(title)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_row.add_child(title)
 	count_label = Label.new()
-	count_label.add_theme_font_size_override("font_size", 14)
-	count_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	UITheme.style_small(count_label)
+	count_label.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
 	title_row.add_child(count_label)
 
 	# Tab bar
@@ -95,6 +97,7 @@ func _build_ui() -> void:
 		var btn := Button.new()
 		btn.text = FILTER_LABELS.get(filter_id, filter_id)
 		btn.custom_minimum_size.x = 80
+		UITheme.style_button(btn, "secondary")
 		btn.pressed.connect(_on_filter_pressed.bind(filter_id))
 		filter_bar.add_child(btn)
 
@@ -190,12 +193,13 @@ func _refresh_items() -> void:
 		var btn := Button.new()
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		UITheme.style_button(btn, "secondary")
 		if entry.unlocked:
 			btn.text = "  " + entry.info.display_name
-			btn.add_theme_color_override("font_color", entry.info.get("icon_color", Color.WHITE))
+			btn.add_theme_color_override("font_color", entry.info.get("icon_color", UITokens.INK_DARK))
 		else:
 			btn.text = "  ???"
-			btn.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
+			btn.add_theme_color_override("font_color", UITokens.INK_LIGHT)
 		btn.pressed.connect(_on_item_selected.bind(entry.item_id, entry.unlocked))
 		content_list.add_child(btn)
 
@@ -204,32 +208,37 @@ func _on_item_selected(item_id: String, is_unlocked: bool) -> void:
 	if not is_unlocked:
 		var label := Label.new()
 		label.text = "???\n\nNot yet discovered."
-		label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		UITheme.style_small(label)
+		label.add_theme_color_override("font_color", UITokens.INK_LIGHT)
 		detail_panel.add_child(label)
 		return
 
 	var info = DataRegistry.get_item_display_info(item_id)
 	var name_label := Label.new()
 	name_label.text = info.get("display_name", item_id)
-	name_label.add_theme_font_size_override("font_size", 20)
-	name_label.add_theme_color_override("font_color", info.get("icon_color", Color.WHITE))
+	UITheme.style_heading(name_label)
+	name_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_BODY))
+	name_label.add_theme_color_override("font_color", info.get("icon_color", UITokens.INK_DARK))
 	detail_panel.add_child(name_label)
 
 	var cat_label := Label.new()
 	cat_label.text = "Category: " + info.get("category", "unknown").replace("_", " ").capitalize()
-	cat_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	UITheme.style_small(cat_label)
+	cat_label.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
 	detail_panel.add_child(cat_label)
 
 	var id_label := Label.new()
 	id_label.text = "ID: " + item_id
-	id_label.add_theme_font_size_override("font_size", 12)
-	id_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	UITheme.style_small(id_label)
+	id_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+	id_label.add_theme_color_override("font_color", UITokens.INK_LIGHT)
 	detail_panel.add_child(id_label)
 
 	var sell_price = DataRegistry.get_sell_price(item_id)
 	if sell_price > 0:
 		var price_label := Label.new()
 		price_label.text = "Sell Price: $" + str(sell_price)
+		UITheme.style_small(price_label)
 		detail_panel.add_child(price_label)
 
 # === CREATURES TAB ===
@@ -259,15 +268,16 @@ func _refresh_creatures() -> void:
 		var btn := Button.new()
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		UITheme.style_button(btn, "secondary")
 		if species_id in owned:
 			btn.text = "  " + sp.display_name + "  [Owned]"
-			btn.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+			btn.add_theme_color_override("font_color", UITokens.STAMP_GREEN)
 		elif species_id in seen:
 			btn.text = "  " + sp.display_name
-			btn.add_theme_color_override("font_color", Color(0.7, 0.7, 0.5))
+			btn.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
 		else:
 			btn.text = "  ???"
-			btn.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
+			btn.add_theme_color_override("font_color", UITokens.INK_LIGHT)
 		btn.pressed.connect(_on_creature_selected.bind(species_id))
 		content_list.add_child(btn)
 
@@ -279,7 +289,8 @@ func _on_creature_selected(species_id: String) -> void:
 	if species_id not in seen:
 		var label := Label.new()
 		label.text = "???\n\nNot yet encountered."
-		label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		UITheme.style_small(label)
+		label.add_theme_color_override("font_color", UITokens.INK_LIGHT)
 		detail_panel.add_child(label)
 		return
 
@@ -289,7 +300,8 @@ func _on_creature_selected(species_id: String) -> void:
 
 	var name_label := Label.new()
 	name_label.text = sp.display_name
-	name_label.add_theme_font_size_override("font_size", 20)
+	UITheme.style_heading(name_label)
+	name_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_BODY))
 	detail_panel.add_child(name_label)
 
 	var type_label := Label.new()
@@ -299,6 +311,7 @@ func _on_creature_selected(species_id: String) -> void:
 			type_str += " / "
 		type_str += str(t).capitalize()
 	type_label.text = "Type: " + type_str
+	UITheme.style_small(type_label)
 	detail_panel.add_child(type_label)
 
 	if species_id in owned:
@@ -310,6 +323,7 @@ func _on_creature_selected(species_id: String) -> void:
 			+ "  SPA: " + str(sp.base_sp_attack) + "\n" \
 			+ "  SPD: " + str(sp.base_sp_defense) + "\n" \
 			+ "  SPE: " + str(sp.base_speed)
+		UITheme.style_small(stats_label)
 		detail_panel.add_child(stats_label)
 
 		if sp.ability_ids.size() > 0:
@@ -322,6 +336,7 @@ func _on_creature_selected(species_id: String) -> void:
 				else:
 					ab_str += str(ab_id) + " "
 			ab_label.text = ab_str
+			UITheme.style_small(ab_label)
 			detail_panel.add_child(ab_label)
 
 		if sp.evolves_to != "":
@@ -329,7 +344,8 @@ func _on_creature_selected(species_id: String) -> void:
 			var evo_name = evo_sp.display_name if evo_sp else sp.evolves_to
 			var evo_label := Label.new()
 			evo_label.text = "Evolves to: " + evo_name + " at Lv " + str(sp.evolution_level)
-			evo_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
+			evo_label.add_theme_color_override("font_color", UITokens.STAMP_BLUE)
+			UITheme.style_small(evo_label)
 			detail_panel.add_child(evo_label)
 
 		var stats = PlayerData.stats
@@ -341,7 +357,7 @@ func _on_creature_selected(species_id: String) -> void:
 			detail_panel.add_child(sep)
 			var your_label := Label.new()
 			your_label.text = "Your Stats:"
-			your_label.add_theme_font_size_override("font_size", 16)
+			UITheme.style_body(your_label)
 			detail_panel.add_child(your_label)
 			if encounters > 0:
 				_add_stat_row(detail_panel, "Encounters", encounters)
@@ -352,7 +368,8 @@ func _on_creature_selected(species_id: String) -> void:
 	else:
 		var hint := Label.new()
 		hint.text = "\nOwn this creature to see full details."
-		hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+		UITheme.style_small(hint)
+		hint.add_theme_color_override("font_color", UITokens.INK_LIGHT)
 		detail_panel.add_child(hint)
 
 # === STATS TAB ===
@@ -364,8 +381,8 @@ func _refresh_stats() -> void:
 	for section_name in STAT_SECTIONS:
 		var header := Label.new()
 		header.text = section_name
-		header.add_theme_font_size_override("font_size", 18)
-		header.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
+		UITheme.style_subheading(header)
+		header.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 		content_list.add_child(header)
 
 		var entries: Array = STAT_SECTIONS[section_name]
@@ -389,8 +406,8 @@ func _refresh_stats() -> void:
 		content_list.add_child(sep)
 		var header := Label.new()
 		header.text = "Species Breakdown"
-		header.add_theme_font_size_override("font_size", 18)
-		header.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
+		UITheme.style_subheading(header)
+		header.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 		content_list.add_child(header)
 
 		var all_species: Dictionary = {}
@@ -419,7 +436,7 @@ func _refresh_stats() -> void:
 			if evo > 0:
 				parts.append(str(evo) + " evo")
 			row.text = "  " + display_name + ": " + ", ".join(parts)
-			row.add_theme_font_size_override("font_size", 14)
+			UITheme.style_small(row)
 			content_list.add_child(row)
 
 func _add_stat_row(parent: Control, label_text: String, value: int) -> void:
@@ -430,12 +447,14 @@ func _add_stat_row(parent: Control, label_text: String, value: int) -> void:
 	var lbl := Label.new()
 	lbl.text = "  " + label_text
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UITheme.style_small(lbl)
 	row.add_child(lbl)
 
 	var val := Label.new()
 	val.text = _format_number(value)
 	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	val.custom_minimum_size.x = 80
+	UITheme.style_small(val)
 	row.add_child(val)
 
 func _format_number(n: int) -> String:

@@ -2,6 +2,8 @@ extends Area3D
 
 @export var npc_id: String = ""
 
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
+
 var nearby_peers: Dictionary = {} # peer_id -> true
 var quest_indicator: Label3D = null
 
@@ -43,17 +45,13 @@ func _create_visual() -> void:
 	var label_text = display_name
 	if occupation != "":
 		label_text += "\n[" + occupation + "]"
-	label.text = label_text
-	label.font_size = 24
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	UITheme.style_label3d(label, label_text, "npc_name")
 	label.position.y = 2.0
 	add_child(label)
 
 	# Quest indicator (! or ?) — client-side only
 	quest_indicator = Label3D.new()
-	quest_indicator.text = ""
-	quest_indicator.font_size = 48
-	quest_indicator.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	UITheme.style_label3d(quest_indicator, "", "quest_marker")
 	quest_indicator.position.y = 2.6
 	quest_indicator.visible = false
 	add_child(quest_indicator)
@@ -87,11 +85,11 @@ func _process(_delta: float) -> void:
 			break
 	if has_completable:
 		quest_indicator.text = "?"
-		quest_indicator.modulate = Color(1.0, 1.0, 0.3)
+		quest_indicator.modulate = UITokens.TEXT_SUCCESS
 		quest_indicator.visible = true
 	elif has_available:
 		quest_indicator.text = "!"
-		quest_indicator.modulate = Color(1.0, 0.85, 0.0)
+		quest_indicator.modulate = UITokens.STAMP_GOLD
 		quest_indicator.visible = true
 	else:
 		quest_indicator.visible = false

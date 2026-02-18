@@ -2,6 +2,7 @@ extends Control
 
 # 2D top-down minimap drawn via _draw(). Client-only.
 # North (-Z in game world) = up on screen.
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 const DEFAULT_ZOOM: float = 3.0 # pixels per world unit
 const MIN_ZOOM: float = 1.0 # ~120 unit view
@@ -74,7 +75,7 @@ func _draw() -> void:
 	var map_center = size / 2.0
 
 	# Background
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0.05, 0.08, 0.12, 0.85))
+	draw_rect(Rect2(Vector2.ZERO, size), Color(UITokens.PAPER_TAN.r, UITokens.PAPER_TAN.g, UITokens.PAPER_TAN.b, 0.92))
 
 	# Grid lines (every 10 world units)
 	_draw_grid(player_pos, map_center)
@@ -89,7 +90,7 @@ func _draw() -> void:
 
 		# Highlight selected target (discovered only)
 		if is_discovered and loc.location_id == PlayerData.compass_target_id:
-			draw_arc(sp, ICON_RADIUS + 4, 0, TAU, 24, Color(1, 1, 0.3, 0.8), 2.0)
+			draw_arc(sp, ICON_RADIUS + 4, 0, TAU, 24, Color(UITokens.STAMP_GOLD.r, UITokens.STAMP_GOLD.g, UITokens.STAMP_GOLD.b, 0.85), 2.0)
 
 		_draw_location_icon(sp, loc.category, loc.icon_color, is_discovered)
 
@@ -100,10 +101,10 @@ func _draw() -> void:
 		var label_color: Color
 		if is_discovered:
 			label_text = loc.display_name
-			label_color = Color(0.9, 0.9, 0.9, 0.8)
+			label_color = Color(UITokens.INK_DARK.r, UITokens.INK_DARK.g, UITokens.INK_DARK.b, 0.9)
 		else:
 			label_text = "???"
-			label_color = Color(0.6, 0.6, 0.6, 0.5)
+			label_color = Color(UITokens.INK_MEDIUM.r, UITokens.INK_MEDIUM.g, UITokens.INK_MEDIUM.b, 0.65)
 		var text_size = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
 		draw_string(font, sp + Vector2(-text_size.x / 2.0, ICON_RADIUS + 12), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, label_color)
 
@@ -116,16 +117,16 @@ func _draw() -> void:
 	for i in 3:
 		var a = map_angle + i * TAU / 3.0 - PI / 2.0
 		tri_points.append(map_center + Vector2(cos(a), sin(a)) * PLAYER_SIZE)
-	draw_colored_polygon(tri_points, Color(0.3, 0.8, 1.0))
-	draw_circle(map_center, 3.0, Color(1, 1, 1))
+	draw_colored_polygon(tri_points, UITokens.STAMP_BLUE)
+	draw_circle(map_center, 3.0, UITokens.PAPER_CREAM)
 
 	# Compass rose in top-right corner
 	var rose_pos = Vector2(size.x - 30, 30)
 	var rose_font_size = 12
-	draw_string(ThemeDB.fallback_font, rose_pos + Vector2(-4, -15), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, rose_font_size, Color(1, 0.3, 0.3))
-	draw_string(ThemeDB.fallback_font, rose_pos + Vector2(-4, 22), "S", HORIZONTAL_ALIGNMENT_LEFT, -1, rose_font_size, Color(0.8, 0.8, 0.8))
-	draw_string(ThemeDB.fallback_font, rose_pos + Vector2(12, 4), "E", HORIZONTAL_ALIGNMENT_LEFT, -1, rose_font_size, Color(0.8, 0.8, 0.8))
-	draw_string(ThemeDB.fallback_font, rose_pos + Vector2(-20, 4), "W", HORIZONTAL_ALIGNMENT_LEFT, -1, rose_font_size, Color(0.8, 0.8, 0.8))
+	draw_string(ThemeDB.fallback_font, rose_pos + Vector2(-4, -15), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, rose_font_size, UITokens.STAMP_RED)
+	draw_string(ThemeDB.fallback_font, rose_pos + Vector2(-4, 22), "S", HORIZONTAL_ALIGNMENT_LEFT, -1, rose_font_size, UITokens.INK_MEDIUM)
+	draw_string(ThemeDB.fallback_font, rose_pos + Vector2(12, 4), "E", HORIZONTAL_ALIGNMENT_LEFT, -1, rose_font_size, UITokens.INK_MEDIUM)
+	draw_string(ThemeDB.fallback_font, rose_pos + Vector2(-20, 4), "W", HORIZONTAL_ALIGNMENT_LEFT, -1, rose_font_size, UITokens.INK_MEDIUM)
 
 	# Legend (bottom-left)
 	_draw_legend()
@@ -161,7 +162,7 @@ func _draw_location_icon(center: Vector2, category: String, color: Color, filled
 			# Circle with inner dot
 			if filled:
 				draw_circle(center, r, color)
-				draw_circle(center, r * 0.35, Color(0.05, 0.08, 0.12))
+				draw_circle(center, r * 0.35, UITokens.PAPER_CREAM)
 			else:
 				var dim_color = Color(color.r, color.g, color.b, 0.4)
 				draw_arc(center, r, 0, TAU, 24, dim_color, 1.5)
@@ -233,7 +234,7 @@ func _draw_legend() -> void:
 	var legend_x: float = 8.0
 	var legend_y: float = size.y - (CATEGORY_LABELS.size() * line_height) - 8.0
 	var icon_size: float = LEGEND_ICON_SIZE
-	var label_color = Color(0.7, 0.7, 0.7, 0.6)
+	var label_color = Color(UITokens.INK_DARK.r, UITokens.INK_DARK.g, UITokens.INK_DARK.b, 0.75)
 	var bg_padding: float = 4.0
 
 	# Semi-transparent background for legend
@@ -243,7 +244,7 @@ func _draw_legend() -> void:
 		80 + bg_padding * 2,
 		CATEGORY_LABELS.size() * line_height + bg_padding * 2 + 2
 	)
-	draw_rect(bg_rect, Color(0.03, 0.05, 0.08, 0.6))
+	draw_rect(bg_rect, Color(UITokens.PARCHMENT_DARK.r, UITokens.PARCHMENT_DARK.g, UITokens.PARCHMENT_DARK.b, 0.82))
 
 	var idx: int = 0
 	for cat_id in CATEGORY_LABELS:
@@ -259,7 +260,7 @@ func _draw_legend() -> void:
 		idx += 1
 
 func _draw_legend_icon(center: Vector2, category: String, r: float) -> void:
-	var color = Color(0.8, 0.8, 0.8, 0.7)
+	var color = Color(UITokens.STAMP_BROWN.r, UITokens.STAMP_BROWN.g, UITokens.STAMP_BROWN.b, 0.85)
 	var points: PackedVector2Array
 	match category:
 		"zone":
@@ -283,7 +284,7 @@ func _draw_legend_icon(center: Vector2, category: String, r: float) -> void:
 			draw_colored_polygon(points, color)
 		"shop":
 			draw_circle(center, r, color)
-			draw_circle(center, r * 0.35, Color(0.03, 0.05, 0.08))
+			draw_circle(center, r * 0.35, UITokens.PAPER_CREAM)
 		"trainer":
 			points = PackedVector2Array()
 			for i in 8:
@@ -312,7 +313,7 @@ func _draw_legend_icon(center: Vector2, category: String, r: float) -> void:
 
 func _draw_grid(player_pos: Vector3, map_center: Vector2) -> void:
 	var grid_spacing: float = 10.0
-	var grid_color = Color(0.3, 0.3, 0.35, 0.3)
+	var grid_color = Color(UITokens.PARCHMENT_DARK.r, UITokens.PARCHMENT_DARK.g, UITokens.PARCHMENT_DARK.b, 0.5)
 	# Calculate grid range visible
 	var half_view = size / (2.0 * zoom_level)
 	var min_x = snappedf(player_pos.x - half_view.x, grid_spacing) - grid_spacing

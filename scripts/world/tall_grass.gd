@@ -32,9 +32,7 @@ func _create_zone_marker() -> void:
 		return
 	var marker = Label3D.new()
 	marker.name = "WildZoneLabel"
-	marker.text = zone_label_text
-	marker.font_size = 28
-	marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	UITheme.style_label3d(marker, zone_label_text, "zone_sign")
 	marker.modulate = grass_color.lerp(Color.WHITE, 0.35)
 	marker.position = Vector3(0, 2.4, 0)
 	add_child(marker)

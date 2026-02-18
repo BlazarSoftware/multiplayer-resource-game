@@ -1,6 +1,7 @@
 extends Control
 
 # Inventory tab content for PauseMenu. Ported from inventory_ui.gd.
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 var tab_bar: TabBar
 var item_list: VBoxContainer
@@ -8,10 +9,11 @@ var seed_label: Label
 var scroll_container: ScrollContainer
 var current_tab: int = 0
 
-const TAB_NAMES = ["All", "Ingredients", "Held Items", "Food", "Tools", "Scrolls"]
-const TAB_CATEGORIES = ["all", "ingredient", "held_item", "food", "tool", "recipe_scroll"]
+const TAB_NAMES = ["All", "Seeds", "Ingredients", "Held Items", "Food", "Tools", "Scrolls", "Battle Items"]
+const TAB_CATEGORIES = ["all", "seed", "ingredient", "held_item", "food", "tool", "recipe_scroll", "battle_item"]
 
 func _ready() -> void:
+	UITheme.init()
 	_build_ui()
 	PlayerData.inventory_changed.connect(_refresh)
 
@@ -41,6 +43,7 @@ func _build_ui() -> void:
 	vbox.add_child(seed_row)
 	seed_label = Label.new()
 	seed_label.text = "Selected Seed: None"
+	UITheme.style_small(seed_label)
 	seed_row.add_child(seed_label)
 
 func _on_tab_changed(tab_idx: int) -> void:
@@ -64,9 +67,16 @@ func _refresh() -> void:
 		if count <= 0:
 			continue
 		var info = DataRegistry.get_item_display_info(item_id)
+		var is_seed_item = _is_seed_item(item_id)
 		if filter_category != "all":
 			var cat = info.get("category", "unknown")
-			if filter_category == "recipe_scroll" and cat == "fragment":
+			if filter_category == "seed":
+				if not is_seed_item:
+					continue
+			elif filter_category == "ingredient":
+				if cat != "ingredient" or is_seed_item:
+					continue
+			elif filter_category == "recipe_scroll" and cat == "fragment":
 				pass
 			elif cat != filter_category:
 				continue
@@ -80,19 +90,21 @@ func _refresh() -> void:
 		var label := Label.new()
 		label.text = "  %s x%d" % [info.get("display_name", item_id), count]
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.style_small(label)
 		hbox.add_child(label)
 		var category = info.get("category", "unknown")
 		match category:
 			"ingredient":
-				var ingredient = DataRegistry.get_ingredient(item_id)
-				if ingredient and ingredient.category == "farm_crop":
+				if is_seed_item:
 					var btn := Button.new()
 					btn.text = "Select Seed"
+					UITheme.style_button(btn, "secondary")
 					var sid = item_id
 					btn.pressed.connect(func(): _select_seed(sid))
 					hbox.add_child(btn)
 					var hb_btn := Button.new()
 					hb_btn.text = "Hotbar"
+					UITheme.style_button(hb_btn, "secondary")
 					var hb_sid = item_id
 					hb_btn.pressed.connect(func(): _show_hotbar_assign(hb_sid, "seed"))
 					hbox.add_child(hb_btn)
@@ -102,29 +114,34 @@ func _refresh() -> void:
 					if food.buff_type != "" and food.buff_type != "none":
 						var btn := Button.new()
 						btn.text = "Eat"
+						UITheme.style_button(btn, "primary")
 						var fid = item_id
 						btn.pressed.connect(func(): _use_food(fid))
 						hbox.add_child(btn)
 					if food.sell_price > 0:
 						var sell_btn := Button.new()
 						sell_btn.text = "Sell ($%d)" % food.sell_price
+						UITheme.style_button(sell_btn, "secondary")
 						var sid = item_id
 						sell_btn.pressed.connect(func(): _sell_item(sid))
 						hbox.add_child(sell_btn)
 					var hb_btn := Button.new()
 					hb_btn.text = "Hotbar"
+					UITheme.style_button(hb_btn, "secondary")
 					var hb_id = item_id
 					hb_btn.pressed.connect(func(): _show_hotbar_assign(hb_id, "food"))
 					hbox.add_child(hb_btn)
 			"recipe_scroll":
 				var btn := Button.new()
 				btn.text = "Use"
+				UITheme.style_button(btn, "primary")
 				var sid = item_id
 				btn.pressed.connect(func(): _use_scroll(sid))
 				hbox.add_child(btn)
 			"battle_item":
 				var hb_btn := Button.new()
 				hb_btn.text = "Hotbar"
+				UITheme.style_button(hb_btn, "secondary")
 				var hb_id = item_id
 				hb_btn.pressed.connect(func(): _show_hotbar_assign(hb_id, "battle_item"))
 				hbox.add_child(hb_btn)
@@ -135,16 +152,19 @@ func _refresh() -> void:
 					if equipped_id != item_id:
 						var btn := Button.new()
 						btn.text = "Equip"
+						UITheme.style_button(btn, "primary")
 						var tid = item_id
 						btn.pressed.connect(func(): _equip_tool(tid))
 						hbox.add_child(btn)
 					else:
 						var lbl := Label.new()
 						lbl.text = "[Equipped]"
-						lbl.add_theme_color_override("font_color", Color.GREEN)
+						UITheme.style_small(lbl)
+						lbl.add_theme_color_override("font_color", UITokens.TEXT_SUCCESS)
 						hbox.add_child(lbl)
 					var hb_btn := Button.new()
 					hb_btn.text = "Hotbar"
+					UITheme.style_button(hb_btn, "secondary")
 					var hb_tool_type = tool_def.tool_type
 					hb_btn.pressed.connect(func(): _show_hotbar_assign(hb_tool_type, "tool_slot"))
 					hbox.add_child(hb_btn)
@@ -154,6 +174,16 @@ func _refresh() -> void:
 		seed_label.text = "Selected Seed: %s" % (ingredient.display_name if ingredient else PlayerData.selected_seed_id)
 	else:
 		seed_label.text = "Selected Seed: None"
+
+func _is_seed_item(item_id: String) -> bool:
+	var ingredient = DataRegistry.get_ingredient(item_id)
+	if ingredient == null:
+		return false
+	if ingredient.category == "farm_crop":
+		return true
+	if item_id.ends_with("_seed"):
+		return true
+	return ingredient.display_name.to_lower().ends_with(" seed")
 
 func _select_seed(seed_id: String) -> void:
 	PlayerData.selected_seed_id = seed_id
@@ -182,6 +212,7 @@ func _show_hotbar_assign(item_id: String, item_type: String) -> void:
 	_hotbar_popup.add_child(vbox)
 	var title := Label.new()
 	title.text = "Assign to slot:"
+	UITheme.style_small(title)
 	vbox.add_child(title)
 	var grid := GridContainer.new()
 	grid.columns = 4
@@ -191,6 +222,7 @@ func _show_hotbar_assign(item_id: String, item_type: String) -> void:
 		var btn := Button.new()
 		btn.text = key_labels[i]
 		btn.custom_minimum_size = Vector2(36, 36)
+		UITheme.style_button(btn, "secondary")
 		var slot_idx = i
 		var sid = item_id
 		var stype = item_type

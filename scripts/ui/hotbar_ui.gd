@@ -84,7 +84,7 @@ func _build_ui() -> void:
 		var label = Label.new()
 		label.text = ""
 		UITheme.style_small(label)
-		label.add_theme_font_size_override("font_size", UITokens.FONT_TINY)
+		label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
 		label.add_theme_color_override("font_color", UITokens.INK_DARK)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.position = Vector2(0, 40)
@@ -97,7 +97,7 @@ func _build_ui() -> void:
 		var key_label = Label.new()
 		key_label.text = KEY_LABELS[i]
 		UITheme.style_small(key_label)
-		key_label.add_theme_font_size_override("font_size", UITokens.FONT_TINY)
+		key_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
 		key_label.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
 		key_label.position = Vector2(3, 1)
 		key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE

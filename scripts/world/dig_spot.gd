@@ -3,6 +3,8 @@ extends Area3D
 ## Server-authoritative dig spot. Players press E with shovel equipped to dig.
 ## Per-player, per-spot daily cooldown (resets each game day).
 
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
+
 @export var spot_id: String = ""
 @export var loot_table: Array = [] # [{item_id, weight, min, max}]
 @export var dig_cooldown_days: int = 1
@@ -33,10 +35,8 @@ func _ready() -> void:
 	add_child(_visual_mesh)
 	# Subtle sparkle label
 	var hint = Label3D.new()
-	hint.text = "~"
-	hint.font_size = 24
-	hint.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	hint.modulate = Color(1.0, 0.9, 0.4, 0.6)
+	UITheme.style_label3d(hint, "~", "interaction_hint")
+	hint.modulate = Color(UITokens.STAMP_GOLD.r, UITokens.STAMP_GOLD.g, UITokens.STAMP_GOLD.b, 0.75)
 	hint.position = Vector3(0, 0.5, 0)
 	add_child(hint)
 

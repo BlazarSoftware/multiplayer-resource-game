@@ -256,6 +256,19 @@ See `docs/location-calendar.md` for full details.
 
 See `docs/compendium-stats.md` for full tracked stat list and hook locations.
 
+## UI Theme & Accessibility
+- **UITokens** (`scripts/ui/ui_tokens.gd`): Static color palette, font size constants (`FONT_H1`=36 through `FONT_TINY`=16), layout constants. No `class_name` — preloaded where needed.
+- **UITheme** (`scripts/ui/ui_theme.gd`): `class_name UITheme`. Semantic styling API (`style_title`, `style_body`, `style_button`, etc.), font loading, font scale + text speed state.
+- **Font scaling**: `UITheme.scaled(size)` multiplies any base font size by `_font_scale` (default 1.0). All UI code MUST use `UITheme.scaled(UITokens.FONT_*)` — never raw `UITokens.FONT_*` for runtime font sizes. Label3D in 3D scenes (battle arena, world labels) also use `UITheme.scaled()`.
+- **Text speed**: `UITheme.get_text_speed()` returns chars/sec (-1 = instant). Used by dialogue/trainer UI for typewriter effect.
+- **Settings persistence**: `user://settings.cfg` via ConfigFile. Saves both float values (`font_scale`, `text_speed_cps`) and integer indices (`font_scale_idx`, `text_speed_idx`). Load prefers index keys, falls back to float lookup for backward compat.
+- **4 font scale steps**: Small (0.85), Normal (1.0), Large (1.15), Extra Large (1.3)
+- **4 text speed steps**: Slow (20 cps), Normal (40 cps), Fast (80 cps), Instant (-1)
+- **Settings UI**: `scripts/ui/tabs/settings_tab.gd` — slider-based, in pause menu Settings tab.
+- **Fonts**: Lilita One (headings), Fredoka One (body). Loaded in `UITheme.init()`.
+
+See `docs/ui-accessibility.md` for full details.
+
 ## GDScript Conventions
 - Use `class_name` for static utility classes (BattleCalculator, StatusEffects, FieldEffects, AbilityEffects, HeldItemEffects, BattleAI, StatTracker)
 - Do NOT preload scripts that already have `class_name` — causes "constant has same name as global class" warning

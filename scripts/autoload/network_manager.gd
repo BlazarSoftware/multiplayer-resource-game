@@ -12,6 +12,12 @@ const MAX_CLIENTS = 32
 const JOIN_READY_TIMEOUT_MS = 15000
 const BUFF_CHECK_INTERVAL = 5.0
 
+# Bank system
+const BANK_INTEREST_RATE: float = 0.005
+const BANK_MAX_DAILY_INTEREST: int = 500
+const BANK_MIN_BALANCE: int = 100
+const BANK_WITHDRAWAL_FEE: float = 0.02
+
 # Rate limiting
 const MAX_RPCS_PER_SECOND = 20
 var _rpc_timestamps: Dictionary = {} # peer_id → Array of timestamps (msec)
@@ -392,6 +398,17 @@ func _finalize_join(sender_id: int, player_name: String, data: Dictionary) -> vo
 	# Backfill social data
 	if not data.has("social"):
 		data["social"] = {"friends": [], "blocked": [], "incoming_requests": [], "outgoing_requests": []}
+	# Backfill hotbar
+	if not data.has("hotbar"):
+		data["hotbar"] = []
+	if not data.has("selected_hotbar_slot"):
+		data["selected_hotbar_slot"] = 0
+	# Backfill dig cooldowns
+	if not data.has("dig_cooldowns"):
+		data["dig_cooldowns"] = {}
+	# Backfill bank data
+	if not data.has("bank"):
+		data["bank"] = {"balance": 0, "last_interest_day": 0}
 	# Prune expired friend requests on login
 	_prune_expired_requests(data)
 	# Backfill basic tools in inventory
@@ -525,6 +542,11 @@ func _create_default_player_data(player_name: String) -> Dictionary:
 		"stats": {},
 		"compendium": {"items": [], "creatures_seen": [], "creatures_owned": []},
 		"social": {"friends": [], "blocked": [], "incoming_requests": [], "outgoing_requests": []},
+		"hotbar": [],
+		"selected_hotbar_slot": 0,
+		"discovered_locations": [],
+		"dig_cooldowns": {},
+		"bank": {"balance": 0, "last_interest_day": 0},
 		"restaurant": {
 			"restaurant_index": -1,
 			"tier": 0,
@@ -595,6 +617,22 @@ func server_update_party(peer_id: int, party_array: Array) -> void:
 	if peer_id not in player_data_store:
 		return
 	player_data_store[peer_id]["party"] = party_array.duplicate(true)
+
+@rpc("any_peer", "reliable")
+func request_sync_hotbar(hotbar_data: Array, selected_slot: int) -> void:
+	var sender = multiplayer.get_remote_sender_id()
+	if sender not in player_data_store:
+		return
+	if hotbar_data.size() > 8:
+		return
+	var clean: Array = []
+	for entry in hotbar_data:
+		if entry is Dictionary:
+			clean.append(entry)
+		else:
+			clean.append({})
+	player_data_store[sender]["hotbar"] = clean
+	player_data_store[sender]["selected_hotbar_slot"] = clampi(selected_slot, 0, 7)
 
 func server_use_watering_can(peer_id: int) -> bool:
 	if peer_id not in player_data_store:
@@ -1934,3 +1972,150 @@ func server_tick_bond_time(peer_id: int) -> void:
 	for creature in party:
 		creature["bond_points"] = creature.get("bond_points", 0) + 1
 		creature["bond_level"] = CreatureInstance.compute_bond_level(creature["bond_points"])
+
+# === Bank System ===
+
+func _apply_bank_interest(peer_id: int) -> int:
+	if peer_id not in player_data_store:
+		return 0
+	var data = player_data_store[peer_id]
+	var bank = data.get("bank", {"balance": 0, "last_interest_day": 0})
+	var balance = int(bank.get("balance", 0))
+	var last_day = int(bank.get("last_interest_day", 0))
+	var season_mgr = get_node_or_null("/root/Main/GameWorld/SeasonManager")
+	var current_day = season_mgr.total_day_count if season_mgr else 1
+
+	if balance < BANK_MIN_BALANCE or current_day <= last_day:
+		bank["last_interest_day"] = current_day
+		data["bank"] = bank
+		return 0
+
+	var days_elapsed = current_day - last_day
+	var total_interest = 0
+	for _i in range(days_elapsed):
+		var daily = int(floor(balance * BANK_INTEREST_RATE))
+		daily = min(daily, BANK_MAX_DAILY_INTEREST)
+		balance += daily
+		total_interest += daily
+
+	bank["balance"] = balance
+	bank["last_interest_day"] = current_day
+	data["bank"] = bank
+	return total_interest
+
+func server_deposit_money(peer_id: int, amount: int) -> bool:
+	if peer_id not in player_data_store:
+		return false
+	if amount <= 0:
+		return false
+	var data = player_data_store[peer_id]
+	var wallet = int(data.get("money", 0))
+	if wallet < amount:
+		return false
+	var bank = data.get("bank", {"balance": 0, "last_interest_day": 0})
+	data["money"] = wallet - amount
+	bank["balance"] = int(bank.get("balance", 0)) + amount
+	data["bank"] = bank
+	return true
+
+func server_withdraw_money(peer_id: int, amount: int) -> bool:
+	if peer_id not in player_data_store:
+		return false
+	if amount <= 0:
+		return false
+	var data = player_data_store[peer_id]
+	var bank = data.get("bank", {"balance": 0, "last_interest_day": 0})
+	var balance = int(bank.get("balance", 0))
+	var fee = max(1, int(floor(amount * BANK_WITHDRAWAL_FEE)))
+	if balance < amount:
+		return false
+	bank["balance"] = balance - amount
+	data["bank"] = bank
+	# Player receives amount minus fee
+	var net_amount = amount - fee
+	data["money"] = int(data.get("money", 0)) + net_amount
+	return true
+
+func _handle_open_bank(peer_id: int) -> void:
+	if not _check_rate_limit(peer_id):
+		return
+	if peer_id not in player_data_store:
+		return
+	# Apply any accumulated interest
+	var interest = _apply_bank_interest(peer_id)
+	var data = player_data_store[peer_id]
+	var bank = data.get("bank", {"balance": 0, "last_interest_day": 0})
+	_open_bank_client.rpc_id(peer_id, int(bank.get("balance", 0)), int(data.get("money", 0)), interest, BANK_INTEREST_RATE, BANK_WITHDRAWAL_FEE)
+
+@rpc("any_peer", "reliable")
+func request_deposit(amount: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id = multiplayer.get_remote_sender_id()
+	if not _check_rate_limit(peer_id):
+		return
+	if peer_id not in player_data_store:
+		return
+	if amount <= 0:
+		_bank_action_failed.rpc_id(peer_id, "Invalid amount.")
+		return
+	if server_deposit_money(peer_id, amount):
+		var data = player_data_store[peer_id]
+		var bank = data.get("bank", {"balance": 0, "last_interest_day": 0})
+		_sync_bank_data.rpc_id(peer_id, int(bank.get("balance", 0)), int(data.get("money", 0)), "Deposited $%d." % amount)
+		# Sync wallet to client PlayerData
+		_sync_money.rpc_id(peer_id, int(data.get("money", 0)))
+	else:
+		_bank_action_failed.rpc_id(peer_id, "Insufficient funds to deposit.")
+
+@rpc("any_peer", "reliable")
+func request_withdraw(amount: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id = multiplayer.get_remote_sender_id()
+	if not _check_rate_limit(peer_id):
+		return
+	if peer_id not in player_data_store:
+		return
+	if amount <= 0:
+		_bank_action_failed.rpc_id(peer_id, "Invalid amount.")
+		return
+	var fee = max(1, int(floor(amount * BANK_WITHDRAWAL_FEE)))
+	if server_withdraw_money(peer_id, amount):
+		var data = player_data_store[peer_id]
+		var bank = data.get("bank", {"balance": 0, "last_interest_day": 0})
+		var net = amount - fee
+		_sync_bank_data.rpc_id(peer_id, int(bank.get("balance", 0)), int(data.get("money", 0)), "Withdrew $%d (fee: $%d)." % [net, fee])
+		_sync_money.rpc_id(peer_id, int(data.get("money", 0)))
+	else:
+		_bank_action_failed.rpc_id(peer_id, "Insufficient bank balance.")
+
+@rpc("any_peer", "reliable")
+func request_close_bank() -> void:
+	if not multiplayer.is_server():
+		return
+	# Nothing special needed server-side; busy state cleared via request_set_busy
+
+@rpc("authority", "reliable")
+func _open_bank_client(balance: int, money: int, interest_earned: int, rate: float, fee_pct: float) -> void:
+	var bank_ui = get_node_or_null("/root/Main/GameWorld/UI/BankUI")
+	if bank_ui and bank_ui.has_method("open_bank"):
+		bank_ui.open_bank(balance, money, interest_earned, rate, fee_pct)
+
+@rpc("authority", "reliable")
+func _sync_bank_data(balance: int, money: int, message: String) -> void:
+	PlayerData.money = money
+	var bank_ui = get_node_or_null("/root/Main/GameWorld/UI/BankUI")
+	if bank_ui and bank_ui.has_method("update_data"):
+		bank_ui.update_data(balance, money, message)
+
+@rpc("authority", "reliable")
+func _bank_action_failed(reason: String) -> void:
+	var bank_ui = get_node_or_null("/root/Main/GameWorld/UI/BankUI")
+	if bank_ui and bank_ui.has_method("show_error"):
+		bank_ui.show_error(reason)
+
+func _on_day_changed_bank_interest() -> void:
+	# Apply interest to all online players on day change
+	for peer_id in player_data_store:
+		_apply_bank_interest(peer_id)

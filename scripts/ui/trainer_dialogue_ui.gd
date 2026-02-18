@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
+
 @onready var panel: PanelContainer = $Panel
 @onready var name_label: Label = $Panel/VBox/NameLabel
 @onready var text_label: Label = $Panel/VBox/TextLabel
@@ -10,9 +12,20 @@ extends CanvasLayer
 
 var pending_trainer_id: String = ""
 var is_challenge_mode: bool = false
+var _typewriter_tween: Tween = null
 
 func _ready() -> void:
 	visible = false
+	UITheme.init()
+	UITheme.style_modal(panel)
+	UITheme.style_heading(name_label)
+	name_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_H2))
+	name_label.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
+	UITheme.style_body(text_label)
+	text_label.add_theme_color_override("font_color", UITokens.INK_DARK)
+	UITheme.style_button(ok_button, "secondary")
+	UITheme.style_button(accept_button, "primary")
+	UITheme.style_button(decline_button, "danger")
 	ok_button.pressed.connect(_on_ok)
 	accept_button.pressed.connect(_on_accept)
 	decline_button.pressed.connect(_on_decline)
@@ -20,14 +33,16 @@ func _ready() -> void:
 # Post-battle dialogue (read-only, OK button only)
 func show_dialogue(trainer_name: String, text: String) -> void:
 	name_label.text = trainer_name
-	text_label.text = text
 	is_challenge_mode = false
 	pending_trainer_id = ""
 	ok_button.visible = true
 	button_row.visible = false
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	# Auto-dismiss after 4 seconds
+	_typewrite_label(text_label, text)
+	# Wait for typewriter to finish before starting auto-dismiss timer
+	if _typewriter_tween and _typewriter_tween.is_valid():
+		await _typewriter_tween.finished
 	await get_tree().create_timer(4.0).timeout
 	if visible and not is_challenge_mode:
 		visible = false
@@ -35,13 +50,37 @@ func show_dialogue(trainer_name: String, text: String) -> void:
 # Pre-battle challenge (accept/decline buttons)
 func show_challenge(trainer_name: String, text: String, trainer_id: String) -> void:
 	name_label.text = trainer_name
-	text_label.text = text
 	is_challenge_mode = true
 	pending_trainer_id = trainer_id
 	ok_button.visible = false
 	button_row.visible = true
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_typewrite_label(text_label, text)
+
+func _typewrite_label(label: Label, text: String) -> void:
+	if _typewriter_tween and _typewriter_tween.is_valid():
+		_typewriter_tween.kill()
+		_typewriter_tween = null
+	label.text = text
+	var cps := UITheme.get_text_speed()
+	if cps < 0:
+		label.visible_characters = -1
+		return
+	var char_count := text.length()
+	if char_count <= 0:
+		label.visible_characters = -1
+		return
+	label.visible_characters = 0
+	var duration := char_count / cps
+	_typewriter_tween = create_tween()
+	_typewriter_tween.tween_property(label, "visible_characters", char_count, duration)
+
+func _skip_typewriter() -> void:
+	if _typewriter_tween and _typewriter_tween.is_valid():
+		_typewriter_tween.kill()
+		_typewriter_tween = null
+		text_label.visible_characters = -1
 
 func _on_ok() -> void:
 	visible = false
@@ -67,3 +106,12 @@ func _on_decline() -> void:
 		if battle_mgr:
 			battle_mgr._respond_gatekeeper_decline.rpc_id(1, pending_trainer_id)
 	pending_trainer_id = ""
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not visible:
+		return
+	# Click-to-skip typewriter
+	if _typewriter_tween and _typewriter_tween.is_valid():
+		if (event is InputEventMouseButton and event.pressed) or (event is InputEventKey and event.pressed and event.keycode != KEY_ESCAPE):
+			_skip_typewriter()
+			get_viewport().set_input_as_handled()

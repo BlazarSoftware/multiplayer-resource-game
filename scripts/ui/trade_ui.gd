@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
+
 # Trade request panel
 var request_panel: PanelContainer = null
 var request_label: Label = null
@@ -32,6 +34,7 @@ var my_receive_pref: Dictionary = {} # destination pref
 var is_confirmed: bool = false
 
 func _ready() -> void:
+	UITheme.init()
 	visible = false
 	_build_request_panel()
 	_build_trade_panel()
@@ -48,8 +51,9 @@ func _build_request_panel() -> void:
 	request_panel = PanelContainer.new()
 	request_panel.name = "RequestPanel"
 	request_panel.anchors_preset = Control.PRESET_CENTER
-	request_panel.custom_minimum_size = Vector2(350, 120)
+	request_panel.custom_minimum_size = UITheme.scaled_vec(Vector2(350, 120))
 	request_panel.visible = false
+	UITheme.style_modal(request_panel)
 	add_child(request_panel)
 
 	var vbox = VBoxContainer.new()
@@ -70,6 +74,7 @@ func _build_request_panel() -> void:
 	request_label = Label.new()
 	request_label.text = "Player wants to trade!"
 	request_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_body(request_label)
 	inner_vbox.add_child(request_label)
 
 	var hbox = HBoxContainer.new()
@@ -80,12 +85,14 @@ func _build_request_panel() -> void:
 	accept_button = Button.new()
 	accept_button.text = "Accept"
 	accept_button.custom_minimum_size.x = 100
+	UITheme.style_button(accept_button, "secondary")
 	accept_button.pressed.connect(_on_accept_trade)
 	hbox.add_child(accept_button)
 
 	decline_button = Button.new()
 	decline_button.text = "Decline"
 	decline_button.custom_minimum_size.x = 100
+	UITheme.style_button(decline_button, "danger")
 	decline_button.pressed.connect(_on_decline_trade)
 	hbox.add_child(decline_button)
 
@@ -98,6 +105,7 @@ func _build_trade_panel() -> void:
 	trade_panel.anchor_right = 0.95
 	trade_panel.anchor_bottom = 0.95
 	trade_panel.visible = false
+	UITheme.style_modal(trade_panel)
 	add_child(trade_panel)
 
 	var margin = MarginContainer.new()
@@ -114,13 +122,14 @@ func _build_trade_panel() -> void:
 	partner_label = Label.new()
 	partner_label.text = "Trading with: ..."
 	partner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	partner_label.add_theme_font_size_override("font_size", 20)
+	UITheme.style_subheading(partner_label)
 	outer_vbox.add_child(partner_label)
 
 	status_label = Label.new()
 	status_label.text = ""
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.add_theme_color_override("font_color", Color.YELLOW)
+	UITheme.style_small(status_label)
+	status_label.add_theme_color_override("font_color", UITokens.TEXT_WARNING)
 	outer_vbox.add_child(status_label)
 
 	# Three columns: My Offer | Their Offer | My Inventory
@@ -137,7 +146,8 @@ func _build_trade_panel() -> void:
 	# Add creature offer display under my offer
 	my_creature_offer_label = Label.new()
 	my_creature_offer_label.text = ""
-	my_creature_offer_label.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
+	UITheme.style_small(my_creature_offer_label)
+	my_creature_offer_label.add_theme_color_override("font_color", UITokens.TEXT_SUCCESS)
 	my_creature_offer_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	my_offer_col.add_child(my_creature_offer_label)
 
@@ -149,7 +159,8 @@ func _build_trade_panel() -> void:
 	# Add creature offer display under their offer
 	their_creature_offer_label = Label.new()
 	their_creature_offer_label.text = ""
-	their_creature_offer_label.add_theme_color_override("font_color", Color(0.9, 0.7, 0.3))
+	UITheme.style_small(their_creature_offer_label)
+	their_creature_offer_label.add_theme_color_override("font_color", UITokens.TEXT_INFO)
 	their_creature_offer_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	their_offer_col.add_child(their_creature_offer_label)
 
@@ -178,12 +189,14 @@ func _build_trade_panel() -> void:
 	confirm_button = Button.new()
 	confirm_button.text = "Confirm Trade"
 	confirm_button.custom_minimum_size = Vector2(150, 40)
+	UITheme.style_button(confirm_button, "primary")
 	confirm_button.pressed.connect(_on_confirm_pressed)
 	btn_row.add_child(confirm_button)
 
 	cancel_button = Button.new()
 	cancel_button.text = "Cancel"
 	cancel_button.custom_minimum_size = Vector2(150, 40)
+	UITheme.style_button(cancel_button, "danger")
 	cancel_button.pressed.connect(_on_cancel_pressed)
 	btn_row.add_child(cancel_button)
 
@@ -194,7 +207,7 @@ func _make_column(title: String) -> VBoxContainer:
 	var lbl = Label.new()
 	lbl.text = title
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.add_theme_font_size_override("font_size", 16)
+	UITheme.style_small(lbl)
 	col.add_child(lbl)
 
 	var scroll = ScrollContainer.new()
@@ -351,12 +364,14 @@ func _refresh_offer_list(list_node: VBoxContainer, offer: Dictionary, can_remove
 		var lbl = Label.new()
 		lbl.text = " %s x%d" % [info.get("display_name", item_id), count]
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.style_small(lbl)
 		hbox.add_child(lbl)
 
 		if can_remove:
 			var btn = Button.new()
 			btn.text = "-"
 			btn.custom_minimum_size.x = 30
+			UITheme.style_button(btn, "danger")
 			var iid = item_id
 			btn.pressed.connect(func(): _remove_from_offer(iid))
 			hbox.add_child(btn)
@@ -387,7 +402,8 @@ func _refresh_creature_selector() -> void:
 	var sep = Label.new()
 	sep.text = "— Creatures —"
 	sep.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sep.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	UITheme.style_small(sep)
+	sep.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
 	creature_selector_list.add_child(sep)
 
 	# Party creatures
@@ -404,6 +420,7 @@ func _refresh_creature_selector() -> void:
 		var lbl = Label.new()
 		lbl.text = "[P] %s Lv%d" % [cname, clevel]
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.style_small(lbl)
 		hbox.add_child(lbl)
 
 		var btn = Button.new()
@@ -419,6 +436,7 @@ func _refresh_creature_selector() -> void:
 			var idx = i
 			btn.pressed.connect(func(): _offer_creature("party", idx))
 		btn.custom_minimum_size.x = 60
+		UITheme.style_button(btn, "secondary")
 		hbox.add_child(btn)
 
 	# Storage creatures
@@ -435,6 +453,7 @@ func _refresh_creature_selector() -> void:
 		var lbl = Label.new()
 		lbl.text = "[S] %s Lv%d" % [cname, clevel]
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.style_small(lbl)
 		hbox.add_child(lbl)
 
 		var btn = Button.new()
@@ -449,6 +468,7 @@ func _refresh_creature_selector() -> void:
 			var idx = i
 			btn.pressed.connect(func(): _offer_creature("storage", idx))
 		btn.custom_minimum_size.x = 60
+		UITheme.style_button(btn, "secondary")
 		hbox.add_child(btn)
 
 func _refresh_receive_pref() -> void:
@@ -465,7 +485,7 @@ func _refresh_receive_pref() -> void:
 	var header = Label.new()
 	header.text = "Where to receive their creature?"
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.add_theme_font_size_override("font_size", 14)
+	UITheme.style_small(header)
 	receive_pref_container.add_child(header)
 
 	var hbox = HBoxContainer.new()
@@ -481,6 +501,7 @@ func _refresh_receive_pref() -> void:
 		var party_btn = Button.new()
 		party_btn.text = "Add to Party"
 		party_btn.custom_minimum_size.x = 120
+		UITheme.style_button(party_btn, "secondary")
 		party_btn.disabled = current_dest == "party"
 		party_btn.pressed.connect(func(): _set_receive_pref("party", -1))
 		hbox.add_child(party_btn)
@@ -489,6 +510,7 @@ func _refresh_receive_pref() -> void:
 	var storage_btn = Button.new()
 	storage_btn.text = "Send to Storage"
 	storage_btn.custom_minimum_size.x = 120
+	UITheme.style_button(storage_btn, "secondary")
 	storage_btn.disabled = current_dest == "storage" or PlayerData.creature_storage.size() >= PlayerData.storage_capacity
 	storage_btn.pressed.connect(func(): _set_receive_pref("storage", -1))
 	hbox.add_child(storage_btn)
@@ -498,6 +520,7 @@ func _refresh_receive_pref() -> void:
 		var swap_label = Label.new()
 		swap_label.text = "Swap with party member:"
 		swap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_small(swap_label)
 		receive_pref_container.add_child(swap_label)
 
 		DataRegistry.ensure_loaded()
@@ -513,11 +536,13 @@ func _refresh_receive_pref() -> void:
 			var lbl = Label.new()
 			lbl.text = "%s (Lv %d)" % [cname, int(c.get("level", 1))]
 			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			UITheme.style_small(lbl)
 			swap_hbox.add_child(lbl)
 
 			var swap_btn = Button.new()
 			swap_btn.text = "Swap"
 			swap_btn.custom_minimum_size.x = 60
+			UITheme.style_button(swap_btn, "secondary")
 			var swap_idx = int(my_receive_pref.get("swap_party_idx", -1))
 			swap_btn.disabled = current_dest == "party" and swap_idx == i
 			# Disable if storage full (swapped creature goes to storage)
@@ -549,11 +574,13 @@ func _refresh_inventory() -> void:
 		var lbl = Label.new()
 		lbl.text = " %s x%d" % [info.get("display_name", item_id), available]
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.style_small(lbl)
 		hbox.add_child(lbl)
 
 		var btn = Button.new()
 		btn.text = "+"
 		btn.custom_minimum_size.x = 30
+		UITheme.style_button(btn, "secondary")
 		var iid = item_id
 		btn.pressed.connect(func(): _add_to_offer(iid))
 		hbox.add_child(btn)

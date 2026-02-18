@@ -85,11 +85,8 @@ static func generate_client(seed_val: int, season: String, offset: Vector3) -> N
 
 	# Ambient label
 	var label := Label3D.new()
-	label.text = "Excursion Zone"
+	UITheme.style_label3d(label, "Excursion Zone", "zone_sign")
 	label.font_size = 48
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = Color(1.0, 0.85, 0.4, 0.8)
-	label.outline_size = 8
 	label.position = Vector3(40, 10, 40)
 	root.add_child(label)
 
@@ -851,10 +848,8 @@ static func _add_rare_zone_glow(parent: Node3D, zone_data: Dictionary, _height_n
 	parent.add_child(glow)
 
 	var label := Label3D.new()
-	label.text = "Rare Grove"
+	UITheme.style_label3d(label, "Rare Grove", "landmark")
 	label.font_size = 32
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = Color(0.9, 0.7, 1.0, 0.9)
 	label.outline_size = 6
 	label.position = Vector3(pos.x, pos.y + 5.0, pos.z)
 	parent.add_child(label)
@@ -905,10 +900,8 @@ static func _create_exit_portal_visual() -> Node3D:
 
 	# Label
 	var label := Label3D.new()
-	label.text = "Exit Portal"
+	UITheme.style_label3d(label, "Exit Portal", "zone_sign")
 	label.font_size = 36
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = Color(0.4, 0.8, 1.0)
 	label.outline_size = 6
 	label.position = Vector3(0, 3.0, 0)
 	portal.add_child(label)

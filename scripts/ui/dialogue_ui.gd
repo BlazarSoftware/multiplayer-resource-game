@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
+
 var npc_name_label: Label = null
 var friendship_label: Label = null
 var friendship_bar: ProgressBar = null
@@ -18,8 +20,10 @@ var current_npc_id: String = ""
 var current_friendship: int = 0
 var current_tier: String = "neutral"
 var showing_gift_panel: bool = false
+var _typewriter_tween: Tween = null
 
 func _ready() -> void:
+	UITheme.init()
 	visible = false
 	_build_ui()
 
@@ -27,7 +31,8 @@ func _build_ui() -> void:
 	var panel = PanelContainer.new()
 	panel.name = "Panel"
 	panel.anchors_preset = Control.PRESET_CENTER
-	panel.custom_minimum_size = Vector2(550, 350)
+	panel.custom_minimum_size = UITheme.scaled_vec(Vector2(550, 350))
+	UITheme.style_modal(panel)
 	add_child(panel)
 
 	var margin = MarginContainer.new()
@@ -44,7 +49,7 @@ func _build_ui() -> void:
 	npc_name_label = Label.new()
 	npc_name_label.text = "NPC Name"
 	npc_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	npc_name_label.add_theme_font_size_override("font_size", 22)
+	UITheme.style_heading(npc_name_label)
 	vbox.add_child(npc_name_label)
 
 	# Friendship bar
@@ -54,6 +59,7 @@ func _build_ui() -> void:
 	friendship_label = Label.new()
 	friendship_label.text = "Neutral (0)"
 	friendship_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UITheme.style_small(friendship_label)
 	friend_row.add_child(friendship_label)
 
 	friendship_bar = ProgressBar.new()
@@ -71,6 +77,7 @@ func _build_ui() -> void:
 	dialogue_text.fit_content = true
 	dialogue_text.custom_minimum_size.y = 80
 	dialogue_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	UITheme.style_richtext_defaults(dialogue_text)
 	vbox.add_child(dialogue_text)
 
 	# Choices container
@@ -84,11 +91,13 @@ func _build_ui() -> void:
 
 	give_gift_button = Button.new()
 	give_gift_button.text = "Give Gift"
+	UITheme.style_button(give_gift_button, "secondary")
 	give_gift_button.pressed.connect(_show_gift_panel)
 	action_container.add_child(give_gift_button)
 
 	close_button = Button.new()
 	close_button.text = "Close"
+	UITheme.style_button(close_button, "danger")
 	close_button.pressed.connect(_close)
 	action_container.add_child(close_button)
 
@@ -96,8 +105,9 @@ func _build_ui() -> void:
 	gift_panel = PanelContainer.new()
 	gift_panel.name = "GiftPanel"
 	gift_panel.anchors_preset = Control.PRESET_CENTER
-	gift_panel.custom_minimum_size = Vector2(400, 300)
+	gift_panel.custom_minimum_size = UITheme.scaled_vec(Vector2(400, 300))
 	gift_panel.visible = false
+	UITheme.style_modal(gift_panel)
 	add_child(gift_panel)
 
 	var gift_margin = MarginContainer.new()
@@ -113,7 +123,7 @@ func _build_ui() -> void:
 	var gift_title = Label.new()
 	gift_title.text = "Select a Gift"
 	gift_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	gift_title.add_theme_font_size_override("font_size", 18)
+	UITheme.style_subheading(gift_title)
 	gift_vbox.add_child(gift_title)
 
 	var gift_scroll = ScrollContainer.new()
@@ -127,6 +137,7 @@ func _build_ui() -> void:
 
 	gift_back_button = Button.new()
 	gift_back_button.text = "Back"
+	UITheme.style_button(gift_back_button, "secondary")
 	gift_back_button.pressed.connect(_hide_gift_panel)
 	gift_vbox.add_child(gift_back_button)
 
@@ -143,7 +154,7 @@ func show_dialogue(npc_id: String, text: String, choices: Array, friendship_poin
 	npc_name_label.text = npc_def.display_name if npc_def else npc_id
 
 	_update_friendship_display(friendship_points, tier)
-	dialogue_text.text = text
+	_typewrite(dialogue_text, text)
 
 	# Build choice buttons
 	_clear_choices()
@@ -151,6 +162,7 @@ func show_dialogue(npc_id: String, text: String, choices: Array, friendship_poin
 		for i in range(choices.size()):
 			var btn = Button.new()
 			btn.text = choices[i]
+			UITheme.style_button(btn, "secondary")
 			var idx = i
 			btn.pressed.connect(_on_choice_pressed.bind(idx))
 			choices_container.add_child(btn)
@@ -159,6 +171,7 @@ func show_dialogue(npc_id: String, text: String, choices: Array, friendship_poin
 		# Simple dialogue — just show Continue + action buttons
 		var continue_btn = Button.new()
 		continue_btn.text = "Continue"
+		UITheme.style_button(continue_btn, "primary")
 		continue_btn.pressed.connect(_on_continue)
 		choices_container.add_child(continue_btn)
 		action_container.visible = false
@@ -171,7 +184,7 @@ func show_dialogue(npc_id: String, text: String, choices: Array, friendship_poin
 func show_choice_result(response: String, new_points: int, new_tier: String) -> void:
 	current_friendship = new_points
 	current_tier = new_tier
-	dialogue_text.text = response
+	_typewrite(dialogue_text, response)
 	_update_friendship_display(new_points, new_tier)
 
 	# Show action buttons after choice result
@@ -179,11 +192,12 @@ func show_choice_result(response: String, new_points: int, new_tier: String) -> 
 	action_container.visible = true
 
 func show_gift_response(message: String, points_change: int) -> void:
-	dialogue_text.text = message
+	var full_text := message
 	if points_change > 0:
-		dialogue_text.text += "\n[color=green](+" + str(points_change) + " friendship)[/color]"
+		full_text += "\n[color=#%s](+%d friendship)[/color]" % [UITheme.bbcode_color("success"), points_change]
 	elif points_change < 0:
-		dialogue_text.text += "\n[color=red](" + str(points_change) + " friendship)[/color]"
+		full_text += "\n[color=#%s](%d friendship)[/color]" % [UITheme.bbcode_color("danger"), points_change]
+	_typewrite(dialogue_text, full_text)
 
 	# Update from synced PlayerData
 	var fs = PlayerData.npc_friendships.get(current_npc_id, {})
@@ -196,13 +210,13 @@ func show_gift_response(message: String, points_change: int) -> void:
 
 func _update_friendship_display(points: int, tier: String) -> void:
 	var tier_colors = {
-		"hate": Color.RED,
-		"dislike": Color.ORANGE,
-		"neutral": Color.WHITE,
-		"like": Color.GREEN,
-		"love": Color.GOLD,
+		"hate": UITokens.TEXT_DANGER,
+		"dislike": UITokens.TEXT_WARNING,
+		"neutral": UITokens.INK_PRIMARY,
+		"like": UITokens.TEXT_SUCCESS,
+		"love": UITokens.STAMP_GOLD,
 	}
-	var color: Color = tier_colors.get(tier, Color.WHITE)
+	var color: Color = tier_colors.get(tier, UITokens.INK_PRIMARY)
 	friendship_label.text = tier.capitalize() + " (" + str(points) + ")"
 	friendship_label.modulate = color
 	friendship_bar.value = points
@@ -257,17 +271,6 @@ func _populate_gift_list() -> void:
 		if npc_def:
 			gift_tier = _get_npc_gift_tier(npc_def, item_id)
 
-		var tier_indicator = ""
-		match gift_tier:
-			"loved":
-				tier_indicator = " [color=gold]★★★[/color]"
-			"liked":
-				tier_indicator = " [color=green]★★[/color]"
-			"disliked":
-				tier_indicator = " [color=orange]✗[/color]"
-			"hated":
-				tier_indicator = " [color=red]✗✗[/color]"
-
 		# Use plain text for button (RichTextLabel doesn't work well in buttons)
 		var tier_plain = ""
 		match gift_tier:
@@ -281,19 +284,20 @@ func _populate_gift_list() -> void:
 				tier_plain = " ✗✗"
 
 		btn.text = display_name + " (x" + str(count) + ")" + tier_plain
+		UITheme.style_button(btn, "secondary")
 		var captured_id = item_id
 		btn.pressed.connect(_give_gift.bind(captured_id))
 
 		# Color the button based on tier
 		match gift_tier:
 			"loved":
-				btn.modulate = Color.GOLD
+				btn.modulate = UITokens.STAMP_GOLD
 			"liked":
-				btn.modulate = Color.GREEN_YELLOW
+				btn.modulate = UITokens.TEXT_SUCCESS
 			"disliked":
-				btn.modulate = Color.ORANGE
+				btn.modulate = UITokens.TEXT_WARNING
 			"hated":
-				btn.modulate = Color.INDIAN_RED
+				btn.modulate = UITokens.TEXT_DANGER
 
 		gift_list.add_child(btn)
 
@@ -301,6 +305,7 @@ func _populate_gift_list() -> void:
 		var empty_label = Label.new()
 		empty_label.text = "No items to give"
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_small(empty_label)
 		gift_list.add_child(empty_label)
 
 func _give_gift(item_id: String) -> void:
@@ -336,6 +341,30 @@ func _get_npc_gift_tier(npc_def: Resource, item_id: String) -> String:
 		return "hated"
 	return "neutral"
 
+func _typewrite(rtl: RichTextLabel, text: String) -> void:
+	if _typewriter_tween and _typewriter_tween.is_valid():
+		_typewriter_tween.kill()
+		_typewriter_tween = null
+	rtl.text = text
+	var cps := UITheme.get_text_speed()
+	if cps < 0:
+		rtl.visible_characters = -1
+		return
+	var char_count := rtl.get_total_character_count()
+	if char_count <= 0:
+		rtl.visible_characters = -1
+		return
+	rtl.visible_characters = 0
+	var duration := char_count / cps
+	_typewriter_tween = create_tween()
+	_typewriter_tween.tween_property(rtl, "visible_characters", char_count, duration)
+
+func _skip_typewriter() -> void:
+	if _typewriter_tween and _typewriter_tween.is_valid():
+		_typewriter_tween.kill()
+		_typewriter_tween = null
+		dialogue_text.visible_characters = -1
+
 func _close() -> void:
 	visible = false
 	gift_panel.visible = false
@@ -353,3 +382,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		_close()
 		get_viewport().set_input_as_handled()
+		return
+	# Click-to-skip typewriter
+	if _typewriter_tween and _typewriter_tween.is_valid():
+		if (event is InputEventMouseButton and event.pressed) or (event is InputEventKey and event.pressed):
+			_skip_typewriter()
+			get_viewport().set_input_as_handled()

@@ -95,6 +95,66 @@ func test_assign_all_slot_types() -> void:
 	assert_eq(PlayerData.hotbar[6].get("item_type", ""), "battle_item")
 	assert_true(PlayerData.hotbar[7].is_empty())
 
+func test_selected_hotbar_slot_save_load_roundtrip() -> void:
+	PlayerData._init_hotbar()
+	PlayerData.assign_hotbar_slot(3, "hoe", "tool_slot")
+	PlayerData.select_hotbar_slot(3)
+	assert_eq(PlayerData.selected_hotbar_slot, 3)
+	var saved = PlayerData.to_dict()
+	assert_true(saved.has("selected_hotbar_slot"), "Save data should include selected_hotbar_slot")
+	assert_eq(saved["selected_hotbar_slot"], 3)
+	# Simulate reload
+	PlayerData.reset()
+	assert_eq(PlayerData.selected_hotbar_slot, 0, "Reset should zero selected slot")
+	PlayerData.load_from_server(saved)
+	assert_eq(PlayerData.selected_hotbar_slot, 3, "Selected slot should restore from save")
+
+func test_selected_hotbar_slot_default_on_missing() -> void:
+	# Simulate old save with no selected_hotbar_slot field
+	var data = PlayerData.to_dict()
+	data.erase("selected_hotbar_slot")
+	PlayerData.reset()
+	PlayerData.load_from_server(data)
+	assert_eq(PlayerData.selected_hotbar_slot, 0, "Should default to 0 when missing")
+
+func test_selected_hotbar_slot_clamped_on_load() -> void:
+	var data = PlayerData.to_dict()
+	data["selected_hotbar_slot"] = 99
+	PlayerData.reset()
+	PlayerData.load_from_server(data)
+	assert_eq(PlayerData.selected_hotbar_slot, 7, "Should clamp to max valid index")
+
+func test_selected_hotbar_slot_clamped_negative_on_load() -> void:
+	var data = PlayerData.to_dict()
+	data["selected_hotbar_slot"] = -5
+	PlayerData.reset()
+	PlayerData.load_from_server(data)
+	assert_eq(PlayerData.selected_hotbar_slot, 0, "Should clamp negative to 0")
+
+func test_hotbar_full_roundtrip_with_selection() -> void:
+	PlayerData._init_hotbar()
+	PlayerData.assign_hotbar_slot(0, "hoe", "tool_slot")
+	PlayerData.assign_hotbar_slot(1, "axe", "tool_slot")
+	PlayerData.assign_hotbar_slot(4, "tomato_seed", "seed")
+	PlayerData.select_hotbar_slot(4)
+	var saved = PlayerData.to_dict()
+	PlayerData.reset()
+	PlayerData.load_from_server(saved)
+	assert_eq(PlayerData.hotbar[0].get("item_id", ""), "hoe")
+	assert_eq(PlayerData.hotbar[1].get("item_id", ""), "axe")
+	assert_eq(PlayerData.hotbar[4].get("item_id", ""), "tomato_seed")
+	assert_true(PlayerData.hotbar[7].is_empty())
+	assert_eq(PlayerData.selected_hotbar_slot, 4)
+
+func test_to_dict_includes_selected_hotbar_slot() -> void:
+	PlayerData._init_hotbar()
+	PlayerData.select_hotbar_slot(5)
+	var d = PlayerData.to_dict()
+	assert_true(d.has("selected_hotbar_slot"))
+	assert_eq(d["selected_hotbar_slot"], 5)
+	assert_true(d.has("hotbar"))
+	assert_eq(d["hotbar"].size(), PlayerData.HOTBAR_SIZE)
+
 func test_hotbar_migration_from_old_10_slots() -> void:
 	# Simulate old save with 10 slots (old format)
 	var data = PlayerData.to_dict()

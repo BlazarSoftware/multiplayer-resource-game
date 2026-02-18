@@ -3,9 +3,11 @@ extends CanvasLayer
 # Always-visible compass strip at top-center of screen.
 # Client-only — no server interaction.
 
-const STRIP_WIDTH: float = 400.0
-const STRIP_HEIGHT: float = 30.0
-const PIXELS_PER_RADIAN: float = STRIP_WIDTH / (PI * 1.0) # ~127 px per radian, shows ~PI range
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
+
+const STRIP_WIDTH: float = 600.0
+const STRIP_HEIGHT: float = 36.0
+const PIXELS_PER_RADIAN: float = STRIP_WIDTH / (PI * 1.0) # ~191 px per radian, shows ~PI range
 
 # Cardinal directions: yaw value when camera faces that direction
 # North = -Z (toward wild zones), camera_yaw = PI
@@ -13,29 +15,28 @@ const PIXELS_PER_RADIAN: float = STRIP_WIDTH / (PI * 1.0) # ~127 px per radian, 
 # South = +Z (toward restaurants), camera_yaw = 0
 # West = -X, camera_yaw = -PI/2
 const CARDINALS: Array = [
-	{"label": "N", "yaw": PI, "color": Color(1, 0.3, 0.3)},
-	{"label": "NE", "yaw": 3.0 * PI / 4.0, "color": Color(0.8, 0.8, 0.8)},
-	{"label": "E", "yaw": PI / 2.0, "color": Color(1, 1, 1)},
-	{"label": "SE", "yaw": PI / 4.0, "color": Color(0.8, 0.8, 0.8)},
-	{"label": "S", "yaw": 0.0, "color": Color(1, 1, 1)},
-	{"label": "SW", "yaw": -PI / 4.0, "color": Color(0.8, 0.8, 0.8)},
-	{"label": "W", "yaw": -PI / 2.0, "color": Color(1, 1, 1)},
-	{"label": "NW", "yaw": -3.0 * PI / 4.0, "color": Color(0.8, 0.8, 0.8)},
+	{"label": "N", "yaw": PI, "color": UITokens.STAMP_RED},
+	{"label": "NE", "yaw": 3.0 * PI / 4.0, "color": UITokens.INK_MEDIUM},
+	{"label": "E", "yaw": PI / 2.0, "color": UITokens.INK_DARK},
+	{"label": "SE", "yaw": PI / 4.0, "color": UITokens.INK_MEDIUM},
+	{"label": "S", "yaw": 0.0, "color": UITokens.INK_DARK},
+	{"label": "SW", "yaw": -PI / 4.0, "color": UITokens.INK_MEDIUM},
+	{"label": "W", "yaw": -PI / 2.0, "color": UITokens.INK_DARK},
+	{"label": "NW", "yaw": -3.0 * PI / 4.0, "color": UITokens.INK_MEDIUM},
 ]
 
 var strip: Control
 var target_label: Label
-var target_dropdown: MenuButton
 var _indoor: bool = false
 var _locations_cache: Array = [] # Array of LocationDef
 
 func _ready() -> void:
 	layer = 5
+	UITheme.init()
 	DataRegistry.ensure_loaded()
 	_locations_cache = DataRegistry.locations.values()
 	_build_ui()
 	PlayerData.compass_target_changed.connect(_on_target_changed)
-	PlayerData.discovered_locations_changed.connect(_rebuild_dropdown)
 	PlayerData.location_changed.connect(_on_location_changed)
 
 func _build_ui() -> void:
@@ -50,13 +51,13 @@ func _build_ui() -> void:
 
 	# Dark background for strip
 	var bg = ColorRect.new()
-	bg.color = Color(0, 0, 0, 0.5)
+	bg.color = Color(UITokens.PAPER_TAN.r, UITokens.PAPER_TAN.g, UITokens.PAPER_TAN.b, 0.92)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	strip.add_child(bg)
 
 	# Center tick mark
 	var tick = ColorRect.new()
-	tick.color = Color(1, 1, 0.3, 0.9)
+	tick.color = Color(UITokens.STAMP_GOLD.r, UITokens.STAMP_GOLD.g, UITokens.STAMP_GOLD.b, 0.95)
 	tick.position = Vector2(STRIP_WIDTH / 2.0 - 1, 0)
 	tick.size = Vector2(2, STRIP_HEIGHT)
 	strip.add_child(tick)
@@ -64,26 +65,13 @@ func _build_ui() -> void:
 	# Target distance label (below strip)
 	target_label = Label.new()
 	target_label.text = ""
-	target_label.add_theme_font_size_override("font_size", 12)
-	target_label.add_theme_color_override("font_color", Color(0.6, 0.9, 1.0))
+	UITheme.style_small(target_label)
+	target_label.add_theme_color_override("font_color", UITokens.STAMP_BLUE)
 	target_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	target_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	target_label.position = Vector2(-100, STRIP_HEIGHT + 10)
 	target_label.size = Vector2(200, 20)
 	add_child(target_label)
-
-	# Target selection dropdown
-	target_dropdown = MenuButton.new()
-	target_dropdown.text = "Target"
-	target_dropdown.flat = true
-	target_dropdown.add_theme_font_size_override("font_size", 11)
-	target_dropdown.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
-	target_dropdown.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	target_dropdown.position = Vector2(STRIP_WIDTH / 2.0 + 4, 8)
-	target_dropdown.size = Vector2(60, STRIP_HEIGHT)
-	add_child(target_dropdown)
-	target_dropdown.get_popup().id_pressed.connect(_on_dropdown_selected)
-	_rebuild_dropdown()
 
 func _process(_delta: float) -> void:
 	if _indoor:
@@ -109,7 +97,7 @@ func _draw_compass(camera_yaw: float) -> void:
 			continue
 		var lbl = Label.new()
 		lbl.text = card.label
-		lbl.add_theme_font_size_override("font_size", 14 if card.label.length() == 1 else 11)
+		lbl.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_BODY) if card.label.length() == 1 else UITheme.scaled(UITokens.FONT_TINY))
 		lbl.add_theme_color_override("font_color", card.color)
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl.position = Vector2(px - 12, 2 if card.label.length() == 1 else 5)
@@ -190,49 +178,8 @@ func _on_location_changed(zone: String, _owner_name: String) -> void:
 	_indoor = (zone == "restaurant")
 	strip.visible = not _indoor
 	target_label.visible = not _indoor
-	target_dropdown.visible = not _indoor
+
 
 func _on_target_changed(_target_id: String) -> void:
 	pass # Compass updates in _process anyway
 
-var _dropdown_ids: Array = [] # Maps popup index -> location_id
-
-func _rebuild_dropdown() -> void:
-	if target_dropdown == null:
-		return
-	var popup = target_dropdown.get_popup()
-	popup.clear()
-	_dropdown_ids.clear()
-	DataRegistry.ensure_loaded()
-
-	# "None" option
-	popup.add_item("Clear Target", 0)
-	_dropdown_ids.append("")
-
-	# Group discovered locations by category
-	var by_category: Dictionary = {}
-	for loc_id in PlayerData.discovered_locations:
-		var loc = DataRegistry.get_location(loc_id)
-		if loc == null:
-			continue
-		var cat: String = loc.category
-		if cat not in by_category:
-			by_category[cat] = []
-		by_category[cat].append(loc)
-
-	var cat_order = ["zone", "wild_zone", "crafting", "shop", "trainer", "social_npc", "landmark"]
-	var idx = 1
-	for cat in cat_order:
-		if cat not in by_category:
-			continue
-		popup.add_separator(cat.replace("_", " ").capitalize())
-		_dropdown_ids.append("") # separator placeholder
-		idx += 1
-		for loc in by_category[cat]:
-			popup.add_item(loc.display_name, idx)
-			_dropdown_ids.append(loc.location_id)
-			idx += 1
-
-func _on_dropdown_selected(id: int) -> void:
-	if id >= 0 and id < _dropdown_ids.size():
-		PlayerData.set_compass_target(_dropdown_ids[id])

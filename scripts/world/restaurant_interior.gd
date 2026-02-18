@@ -6,11 +6,21 @@ var restaurant_index: int = -1
 @onready var farm_manager: Node3D = $FarmArea/FarmManager
 @onready var owner_label: Label3D = $OwnerLabel
 
+func _ready() -> void:
+	var door_label = get_node_or_null("ExitDoor/DoorLabel")
+	if door_label and door_label is Label3D:
+		UITheme.style_label3d(door_label, "", "interaction_hint")
+	var water_label = get_node_or_null("WaterSource/WaterLabel")
+	if water_label and water_label is Label3D:
+		UITheme.style_label3d(water_label, "", "zone_sign")
+
 func initialize(p_owner_name: String, idx: int, data: Dictionary) -> void:
 	owner_name = p_owner_name
 	restaurant_index = idx
 	position = Vector3(1000 + idx * 200, 0, 1000)
 	owner_label.text = p_owner_name + "'s Restaurant"
+	UITheme.style_label3d(owner_label, "", "landmark")
+	owner_label.font_size = 48
 	# Load farm plot states if saved
 	if data.has("farm_plots") and not data["farm_plots"].is_empty():
 		# Defer loading until FarmManager has generated its plots

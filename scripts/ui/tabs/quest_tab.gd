@@ -1,6 +1,7 @@
 extends Control
 
 # Quest log tab content for PauseMenu. Ported from quest_log_ui.gd.
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 var tab_bar: TabBar
 var quest_list: VBoxContainer
@@ -16,6 +17,7 @@ var _npc_quests: Array = []
 var _showing_npc_quests: bool = false
 
 func _ready() -> void:
+	UITheme.init()
 	_build_ui()
 	PlayerData.quests_changed.connect(_refresh)
 
@@ -56,25 +58,27 @@ func _build_ui() -> void:
 	right_scroll.add_child(detail_panel)
 
 	detail_name = Label.new()
-	detail_name.add_theme_font_size_override("font_size", 20)
+	UITheme.style_subheading(detail_name)
 	detail_panel.add_child(detail_name)
 
 	detail_desc = RichTextLabel.new()
 	detail_desc.bbcode_enabled = true
 	detail_desc.custom_minimum_size = Vector2(0, 80)
 	detail_desc.fit_content = true
+	UITheme.style_richtext_defaults(detail_desc)
 	detail_panel.add_child(detail_desc)
 
 	detail_objectives = VBoxContainer.new()
 	detail_panel.add_child(detail_objectives)
 
 	detail_rewards = Label.new()
-	detail_rewards.add_theme_font_size_override("font_size", 14)
-	detail_rewards.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	UITheme.style_small(detail_rewards)
+	detail_rewards.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 	detail_panel.add_child(detail_rewards)
 
 	action_button = Button.new()
 	action_button.text = "Track Quest"
+	UITheme.style_button(action_button, "secondary")
 	action_button.pressed.connect(_on_action_pressed)
 	action_button.visible = false
 	detail_panel.add_child(action_button)
@@ -134,6 +138,7 @@ func _add_quest_button(quest_id: String, qdef: Resource, is_active: bool) -> voi
 	else:
 		btn.text = prefix + qdef.display_name + " [Done]"
 	btn.pressed.connect(_show_quest_detail.bind(quest_id, is_active))
+	UITheme.style_button(btn, "secondary")
 	quest_list.add_child(btn)
 
 func _clear_detail() -> void:
@@ -164,16 +169,17 @@ func _show_quest_detail(quest_id: String, is_active: bool) -> void:
 		if i < obj_states.size():
 			progress = int(obj_states[i].get("progress", 0))
 
-		var obj_label := Label.new()
-		if is_active:
-			var check = "[x] " if progress >= target_count else "[ ] "
-			obj_label.text = check + desc + " (" + str(progress) + "/" + str(target_count) + ")"
-			if progress >= target_count:
-				obj_label.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3))
-		else:
-			obj_label.text = "[x] " + desc
-			obj_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
-		detail_objectives.add_child(obj_label)
+			var obj_label := Label.new()
+			UITheme.style_small(obj_label)
+			if is_active:
+				var check = "[x] " if progress >= target_count else "[ ] "
+				obj_label.text = check + desc + " (" + str(progress) + "/" + str(target_count) + ")"
+				if progress >= target_count:
+					obj_label.add_theme_color_override("font_color", UITokens.TEXT_SUCCESS)
+			else:
+				obj_label.text = "[x] " + desc
+				obj_label.add_theme_color_override("font_color", UITokens.TEXT_MUTED)
+			detail_objectives.add_child(obj_label)
 
 	var reward_parts: Array = []
 	if qdef.reward_money > 0:
@@ -231,11 +237,13 @@ func _refresh_npc_quests() -> void:
 			"in_progress":
 				btn.text = "... " + name_text
 		btn.pressed.connect(_show_npc_quest_detail.bind(quest_data))
+		UITheme.style_button(btn, "secondary")
 		quest_list.add_child(btn)
 
 	if _npc_quests.is_empty():
 		var empty_label := Label.new()
 		empty_label.text = "No quests available."
+		UITheme.style_small(empty_label)
 		quest_list.add_child(empty_label)
 
 func _show_npc_quest_detail(quest_data: Dictionary) -> void:
@@ -255,6 +263,7 @@ func _show_npc_quest_detail(quest_data: Dictionary) -> void:
 				var obj = objectives[i]
 				var obj_label := Label.new()
 				obj_label.text = "[ ] " + str(obj.get("description", "Objective " + str(i + 1)))
+				UITheme.style_small(obj_label)
 				detail_objectives.add_child(obj_label)
 			var reward_parts: Array = []
 			var money = int(quest_data.get("reward_money", 0))

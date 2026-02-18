@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
+
 var title_label: Label = null
 var tab_bar: TabBar = null
 var item_list: VBoxContainer = null
@@ -12,6 +14,7 @@ var current_catalog: Array = [] # [{item_id, buy_price}]
 var current_tab: int = 0 # 0=Buy, 1=Sell
 
 func _ready() -> void:
+	UITheme.init()
 	visible = false
 	_build_ui()
 
@@ -19,7 +22,8 @@ func _build_ui() -> void:
 	var panel = PanelContainer.new()
 	panel.name = "Panel"
 	panel.anchors_preset = Control.PRESET_CENTER
-	panel.custom_minimum_size = Vector2(500, 400)
+	panel.custom_minimum_size = UITheme.scaled_vec(Vector2(500, 400))
+	UITheme.style_modal(panel)
 	add_child(panel)
 
 	var margin = MarginContainer.new()
@@ -35,12 +39,13 @@ func _build_ui() -> void:
 	title_label = Label.new()
 	title_label.text = "Shop"
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.add_theme_font_size_override("font_size", 20)
+	UITheme.style_subheading(title_label)
 	vbox.add_child(title_label)
 
 	money_label = Label.new()
 	money_label.text = "Money: $0"
 	money_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_body(money_label)
 	vbox.add_child(money_label)
 
 	tab_bar = TabBar.new()
@@ -60,6 +65,7 @@ func _build_ui() -> void:
 
 	close_button = Button.new()
 	close_button.text = "Close"
+	UITheme.style_button(close_button, "danger")
 	close_button.pressed.connect(_close)
 	vbox.add_child(close_button)
 
@@ -112,10 +118,12 @@ func _refresh_buy() -> void:
 		var label = Label.new()
 		label.text = "  %s — $%d" % [info.get("display_name", item_id), buy_price]
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.style_small(label)
 		hbox.add_child(label)
 
 		var btn = Button.new()
 		btn.text = "Buy"
+		UITheme.style_button(btn, "primary")
 		btn.disabled = PlayerData.money < buy_price
 		var iid = item_id
 		var sid = current_shop_id
@@ -144,10 +152,12 @@ func _refresh_sell() -> void:
 		var label = Label.new()
 		label.text = "  %s x%d — $%d each" % [info.get("display_name", item_id), count, sell_price]
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.style_small(label)
 		hbox.add_child(label)
 
 		var btn = Button.new()
 		btn.text = "Sell 1"
+		UITheme.style_button(btn, "secondary")
 		var iid = item_id
 		btn.pressed.connect(func(): _sell_item(iid, 1))
 		hbox.add_child(btn)

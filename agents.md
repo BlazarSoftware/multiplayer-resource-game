@@ -1,224 +1,92 @@
-# Agents Guide
+# Agents Guide — Creature Crafting Multiplayer Resource Game
 
-## Automated Testing (REQUIRED)
+## Quick Reference
 
-### Run Before Committing
-All 312 tests must pass before any commit:
+| Area | Key Files | Notes |
+|------|-----------|-------|
+| UI Theme | `scripts/ui/ui_theme.gd`, `scripts/ui/ui_tokens.gd` | UITheme is `class_name` — never preload. UITokens has no `class_name` — must preload. |
+| Settings | `scripts/ui/tabs/settings_tab.gd` | Font scale + text speed + volume. Persisted to `user://settings.cfg`. |
+| Battle Arena | `scripts/battle/battle_arena.gd`, `scripts/battle/battle_arena_ui.gd` | 3D arena is client-only. Label3D sizes must use `UITheme.scaled()`. |
+| Hotbar | `scripts/ui/hotbar_ui.gd` | CanvasLayer overlay. Font sizes must use `UITheme.scaled()`. |
+| Networking | `scripts/autoload/network_manager.gd` | Server-authoritative. See CLAUDE.md Networking Rules. |
+| Battle | `scripts/battle/battle_manager.gd` | Server-authoritative battle state. See `docs/battle-system.md`. |
+| Data Registry | `scripts/autoload/data_registry.gd` | Loads all `.tres` resources. Handles `.remap` in exports. |
+
+## UI Styling Rules
+
+### Font Scaling Convention
+All runtime font sizes MUST go through `UITheme.scaled()`:
+```gdscript
+# CORRECT — scales with user's font size setting
+label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_BODY))
+
+# WRONG — bypasses font scaling, won't respond to accessibility settings
+label.add_theme_font_size_override("font_size", UITokens.FONT_BODY)
+```
+
+This applies to:
+- 2D UI Labels, Buttons, LineEdits, RichTextLabels
+- 3D Label3D nodes (battle arena trainer/opponent names, damage numbers)
+- Any `add_theme_font_size_override()` call
+
+### Semantic Style Functions
+Prefer semantic helpers over manual styling:
+```gdscript
+UITheme.style_title(label)         # H1, heading font, primary ink
+UITheme.style_section(label)       # H2, heading font, primary ink
+UITheme.style_body_text(label)     # Body, body font, primary ink
+UITheme.style_caption(label)       # Small, body font, secondary ink
+UITheme.style_button(button)       # Primary variant by default
+UITheme.style_label3d(label, "", "npc_name")  # 3D label with role preset
+```
+
+These all call `UITheme.scaled()` internally — no extra scaling needed.
+
+### Color Tokens
+Use `UITokens` constants instead of hardcoded colors:
+- **Ink**: `INK_PRIMARY`, `INK_SECONDARY`, `INK_DISABLED`
+- **Paper**: `PAPER_BASE`, `PAPER_CARD`, `PAPER_EDGE`
+- **Stamps**: `STAMP_RED`, `STAMP_GREEN`, `STAMP_GOLD`, `STAMP_BLUE`, `STAMP_BROWN`
+- **Text semantics**: `TEXT_SUCCESS`, `TEXT_WARNING`, `TEXT_DANGER`, `TEXT_INFO`, `TEXT_MUTED`
+- **Type colors**: `TYPE_SPICY`, `TYPE_SWEET`, `TYPE_SOUR`, `TYPE_HERBAL`, `TYPE_UMAMI`, `TYPE_GRAIN`
+
+## Settings Persistence
+
+Settings are saved to `user://settings.cfg` using Godot's `ConfigFile`:
+
+```ini
+[audio]
+master_volume=1.0
+
+[accessibility]
+font_scale=1.0
+font_scale_idx=1
+text_speed_cps=40.0
+text_speed_idx=1
+```
+
+- **Index keys** (`font_scale_idx`, `text_speed_idx`) are the reliable identifiers — integer slider positions.
+- **Float keys** (`font_scale`, `text_speed_cps`) kept for backward compatibility and for `UITheme._load_settings()` which reads `font_scale` directly at init.
+- Load prefers index, falls back to float `Array.find()` if index is missing (old config files).
+
+## Networking Checklist (for any new feature)
+
+Before writing code, answer:
+1. Server only, client only, or both?
+2. Does server need to validate? (Almost always yes)
+3. Do other clients need to see the result?
+4. Race condition risk with optimistic client update?
+
+See CLAUDE.md "Networking Rules" for the full authority model table.
+
+## Testing
 
 ```bash
-# GDScript tests (GUT 9.5.0) — 291 tests
+# GDScript tests (GUT) — 761+ tests
 '/Applications/Mechanical Turk.app/Contents/MacOS/Mechanical Turk' --path . --headless -s addons/gut/gut_cmdln.gd -gexit
 
-# Express API tests (Vitest) — 21 tests
+# Express API tests (Vitest)
 cd api && npx vitest run
 ```
 
-### Test Coverage Map
-
-| Source Area | Test File(s) | Tests |
-|-------------|-------------|-------|
-| `scripts/battle/battle_calculator.gd` | `test/unit/battle/test_battle_calculator.gd`, `test_battle_calculator_rng.gd` | ~76 |
-| `scripts/battle/status_effects.gd` | `test/unit/battle/test_status_effects.gd` | ~33 |
-| `scripts/battle/field_effects.gd` | `test/unit/battle/test_field_effects.gd` | ~31 |
-| `scripts/battle/ability_effects.gd` | `test/unit/battle/test_ability_effects.gd` | ~34 |
-| `scripts/battle/held_item_effects.gd` | `test/unit/battle/test_held_item_effects.gd` | ~25 |
-| `scripts/battle/battle_ai.gd` | `test/unit/battle/test_battle_ai.gd` | ~16 |
-| `scripts/data/creature_instance.gd` | `test/unit/data/test_creature_instance.gd`, `test_creature_instance_creation.gd` | ~24 |
-| `scripts/world/season_manager.gd` | `test/unit/world/test_season_manager.gd` | ~21 |
-| Crafting validation | `test/unit/crafting/test_crafting_validation.gd` | ~14 |
-| Battle integration (full pipeline) | `test/integration/test_battle_turn.gd`, `test_battle_pvp.gd` | ~36 |
-| `api/src/routes/players.ts` | `api/test/players.test.ts` | 14 |
-| `api/src/routes/world.ts` | `api/test/world.test.ts` | 6 |
-| `api/src/app.ts` | `api/test/health.test.ts` | 1 |
-
-### Test Helpers (GDScript)
-- **`RegistrySeeder`** (`test/helpers/registry_seeder.gd`): Populates DataRegistry with test data. Use `seed_all()` in `before_each()`, `clear_all()` in `after_each()`.
-- **`BattleFactory`** (`test/helpers/battle_factory.gd`): `creature(overrides)` / `battle(overrides)` — dict factories with all expected keys.
-- **`MockMove`** (`test/helpers/mock_move.gd`): `physical()` / `special()` / `status()` / `with_props()` — MoveDef Resource factory.
-- **`BattleTestScene`** (`test/helpers/battle_test_scene.gd`): Integration test helper for battle dicts.
-
-### Test Helpers (API)
-- **`setupTestDb()`** (`api/test/setup.ts`): Creates MongoMemoryServer + Express app. Returns `{app, db}`.
-- **`clearCollections()`**: Wipes test data between tests.
-- **`teardownTestDb()`**: Closes connections after test suite.
-
-### Adding New Tests
-- **New battle mechanic**: Add to existing `test/unit/battle/` file. Update `registry_seeder.gd` if new data entries needed.
-- **New data type**: Add serialization tests in `test/unit/data/`.
-- **New API endpoint**: Add test file in `api/test/` using `setupTestDb()` pattern.
-
-## Quick Start (MCP Editor Session — preferred for local dev)
-1. Use MCP `run_multiplayer_session` with `serverArgs: ["--server"]`, `numClients: 2`
-2. Server auto-starts on port 7777 (no ConnectUI), clients show ConnectUI defaulting to `127.0.0.1`
-3. Join clients via MCP `execute_gdscript` calling `NetworkManager.join_game("127.0.0.1", "PlayerN")` directly
-
-## Quick Start (Public Server)
-1. Launch client with Mechanical Turk and open this project.
-2. Click "Join Game" — exported builds default to `207.32.216.76` (public K8s server).
-
-## Quick Start (Docker Local Dev)
-1. Build engine (first time only): `./scripts/build-engine-templates.sh`
-2. Start all 3 services: `docker compose up --build -d` (MongoDB + API + game server)
-3. Verify API: `curl http://localhost:3000/health`
-4. Launch client, click "Join Game" — editor defaults to `127.0.0.1`.
-
-## Quick Start (Kubernetes Deploy)
-1. First-time setup: `./scripts/deploy-k8s.sh --setup`
-2. Build, push, and deploy: `./scripts/deploy-k8s.sh` (auto-builds engine if missing, deploys all 3 services)
-3. Join using `207.32.216.76:7777` (public) or `10.225.0.153:7777` (VPN).
-
-## Engine Build (Two-Phase Docker)
-The server must use the Mechanical Turk engine (Godot 4.7 fork) — stock Godot causes RPC checksum mismatches. The build is split:
-1. **Engine phase** (`Dockerfile.engine`): Compiles MT engine from C++ source for Linux x86_64. Output cached in `engine-builds/linux/`. Requires `../mechanical-turk/` engine repo.
-2. **Game phase** (`Dockerfile`): Uses pre-built MT binaries to export the server. Templates at `/root/.local/share/mechanical_turk/export_templates/4.7.dev/`.
-
-```bash
-./scripts/build-engine-templates.sh          # build engine (cached)
-./scripts/build-engine-templates.sh --force  # force rebuild
-```
-
-**Key constraints**: LTO disabled (`lto=none`) due to Docker memory limits. Engine data dir is `mechanical_turk` (not `godot`).
-
-## Architecture: 3-Service Stack
-
-```
-[Godot Game Server] --HTTP--> [Express API :3000] --MongoDB--> [MongoDB :27017]
-     |                              (internal only)
-     |--UDP 7777--> [Game Clients]
-```
-- Only the game server talks to the API. Clients get data via RPCs.
-- **Editor dev (no Docker)**: SaveManager auto-falls back to file I/O (`user://save/`). No API needed.
-- **Docker Compose**: `docker compose up --build -d` starts mongodb + api-service + game-server
-- **K8s**: 3 deployments (creature-crafting-mongodb, creature-crafting-api, creature-crafting-server)
-
-### UUID Identity System (CRITICAL)
-Every persistent entity MUST have a stable UUID. MongoDB documents are keyed by UUID.
-
-| Entity | UUID field | Generated by |
-|--------|-----------|-------------|
-| Player | `player_id` | Express API (`crypto.randomUUID()`) on first join |
-| Creature | `creature_id` | Server-side `_generate_uuid()` on creation |
-
-**If you add a new persistent entity type** (guilds, mail, auction listings, etc.), it MUST get a UUID field generated server-side. Never rely on array index or display name as identity.
-
-## Networking Contract
-- Server/client default UDP port is `7777`.
-- **Smart IP defaults**: Editor ConnectUI defaults to `127.0.0.1` (localhost). Exported builds default to `207.32.216.76` (public server). Editor mode ignores saved prefs for IP to prevent stale overrides.
-- **Dedicated server detection** (3 triggers in `NetworkManager._ready()`):
-  1. `DisplayServer.get_name() == "headless"` — Docker/headless export
-  2. `OS.has_feature("dedicated_server")` — Godot dedicated server export
-  3. `"--server" in OS.get_cmdline_user_args()` — CLI flag (used by MCP `run_multiplayer_session`)
-- When dedicated: auto-calls `host_game()` + `start_game()`, skips ConnectUI, skips game world UI (HUD, BattleUI, etc.)
-- Any tooling, scripts, docs, and deployment defaults should assume port `7777`.
-
-## Multiplayer-Aware Development (CRITICAL)
-
-This is a server-authoritative persistent MMO. **Any gameplay change — new feature, new action, new resource, any UI that affects game state — must be evaluated for networking impact.** If the user does not specify whether a change should be networked (synced to other clients), always ask before implementing.
-
-### Questions to resolve before writing code
-- Should this run on **server only**, **client only**, or **both**?
-- Does the server need to **validate/authorize** this action? (Almost always yes for anything that changes player data, inventory, party, or world state.)
-- Do other clients need to **see the result**? If so, how is it synced — RPC, StateSync property, or MultiplayerSpawner?
-- Is there a **race condition** if the client optimistically updates before the server confirms?
-- Does this state need to **persist** across sessions (saved to MongoDB)?
-
-Never assume a gameplay feature is local-only unless explicitly told so.
-
-### Authority Model
-| System | Authority | Sync mechanism |
-|--------|-----------|---------------|
-| Player movement | Server (`_physics_process`) | StateSync (position, velocity) |
-| Player rotation | Server (`_physics_process`) | StateSync (`mesh_rotation_y`, on-change) |
-| Player visuals (color, name) | Server (set before spawn) | StateSync (spawn-only) |
-| Camera / input | Client (InputSync) | InputSync → server reads |
-| Inventory | Server (`server_add/remove_inventory`) | RPC to client |
-| Watering can | Server (`server_use/refill_watering_can`) | RPC to client |
-| Farm actions | Server (`request_farm_action` RPC) | Server validates, RPCs result |
-| Battle state | Server (BattleManager) | RPCs to involved clients |
-| Crafting | Server (CraftingSystem) | RPC results to client |
-| World item spawn/pickup | Server (WorldItemManager) | `_spawn/_despawn_world_item_client` RPCs to all |
-| Calendar/weather | Server (SeasonManager) | `_broadcast_time` RPC to all |
-| Save/load | Server only (SaveManager → API → MongoDB) | `_receive_player_data` RPC on join |
-
-### Data Flow Rules
-- **Server-side data**: `NetworkManager.player_data_store[peer_id]` — the authoritative copy of each player's inventory, party, position, watering can, color, etc.
-- **Client-side mirror**: `PlayerData` autoload — local copy for UI display. Updated only via server RPCs, never written to by server code.
-- **Never deduct resources client-side before server confirms.** Server deducts from `player_data_store` first, then syncs to client via RPC.
-- **Never modify `PlayerData` on the server process.** It's the client's local mirror only.
-- **Never trust client data.** Party data, inventory, creature stats — all read from `player_data_store`, never from client RPCs.
-
-### Security Measures
-- **Rate limiting**: 20 RPCs/sec per client, auto-disconnect on exceed (`_check_rate_limit()` in NetworkManager)
-- **Server-authoritative party data**: `_build_party_from_store()` reads from server, not client
-- **Move validation**: server checks move_id exists in creature's actual moveset
-- **Name validation**: server-side regex (2-16 chars, `[a-zA-Z0-9_ ]+`)
-
-### Adding New Synced State (checklist)
-1. Add the field to `NetworkManager._create_default_player_data()` (server default)
-2. Add server helper functions to `NetworkManager` (e.g., `server_use_X`, `server_add_X`)
-3. Add field to `PlayerData.load_from_server()`, `to_dict()`, and `reset()` (client mirror)
-4. Add validation in the server-side RPC handler (don't trust the client)
-5. Add sync RPC from server to client after successful action
-6. If visually synced to all players: add to `player_controller.gd` + StateSync config in `player.tscn`
-7. If only the owning player needs it: use targeted `rpc_id(sender, ...)`
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `api/src/index.ts` | Express API entry point |
-| `api/src/routes/players.ts` | Player CRUD endpoints (MongoDB) |
-| `api/src/routes/world.ts` | World state save/load endpoints |
-| `scripts/autoload/network_manager.gd` | Server authority, RPCs, rate limiting, async join flow |
-| `scripts/autoload/save_manager.gd` | Async HTTP to Express API with file I/O fallback |
-| `scripts/autoload/game_manager.gd` | Scene loading, game state transitions |
-| `scripts/autoload/player_data.gd` | Client-side mirror of player state |
-| `scripts/battle/battle_manager.gd` | Battle state machine (wild/trainer/PvP) |
-| `scripts/world/season_manager.gd` | Calendar + weather system |
-| `scripts/world/game_world.gd` | World scene orchestration |
-| `scripts/world/farm_manager.gd` | Farm plot management, rain watering |
-| `scripts/world/restaurant_manager.gd` | Per-player restaurant instances |
-| `docker-compose.yml` | 3-service local dev stack |
-| `k8s/*.yaml` | Kubernetes manifests (MongoDB, API, game server) |
-| `scripts/deploy-k8s.sh` | Build + push + deploy to K8s |
-
-## Kubernetes Deployment
-- Namespace: `godot-multiplayer` (shared with sheep-tag and other game servers).
-- **3 deployments**: creature-crafting-mongodb (mongo:7), creature-crafting-api (Express), creature-crafting-server (Godot)
-- **Images**: `ghcr.io/crankymagician/mt-creature-crafting-server:latest`, `ghcr.io/crankymagician/mt-creature-crafting-api:latest`
-- NodePort `7777` → container `7777/UDP`. Public IP: `207.32.216.76`. Internal/VPN: `10.225.0.153`.
-- **Node SSH access**: `ssh jayhawk@10.225.0.153` (password: `fir3W0rks!`). User has sudo.
-- **Deploy order**: MongoDB → API (waits for rollout) → Game server
-- **Manifests**: `k8s/mongodb.yaml`, `k8s/api-service.yaml`, `k8s/deployment.yaml`, `k8s/service.yaml`
-- **MCP addon excluded** from server export (`export_presets.cfg` exclude filter). Non-fatal autoload error for `runtime_bridge.gd` on startup is expected.
-
-## MCP Testing Workflow
-
-### Preferred: `run_multiplayer_session`
-- Use MCP `run_multiplayer_session` with `serverArgs: ["--server"]`, `numClients: 2`
-- Target instances: `"runtime:server"`, `"runtime:client_1"`, `"runtime:client_2"`
-- Join clients: `execute_gdscript` with `target: "runtime:client_N"` to call `NetworkManager.join_game("127.0.0.1", "PlayerN")`
-- Verify state: `get_scene_tree`, `execute_gdscript`, `get_debug_output` (per instance)
-- Cleanup: `stop_all_instances`
-- **Screenshot caching**: MCP screenshot tool may cache — use `get_scene_tree` or `execute_gdscript` for reliable verification
-
-### Alternative: Editor bridge test pattern
-- MCP bridge by default talks to the editor process on port 9080, not the running game.
-- **To test server-side logic**: add temp test code to `connect_ui.gd` `_ready()`, call `NetworkManager.host_game()`, run assertions synchronously, then check `get_debug_output`. Revert test code after.
-- **Do NOT** call `GameManager.start_game()` before tests finish — it frees ConnectUI and kills any running coroutine.
-
-### Port conflicts
-- If `host_game()` fails with error 20, run `lsof -i :7777` and stop whatever is holding the port (usually Docker: `docker compose down`).
-
-## Operational Notes
-- If local container/server appears stale, rebuild:
-  - `docker compose up --build -d`
-- If needed, force rebuild without cache:
-  - `docker compose build --no-cache`
-  - `docker compose up -d`
-- If engine source changed and server needs rebuilding:
-  - `./scripts/build-engine-templates.sh --force` then rebuild Docker image
-- If K8s pod appears stale, redeploy:
-  - `./scripts/deploy-k8s.sh`
-  - Or restart without rebuild: `./scripts/deploy-k8s.sh --skip-build`
-- **Connection timeout**: ConnectUI shows "Connection timed out" after 10s if server is unreachable or engine version mismatches. No more silent hangs.
+All tests must pass before committing. See `docs/testing-guide.md` for patterns.

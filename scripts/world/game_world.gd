@@ -8,7 +8,7 @@ const FARM_MANAGER_PATH: NodePath = "Zones/FarmZone/FarmManager"
 
 # UI scenes (loaded at runtime for the local player)
 var hud_scene = preload("res://scenes/ui/hud.tscn")
-var battle_ui_scene = preload("res://scenes/ui/battle_ui.tscn")
+var battle_ui_scene = preload("res://scenes/battle/battle_arena_ui.tscn")
 var crafting_ui_scene = preload("res://scenes/ui/crafting_ui.tscn")
 var pause_menu_scene = preload("res://scenes/ui/pause_menu.tscn")
 var storage_ui_scene = preload("res://scenes/ui/storage_ui.tscn")
@@ -20,10 +20,12 @@ var compass_ui_scene = preload("res://scenes/ui/compass_ui.tscn")
 var creature_destination_ui_scene = preload("res://scenes/ui/creature_destination_ui.tscn")
 var hotbar_ui_scene = preload("res://scenes/ui/hotbar_ui.tscn")
 var excursion_hud_scene = preload("res://scenes/ui/excursion_hud.tscn")
+var bank_ui_scene = preload("res://scenes/ui/bank_ui.tscn")
 
 func _ready() -> void:
 	# Initialize DataRegistry
 	DataRegistry.ensure_loaded()
+	_apply_world_label_theme()
 
 	# Generate world decorations (paths, signposts, trees, zone overlays) on all peers
 	_generate_paths()
@@ -31,6 +33,7 @@ func _ready() -> void:
 	_generate_trees()
 	_generate_zone_overlays()
 	_spawn_calendar_board()
+	_spawn_bank_npc()
 	_generate_harvestables()
 	_generate_dig_spots()
 	_spawn_excursion_entrance()
@@ -39,6 +42,11 @@ func _ready() -> void:
 		_setup_ui()
 		_ensure_fallback_camera()
 		return
+
+	# Connect bank interest to day_changed
+	var season_mgr = $SeasonManager
+	if season_mgr and season_mgr.has_signal("day_changed"):
+		season_mgr.day_changed.connect(NetworkManager._on_day_changed_bank_interest)
 
 	# Server: load world state from save
 	_load_world_state.call_deferred()
@@ -50,6 +58,20 @@ func _ready() -> void:
 	# Listen for new connections / disconnections
 	NetworkManager.player_connected.connect(_on_player_connected)
 	NetworkManager.player_disconnected.connect(_on_player_disconnected)
+
+func _apply_world_label_theme() -> void:
+	var label_roles := {
+		"Zones/RestaurantZone/CraftingTable/StationLabel": "station",
+		"Zones/RestaurantZone/Pantry/StationLabel": "station",
+		"Zones/RestaurantZone/Workbench/StationLabel": "station",
+		"Zones/WildZone/Cauldron/StationLabel": "station",
+		"Zones/RestaurantRow/SignLabel": "landmark",
+		"Zones/RestaurantRow/SubSign": "station",
+	}
+	for label_path in label_roles:
+		var label_node := get_node_or_null(label_path)
+		if label_node and label_node is Label3D:
+			UITheme.style_label3d(label_node, "", label_roles[label_path])
 
 func has_spawn_path_ready() -> bool:
 	return (
@@ -205,6 +227,9 @@ func _setup_ui() -> void:
 	var excursion_hud = excursion_hud_scene.instantiate()
 	ui_node.add_child(excursion_hud)
 
+	var bank_ui = bank_ui_scene.instantiate()
+	ui_node.add_child(bank_ui)
+
 func _spawn_calendar_board() -> void:
 	var board_script = load("res://scripts/world/calendar_board.gd")
 	var board = Area3D.new()
@@ -212,6 +237,14 @@ func _spawn_calendar_board() -> void:
 	board.name = "CalendarBoard"
 	board.position = Vector3(5, 0, 5)
 	add_child(board)
+
+func _spawn_bank_npc() -> void:
+	var bank_script = load("res://scripts/world/bank_npc.gd")
+	var bank = Area3D.new()
+	bank.set_script(bank_script)
+	bank.name = "BankNPC"
+	bank.position = Vector3(10, 0, 5)
+	add_child(bank)
 
 func _spawn_excursion_entrance() -> void:
 	var entrance = Node3D.new()
@@ -232,11 +265,8 @@ func _spawn_excursion_entrance() -> void:
 	entrance.add_child(post)
 
 	var sign_label = Label3D.new()
-	sign_label.text = "Excursion Portal"
+	UITheme.style_label3d(sign_label, "Excursion Portal", "station")
 	sign_label.font_size = 36
-	sign_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	sign_label.modulate = Color(1.0, 0.85, 0.4)
-	sign_label.outline_size = 8
 	sign_label.position = Vector3(0, 3.5, 0)
 	entrance.add_child(sign_label)
 
@@ -277,11 +307,7 @@ func _spawn_excursion_entrance() -> void:
 
 	# Hint label for clients
 	var hint = Label3D.new()
-	hint.text = "Press E to Enter"
-	hint.font_size = 24
-	hint.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	hint.modulate = Color(0.8, 0.8, 0.8, 0.7)
-	hint.outline_size = 4
+	UITheme.style_label3d(hint, "Press E to Enter", "interaction_hint")
 	hint.position = Vector3(0, 2.5, 0)
 	entrance.add_child(hint)
 
@@ -372,11 +398,8 @@ func _generate_signposts() -> void:
 
 		# Sign text
 		var label = Label3D.new()
-		label.text = sp.text
+		UITheme.style_label3d(label, sp.text, "zone_sign")
 		label.font_size = 36
-		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		label.modulate = Color(0.95, 0.85, 0.6)
-		label.outline_size = 8
 		label.position = Vector3(sp.pos.x, 2.3, sp.pos.z)
 		signs_node.add_child(label)
 
@@ -384,11 +407,9 @@ func _generate_signposts() -> void:
 	var marker_positions = [Vector3(0, 1.5, 6), Vector3(0, 1.5, 9)]
 	for mpos in marker_positions:
 		var marker = Label3D.new()
-		marker.text = "v Restaurant Row v"
+		UITheme.style_label3d(marker, "v Restaurant Row v", "interaction_hint")
 		marker.font_size = 24
 		marker.outline_size = 6
-		marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		marker.modulate = Color(1.0, 0.9, 0.4)
 		marker.position = mpos
 		signs_node.add_child(marker)
 
@@ -473,11 +494,8 @@ func _generate_zone_overlays() -> void:
 
 		# Zone label (floating above)
 		var label = Label3D.new()
-		label.text = z.label
+		UITheme.style_label3d(label, z.label, "zone_sign")
 		label.font_size = 36
-		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		label.modulate = Color(1, 1, 1, 0.9)
-		label.outline_size = 6
 		label.position = Vector3(z.pos.x, 3.5, z.pos.z)
 		overlays_node.add_child(label)
 

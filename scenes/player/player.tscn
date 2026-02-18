@@ -106,7 +106,6 @@ billboard = 1
 visible = false
 text = "[Busy]"
 font_size = 20
-modulate = Color(1, 0.9, 0.2, 1)
 outline_size = 4
 
 [node name="PlayerInteraction" type="Node" parent="."]

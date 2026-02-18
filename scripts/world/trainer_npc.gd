@@ -52,9 +52,7 @@ func _create_visual() -> void:
 
 	# Label
 	label_3d = Label3D.new()
-	label_3d.text = display_name
-	label_3d.font_size = 24
-	label_3d.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	UITheme.style_label3d(label_3d, display_name, "npc_name")
 	label_3d.position.y = 2.0
 	add_child(label_3d)
 
@@ -76,9 +74,7 @@ func _create_gate() -> void:
 
 	gate_label = Label3D.new()
 	gate_label.text = "Defeat %s to Pass!" % (DataRegistry.get_trainer(trainer_id).display_name if DataRegistry.get_trainer(trainer_id) else trainer_id)
-	gate_label.font_size = 28
-	gate_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	gate_label.modulate = Color(1.0, 0.3, 0.3)
+	UITheme.style_label3d(gate_label, "", "danger")
 	gate_label.position = Vector3(0, 3.2, -2.5)
 	add_child(gate_label)
 

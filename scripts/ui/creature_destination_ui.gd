@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const UITokens = preload("res://scripts/ui/ui_tokens.gd")
+
 var panel: PanelContainer = null
 var title_label: Label = null
 var creature_info_label: Label = null
@@ -12,6 +14,7 @@ var pending_creature: Dictionary = {}
 var pending_party: Array = []
 
 func _ready() -> void:
+	UITheme.init()
 	visible = false
 	_build_ui()
 	NetworkManager.creature_destination_requested.connect(_on_destination_requested)
@@ -20,7 +23,8 @@ func _build_ui() -> void:
 	panel = PanelContainer.new()
 	panel.name = "DestPanel"
 	panel.anchors_preset = Control.PRESET_CENTER
-	panel.custom_minimum_size = Vector2(400, 350)
+	panel.custom_minimum_size = UITheme.scaled_vec(Vector2(400, 350))
+	UITheme.style_modal(panel)
 	add_child(panel)
 
 	var margin = MarginContainer.new()
@@ -37,19 +41,21 @@ func _build_ui() -> void:
 	title_label = Label.new()
 	title_label.text = "Party Full — Choose Destination"
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.add_theme_font_size_override("font_size", 18)
+	UITheme.style_subheading(title_label)
 	vbox.add_child(title_label)
 
 	creature_info_label = Label.new()
 	creature_info_label.text = ""
 	creature_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	creature_info_label.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
+	UITheme.style_small(creature_info_label)
+	creature_info_label.add_theme_color_override("font_color", UITokens.TEXT_SUCCESS)
 	vbox.add_child(creature_info_label)
 
 	# Send to Storage button
 	storage_button = Button.new()
 	storage_button.text = "Send to Storage"
-	storage_button.custom_minimum_size.y = 35
+	storage_button.custom_minimum_size.y = UITheme.scaled(35)
+	UITheme.style_button(storage_button, "secondary")
 	storage_button.pressed.connect(_on_storage_pressed)
 	vbox.add_child(storage_button)
 
@@ -57,7 +63,8 @@ func _build_ui() -> void:
 	var sep_label = Label.new()
 	sep_label.text = "— Or swap with a party member —"
 	sep_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sep_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	UITheme.style_small(sep_label)
+	sep_label.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
 	vbox.add_child(sep_label)
 
 	# Party list for swapping
@@ -74,13 +81,15 @@ func _build_ui() -> void:
 	status_label = Label.new()
 	status_label.text = ""
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.add_theme_color_override("font_color", Color.YELLOW)
+	UITheme.style_small(status_label)
+	status_label.add_theme_color_override("font_color", UITokens.TEXT_WARNING)
 	vbox.add_child(status_label)
 
 	# Cancel button
 	cancel_button = Button.new()
 	cancel_button.text = "Cancel (Creature Lost)"
-	cancel_button.custom_minimum_size.y = 30
+	cancel_button.custom_minimum_size.y = UITheme.scaled(30)
+	UITheme.style_button(cancel_button, "danger")
 	cancel_button.pressed.connect(_on_cancel_pressed)
 	vbox.add_child(cancel_button)
 
@@ -121,11 +130,13 @@ func _on_destination_requested(creature_data: Dictionary, current_party: Array, 
 		var lbl = Label.new()
 		lbl.text = "%s (Lv %d)" % [c_name, c_level]
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.style_small(lbl)
 		hbox.add_child(lbl)
 
 		var btn = Button.new()
 		btn.text = "Swap"
 		btn.custom_minimum_size.x = 60
+		UITheme.style_button(btn, "secondary")
 		# Disable swap if only 1 creature or storage full
 		if current_party.size() <= 1 or storage_size >= storage_cap:
 			btn.disabled = true
