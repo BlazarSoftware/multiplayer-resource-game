@@ -1,5 +1,9 @@
 # Claude Notes
 
+## Product Docs
+- `docs/game-pillars-theme.md` — Core fantasy, pillars, tone, and inspirations (Stardew Valley, Harvest Moon, Pokemon, low-poly, kawaii).
+- `docs/demo-plan.md` — Target demo scope with Done/To Do status.
+
 ## Project Runtime Defaults
 - Multiplayer default port: `7777` (UDP).
 - **Smart IP defaults**: In editor, ConnectUI defaults to `127.0.0.1` (localhost). In exported builds, defaults to `207.32.216.76` (public server). Editor mode ignores saved prefs for IP to prevent stale overrides.

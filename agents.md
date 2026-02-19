@@ -11,6 +11,8 @@
 | Networking | `scripts/autoload/network_manager.gd` | Server-authoritative. See CLAUDE.md Networking Rules. |
 | Battle | `scripts/battle/battle_manager.gd` | Server-authoritative battle state. See `docs/battle-system.md`. |
 | Data Registry | `scripts/autoload/data_registry.gd` | Loads all `.tres` resources. Handles `.remap` in exports. |
+| Game Pillars | `docs/game-pillars-theme.md` | Core fantasy, pillars, tone, and inspirations. |
+| Demo Plan | `docs/demo-plan.md` | Target demo scope with Done/To Do status. |
 
 ## UI Styling Rules
 

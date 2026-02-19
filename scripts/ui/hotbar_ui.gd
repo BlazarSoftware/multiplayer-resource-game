@@ -24,7 +24,7 @@ var _empty_style: StyleBox
 func _ready() -> void:
 	layer = 2
 	UITheme.init()
-	_selected_style = _make_hotbar_style(UITokens.PAPER_CREAM, UITokens.STAMP_GOLD, 3)
+	_selected_style = _make_hotbar_style(UITokens.BUTTON_PRIMARY_BG, UITokens.BUTTON_PRIMARY_BORDER, 3)
 	_normal_style = _make_hotbar_style(UITokens.PAPER_BASE, UITokens.STAMP_BROWN, 1)
 	_empty_style = _make_hotbar_style(UITokens.PARCHMENT_DARK, UITokens.INK_LIGHT, 1)
 
@@ -111,6 +111,7 @@ func _build_ui() -> void:
 		label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
 		label.add_theme_color_override("font_color", UITokens.INK_DARK)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.clip_text = true
 		label.position = Vector2(0, 40)
 		label.size = Vector2(SLOT_SIZE, 14)
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
