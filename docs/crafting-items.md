@@ -1,8 +1,8 @@
 # Crafting & Item System Details
 
 ## Overview
-- **58 recipes**: 13 creature (cauldron, unlockable), 18 held item (workbench), 12 food (kitchen), 9 tool upgrade (workbench), 6 battle item (kitchen)
-- **6 item types**: ingredients (16), held items (18), foods (12), tools (12), recipe scrolls (13), battle items (6) — all share single inventory namespace
+- **67 recipes**: 13 creature (cauldron, unlockable), 18 held item (workbench), 18 food (kitchen), 9 tool upgrade (workbench), 6 battle item (kitchen), 3 other
+- **6 item types**: ingredients (34), held items (18), foods (20), tools (16), recipe scrolls (13), battle items (6) — all share single inventory namespace
 - **3 crafting stations**: Kitchen (restaurant zone), Workbench (near spawn), Cauldron (deep wild zone) — each filters recipes by `station` field
 - **Recipe unlock system**: Creature recipes require recipe scrolls to unlock. Scrolls come from trainer first-defeat rewards, world pickups, or fragment collection (3-5 fragments auto-combine)
 

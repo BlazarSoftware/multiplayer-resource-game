@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/ingredients/carrot.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "carrot"
+display_name = "Carrot"
+description = "A bright orange root vegetable."
+category = "farm_crop"
+icon_color = Color(1.0, 0.5, 0.1, 1)
+icon_texture = ExtResource("2")
+sell_price = 4
+season = "autumn"
+grow_time = 90.0
+harvest_min = 1
+harvest_max = 3

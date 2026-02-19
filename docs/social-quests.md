@@ -34,9 +34,9 @@
 ### Available Trades
 | NPC | Creature | Level | Cost | Friendship | Season | One-time |
 |-----|----------|-------|------|------------|--------|----------|
-| Baker Brioche | Wheat Golem | 8 | 20 grain_wheat + 3 sweet_crystal + 500g | like | spring | yes |
-| Sage Herbalist | Basil Sprite | 10 | 15 herb_basil + 5 herbal_dew + 600g | love | — | yes |
-| Ember Smith | Sear Slug | 12 | 10 chili_pepper + 5 spicy_essence + 800g | love | — | yes |
+| Baker Brioche | Wheat Golem | 8 | 20 grain_wheat + 3 sugar + 500g | like | spring | yes |
+| Sage Herbalist | Basil Sprite | 10 | 15 herb_basil + 5 broth + 600g | love | — | yes |
+| Ember Smith | Sear Slug | 12 | 10 chili_pepper + 5 chili_powder + 800g | love | — | yes |
 
 ### Availability Check
 `_get_available_creature_trade(peer_id, npc_id, npc_def)` filters by:

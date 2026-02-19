@@ -624,14 +624,20 @@ func _show_item_panel() -> void:
 		if bi == null:
 			continue
 		has_items = true
+		var row = HBoxContainer.new()
+		row.custom_minimum_size.y = 32
+		var info = DataRegistry.get_item_display_info(item_id)
+		var icon = UITheme.create_item_icon(info, 20)
+		row.add_child(icon)
 		var btn = Button.new()
 		btn.text = "%s x%d — %s" % [bi.display_name, PlayerData.inventory[item_id], bi.description]
-		btn.custom_minimum_size.y = 32
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		UITheme.style_button(btn, "secondary")
 		var iid = item_id
 		var effect = bi.effect_type
 		btn.pressed.connect(func(): _on_item_selected(iid, effect))
-		vbox.add_child(btn)
+		row.add_child(btn)
+		vbox.add_child(row)
 
 	if not has_items:
 		var empty_label = Label.new()

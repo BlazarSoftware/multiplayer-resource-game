@@ -8,6 +8,6 @@ recipe_id = "axe_bronze"
 display_name = "Forge Bronze Axe"
 result_tool_id = "tool_axe_bronze"
 requires_tool_ingredient = "tool_axe_basic"
-ingredients = {"spicy_essence": 3}
+ingredients = {"chili_powder": 3}
 description = "Upgrade your axe with bronze."
 station = "workbench"

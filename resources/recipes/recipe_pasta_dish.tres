@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "pasta_dish"
+display_name = "Cook Pasta"
+result_food_id = "pasta_dish"
+ingredients = {"flour": 2, "egg": 1, "tomato": 1}
+description = "Cook fresh egg pasta in tomato sauce."
+station = "kitchen"

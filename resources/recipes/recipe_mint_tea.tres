@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "mint_tea"
 display_name = "Brew Mint Tea"
 result_food_id = "mint_tea"
-ingredients = {"mint": 2, "herbal_dew": 1}
+ingredients = {"mint": 2, "broth": 1}
 description = "Brew a refreshing mint tea."
 station = "kitchen"

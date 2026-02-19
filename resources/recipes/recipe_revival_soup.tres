@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "revival_soup"
 display_name = "Cook Revival Soup"
 result_item_id = "revival_soup"
-ingredients = {"sweet_crystal": 3, "herb_basil": 2, "umami_stock": 2}
+ingredients = {"sugar": 3, "herb_basil": 2, "umami_stock": 2}
 description = "A miraculous broth that revives a fainted creature at 50% HP."
 station = "kitchen"

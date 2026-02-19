@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="BattleItemDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BattleItemDef" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/battle_item_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/battle_items/status_heal.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -8,6 +9,7 @@ item_id = "flavor_essence"
 display_name = "Flavor Essence"
 description = "Concentrated flavor extract. Restores 5 PP per move."
 icon_color = Color(0.6, 0.4, 0.9, 1)
+icon_texture = ExtResource("2")
 effect_type = "restore_pp"
 effect_value = 5
 target = "single"

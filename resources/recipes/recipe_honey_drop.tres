@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "recipe_honey_drop"
 display_name = "Craft Honey Drop"
 result_item_id = "honey_drop"
-ingredients = {"sweet_crystal": 3, "herb_basil": 1}
+ingredients = {"sugar": 3, "herb_basil": 1}
 description = "A sweet honey bead. Boosts Sweet moves by 20%."
 station = "workbench"

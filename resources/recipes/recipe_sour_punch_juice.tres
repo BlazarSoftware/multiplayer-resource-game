@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "sour_punch_juice"
 display_name = "Mix Sour Punch Juice"
 result_food_id = "sour_punch_juice"
-ingredients = {"lemon": 2, "sour_essence": 1}
+ingredients = {"lemon": 2, "vinegar": 1}
 description = "Mix a tangy sour punch juice."
 station = "kitchen"

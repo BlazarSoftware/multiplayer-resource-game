@@ -7,4 +7,5 @@ extends Resource
 @export var tool_type: String = "" # hoe, axe, watering_can
 @export var tier: int = 0 # 0=basic, 1=bronze, 2=iron, 3=gold
 @export var icon_color: Color = Color.WHITE
+@export var icon_texture: Texture2D
 @export var effectiveness: Dictionary = {} # e.g. {"capacity": 15} or {"speed_mult": 1.3}

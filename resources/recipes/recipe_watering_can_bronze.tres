@@ -8,6 +8,6 @@ recipe_id = "watering_can_bronze"
 display_name = "Forge Bronze Watering Can"
 result_tool_id = "tool_watering_can_bronze"
 requires_tool_ingredient = "tool_watering_can_basic"
-ingredients = {"spicy_essence": 3}
+ingredients = {"chili_powder": 3}
 description = "Upgrade your watering can with bronze."
 station = "workbench"

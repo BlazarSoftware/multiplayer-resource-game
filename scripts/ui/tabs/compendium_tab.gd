@@ -190,6 +190,12 @@ func _refresh_items() -> void:
 	count_label.text = "Items: " + str(unlocked_count) + "/" + str(total)
 
 	for entry in filtered:
+		var row := HBoxContainer.new()
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if entry.unlocked:
+			var info_dict = DataRegistry.get_item_display_info(entry.item_id)
+			var icon = UITheme.create_item_icon(info_dict, 16)
+			row.add_child(icon)
 		var btn := Button.new()
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -201,7 +207,8 @@ func _refresh_items() -> void:
 			btn.text = "  ???"
 			btn.add_theme_color_override("font_color", UITokens.INK_LIGHT)
 		btn.pressed.connect(_on_item_selected.bind(entry.item_id, entry.unlocked))
-		content_list.add_child(btn)
+		row.add_child(btn)
+		content_list.add_child(row)
 
 func _on_item_selected(item_id: String, is_unlocked: bool) -> void:
 	_clear_children(detail_panel)
@@ -214,6 +221,9 @@ func _on_item_selected(item_id: String, is_unlocked: bool) -> void:
 		return
 
 	var info = DataRegistry.get_item_display_info(item_id)
+	# Large icon
+	var detail_icon = UITheme.create_item_icon(info, 32)
+	detail_panel.add_child(detail_icon)
 	var name_label := Label.new()
 	name_label.text = info.get("display_name", item_id)
 	UITheme.style_heading(name_label)

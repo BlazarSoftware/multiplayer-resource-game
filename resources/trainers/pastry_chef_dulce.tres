@@ -12,5 +12,5 @@ party = [{"species_id": "frost_berry", "level": 8}, {"species_id": "mint_wisp", 
 ai_difficulty = "medium"
 rematch_cooldown_sec = 600
 reward_money = 300
-reward_ingredients = {"sweet_crystal": 3}
+reward_ingredients = {"sugar": 3}
 reward_recipe_scroll_id = "scroll_taffy_serpent"

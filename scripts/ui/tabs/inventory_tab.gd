@@ -83,10 +83,8 @@ func _refresh() -> void:
 
 		var hbox := HBoxContainer.new()
 		item_list.add_child(hbox)
-		var color_rect := ColorRect.new()
-		color_rect.custom_minimum_size = Vector2(20, 20)
-		color_rect.color = info.get("icon_color", Color.GRAY)
-		hbox.add_child(color_rect)
+		var icon := UITheme.create_item_icon(info, 20)
+		hbox.add_child(icon)
 		var label := Label.new()
 		label.text = "  %s x%d" % [info.get("display_name", item_id), count]
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL

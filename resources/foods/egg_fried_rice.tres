@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/foods/egg_fried_rice.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+food_id = "egg_fried_rice"
+display_name = "Egg Fried Rice"
+description = "Fluffy rice stir-fried with egg and savory soy sauce."
+icon_color = Color(0.9, 0.8, 0.4, 1)
+icon_texture = ExtResource("2")
+sell_price = 32
+buff_type = "speed_boost"
+buff_value = 1.2
+buff_duration_sec = 120.0

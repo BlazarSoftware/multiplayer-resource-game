@@ -196,6 +196,47 @@ This ensures old config files (pre-index) still work, while new saves are robust
 | `"danger"` | 28 | Heading | Red | Warning labels |
 | (default) | 24 | Body | Base | Generic 3D text |
 
+## Icon System (Synty POLYGON_Icons + Kawaii Shader)
+
+### Overview
+All item icons are pre-baked 256x256 PNGs rendered from Synty POLYGON_Icons 3D meshes through a kawaii toon shader pipeline. Zero runtime cost — icons are static textures loaded from `res://assets/ui/textures/icons/<category>/`.
+
+### Icon Helper
+`UITheme.create_item_icon(info, base_size)` is the universal factory for item icons:
+
+```gdscript
+# Returns TextureRect if icon_texture exists, ColorRect fallback otherwise
+var icon: Control = UITheme.create_item_icon(info, 20)
+container.add_child(icon)
+```
+
+- `info` — Dictionary from `DataRegistry.get_item_display_info()` (has `icon_texture` and `icon_color` keys)
+- `base_size` — Base pixel size before scaling (default 32). Automatically scaled via `UITheme.scaled()`
+- All icons have `mouse_filter = MOUSE_FILTER_IGNORE`
+
+### Where Icons Are Used
+
+| UI Component | File | Icon Size |
+|-------------|------|-----------|
+| Hotbar slots | `hotbar_ui.gd` | 32 (dynamic swap via `_set_slot_icon()`) |
+| Inventory list | `inventory_tab.gd` | 20 |
+| Shop buy/sell | `shop_ui.gd` | 20 |
+| Trade panels | `trade_ui.gd` | 16 |
+| Crafting UI | `crafting_ui.gd` | 20 |
+| Battle items | `battle_ui.gd` | 20 |
+| Compendium | `compendium_tab.gd` | 20 |
+
+### Adding Icons for New Items
+1. Add the GLB path mapping in `tools/bake_icons_cli.gd` `icon_manifest`
+2. Run the bake script: `'/Applications/Mechanical Turk.app/Contents/MacOS/Mechanical Turk' --path . --script tools/bake_icons_cli.gd`
+3. Add `icon_texture = ExtResource(...)` to the item's `.tres` file pointing to the baked PNG
+4. `DataRegistry.get_item_display_info()` automatically includes `icon_texture` — no code changes needed
+
+### Bake Pipeline
+- **Shaders**: `shaders/toon_icon.gdshader` (cel + pastel remap + rim light), `shaders/icon_outline.gdshader` (inverted hull)
+- **Synty palette**: GLBs use shared `PolygonIcons_Texture_01_A.png` — bake script auto-assigns it
+- **Output**: `assets/ui/textures/icons/{ingredients,foods,tools,battle_items,held_items,ui}/`
+
 ## Adding New UI Components
 
 1. Call `UITheme.init()` in `_ready()` if the component is a root-level scene
@@ -204,3 +245,4 @@ This ensures old config files (pre-index) still work, while new saves are robust
 4. Use `UITokens` color constants, never hardcoded hex values
 5. For panels, use `UITheme.make_panel_style()` or `UITheme.style_card()`
 6. For 3D labels, use `UITheme.style_label3d()` with an appropriate role
+7. For item icons, use `UITheme.create_item_icon(info)` — never create ColorRect manually

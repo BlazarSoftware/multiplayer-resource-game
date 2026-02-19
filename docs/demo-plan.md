@@ -6,7 +6,7 @@ This is the target demo plan we are building toward. The status list below track
 
 ### Done (Implemented Today)
 - Battle system with wild, trainer, and PvP modes (21 Munchies, 57 moves, 20 abilities).
-- Crafting system with Kitchen, Workbench, and Cauldron stations (58 recipes).
+- Crafting system with Kitchen, Workbench, and Cauldron stations (67 recipes).
 - Farming actions and tool upgrades (plant, water, harvest, till).
 - NPC dialogue, gifting, and friendship tiers (5 NPCs currently implemented).
 - Quest system (6 quests: 3 main story, 1 side, 1 daily, 1 weekly).

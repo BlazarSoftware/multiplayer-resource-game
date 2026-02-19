@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "recipe_breadcrumb_ring"
 display_name = "Craft Breadcrumb Ring"
 result_item_id = "breadcrumb_ring"
-ingredients = {"grain_core": 3, "wheat": 1}
+ingredients = {"flour": 3, "wheat": 1}
 description = "A ring of toasted breadcrumbs. Boosts Grain moves by 20%."
 station = "workbench"

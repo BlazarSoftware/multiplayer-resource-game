@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "pumpkin_pie"
 display_name = "Bake Pumpkin Pie"
 result_food_id = "pumpkin_pie"
-ingredients = {"pumpkin": 2, "wheat": 1, "sweet_crystal": 1}
+ingredients = {"pumpkin": 2, "wheat": 1, "sugar": 1}
 description = "Bake a hearty pumpkin pie."
 station = "kitchen"

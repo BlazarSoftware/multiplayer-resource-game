@@ -8,6 +8,6 @@ recipe_id = "hoe_gold"
 display_name = "Forge Gold Hoe"
 result_tool_id = "tool_hoe_gold"
 requires_tool_ingredient = "tool_hoe_iron"
-ingredients = {"sweet_crystal": 8}
+ingredients = {"sugar": 8}
 description = "Upgrade your hoe with gold."
 station = "workbench"

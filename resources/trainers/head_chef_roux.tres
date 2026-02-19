@@ -12,5 +12,5 @@ party = [{"species_id": "blaze_wyvern", "level": 14}, {"species_id": "truffle_ki
 ai_difficulty = "hard"
 rematch_cooldown_sec = 900
 reward_money = 600
-reward_ingredients = {"spicy_essence": 3, "umami_extract": 3}
+reward_ingredients = {"chili_powder": 3, "soy_sauce": 3}
 reward_recipe_scroll_id = "scroll_wheat_golem"

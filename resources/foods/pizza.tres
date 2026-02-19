@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/foods/pizza.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+food_id = "pizza"
+display_name = "Pizza"
+description = "A cheesy, tomato-topped flatbread fresh from the oven."
+icon_color = Color(0.9, 0.5, 0.2, 1)
+icon_texture = ExtResource("2")
+sell_price = 45
+buff_type = "xp_multiplier"
+buff_value = 1.3
+buff_duration_sec = 180.0

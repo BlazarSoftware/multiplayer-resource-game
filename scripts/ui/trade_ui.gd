@@ -356,10 +356,8 @@ func _refresh_offer_list(list_node: VBoxContainer, offer: Dictionary, can_remove
 		var hbox = HBoxContainer.new()
 		list_node.add_child(hbox)
 
-		var color_rect = ColorRect.new()
-		color_rect.custom_minimum_size = Vector2(16, 16)
-		color_rect.color = info.get("icon_color", Color.GRAY)
-		hbox.add_child(color_rect)
+		var icon = UITheme.create_item_icon(info, 16)
+		hbox.add_child(icon)
 
 		var lbl = Label.new()
 		lbl.text = " %s x%d" % [info.get("display_name", item_id), count]
@@ -569,10 +567,8 @@ func _refresh_inventory() -> void:
 		var hbox = HBoxContainer.new()
 		my_inventory_list.add_child(hbox)
 
-		var color_rect = ColorRect.new()
-		color_rect.custom_minimum_size = Vector2(16, 16)
-		color_rect.color = info.get("icon_color", Color.GRAY)
-		hbox.add_child(color_rect)
+		var icon = UITheme.create_item_icon(info, 16)
+		hbox.add_child(icon)
 
 		var lbl = Label.new()
 		lbl.text = " %s x%d" % [info.get("display_name", item_id), available]

@@ -6,7 +6,7 @@ signal exec_ready(result: Dictionary)
 
 
 func handle_execute(params) -> Dictionary:
-	call_deferred("_execute_deferred", params)
+	_execute_deferred(params)
 	return {"_deferred": exec_ready}
 
 
@@ -121,5 +121,7 @@ func _make_json_safe(value: Variant) -> Variant:
 		return str(value)
 	if value is Node:
 		return {"_node_path": str((value as Node).get_path()), "_class": (value as Node).get_class()}
+	if value is Resource:
+		return {"_type": "Resource", "class": value.get_class(), "path": value.resource_path}
 	# Fallback: convert to string
 	return str(value)

@@ -403,6 +403,7 @@ func handle_create_shader(params) -> Dictionary:
 	var node_path: String = params.get("node_path", "")
 	var shader_code: String = params.get("shader_code", "")
 	var shader_params: Dictionary = params.get("params", {})
+	var auto_detect: bool = params.get("auto_detect_shader_type", false)
 
 	if node_path.is_empty() or shader_code.is_empty():
 		return {"error": "node_path and shader_code are required"}
@@ -410,6 +411,13 @@ func handle_create_shader(params) -> Dictionary:
 	var node := _safe_get_node_by_path(node_path)
 	if node == null:
 		return {"error": "Node not found: %s" % node_path}
+
+	# Auto-detect shader type if requested
+	if auto_detect:
+		if node is CanvasItem:
+			shader_code = "shader_type canvas_item;\n" + shader_code
+		elif node is Node3D or node is MeshInstance3D:
+			shader_code = "shader_type spatial;\n" + shader_code
 
 	var shader := Shader.new()
 	shader.code = shader_code
@@ -480,34 +488,113 @@ func handle_create_particles(params) -> Dictionary:
 		parent.add_child(particles)
 		return {"status": "ok", "path": str(particles.get_path()), "type": "GPUParticles3D"}
 	else:
-		var particles := GPUParticles2D.new()
-		particles.name = node_name
-		particles.amount = int(params.get("amount", 16))
-		particles.lifetime = float(params.get("lifetime", 1.0))
-		particles.one_shot = params.get("one_shot", false)
-		particles.emitting = params.get("emitting", true)
-		particles.explosiveness = float(params.get("explosiveness", 0.0))
-		if params.has("position") and params["position"] is Dictionary:
-			var p: Dictionary = params["position"]
-			particles.position = Vector2(float(p.get("x", 0)), float(p.get("y", 0)))
-		# Create process material
-		var mat := ParticleProcessMaterial.new()
-		if params.has("direction") and params["direction"] is Dictionary:
-			var d: Dictionary = params["direction"]
-			mat.direction = Vector3(float(d.get("x", 0)), float(d.get("y", -1)), 0)
-		mat.spread = float(params.get("spread", 45))
-		mat.initial_velocity_min = float(params.get("initial_velocity_min", 20))
-		mat.initial_velocity_max = float(params.get("initial_velocity_max", 50))
-		if params.has("gravity") and params["gravity"] is Dictionary:
-			var g: Dictionary = params["gravity"]
-			mat.gravity = Vector3(float(g.get("x", 0)), float(g.get("y", 98)), 0)
-		mat.scale_min = float(params.get("scale_min", 1.0))
-		mat.scale_max = float(params.get("scale_max", 1.0))
-		if params.has("color"):
-			mat.color = Color(params["color"])
-		particles.process_material = mat
-		parent.add_child(particles)
-		return {"status": "ok", "path": str(particles.get_path()), "type": "GPUParticles2D"}
+		var use_cpu: bool = params.get("use_cpu", false)
+
+		if use_cpu:
+			var particles := CPUParticles2D.new()
+			particles.name = node_name
+			particles.amount = int(params.get("amount", 16))
+			particles.lifetime = float(params.get("lifetime", 1.0))
+			particles.one_shot = params.get("one_shot", false)
+			particles.emitting = params.get("emitting", true)
+			particles.explosiveness = float(params.get("explosiveness", 0.0))
+			if params.has("position") and params["position"] is Dictionary:
+				var p: Dictionary = params["position"]
+				particles.position = Vector2(float(p.get("x", 0)), float(p.get("y", 0)))
+			if params.has("direction") and params["direction"] is Dictionary:
+				var d: Dictionary = params["direction"]
+				particles.direction = Vector2(float(d.get("x", 0)), float(d.get("y", -1)))
+			particles.spread = float(params.get("spread", 45))
+			particles.initial_velocity_min = float(params.get("initial_velocity_min", 20))
+			particles.initial_velocity_max = float(params.get("initial_velocity_max", 50))
+			if params.has("gravity") and params["gravity"] is Dictionary:
+				var g: Dictionary = params["gravity"]
+				particles.gravity = Vector2(float(g.get("x", 0)), float(g.get("y", 98)))
+			particles.scale_amount_min = float(params.get("scale_min", 1.0))
+			particles.scale_amount_max = float(params.get("scale_max", 1.0))
+			if params.has("color"):
+				particles.color = Color(params["color"])
+			# Color ramp for CPU particles
+			if params.has("color_ramp") and params["color_ramp"] is Array:
+				var gradient := Gradient.new()
+				gradient.offsets = PackedFloat32Array()
+				gradient.colors = PackedColorArray()
+				for stop in params["color_ramp"]:
+					if stop is Dictionary:
+						gradient.add_point(float(stop.get("offset", 0.0)), Color(stop.get("color", "#ffffff")))
+				particles.color_ramp = gradient
+			# Emission shape for CPU particles
+			var emission_shape_str: String = params.get("emission_shape", "point")
+			var emission_radius: float = float(params.get("emission_radius", 50))
+			match emission_shape_str:
+				"ring":
+					particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RING
+					particles.emission_ring_radius = emission_radius
+					particles.emission_ring_inner_radius = emission_radius * 0.8
+					particles.emission_ring_height = 0.0
+				"sphere":
+					particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+					particles.emission_sphere_radius = emission_radius
+				"box":
+					particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+					particles.emission_rect_extents = Vector2(emission_radius, emission_radius)
+			parent.add_child(particles)
+			return {"status": "ok", "path": str(particles.get_path()), "type": "CPUParticles2D"}
+		else:
+			var particles := GPUParticles2D.new()
+			particles.name = node_name
+			particles.amount = int(params.get("amount", 16))
+			particles.lifetime = float(params.get("lifetime", 1.0))
+			particles.one_shot = params.get("one_shot", false)
+			particles.emitting = params.get("emitting", true)
+			particles.explosiveness = float(params.get("explosiveness", 0.0))
+			if params.has("position") and params["position"] is Dictionary:
+				var p: Dictionary = params["position"]
+				particles.position = Vector2(float(p.get("x", 0)), float(p.get("y", 0)))
+			# Create process material
+			var mat := ParticleProcessMaterial.new()
+			if params.has("direction") and params["direction"] is Dictionary:
+				var d: Dictionary = params["direction"]
+				mat.direction = Vector3(float(d.get("x", 0)), float(d.get("y", -1)), 0)
+			mat.spread = float(params.get("spread", 45))
+			mat.initial_velocity_min = float(params.get("initial_velocity_min", 20))
+			mat.initial_velocity_max = float(params.get("initial_velocity_max", 50))
+			if params.has("gravity") and params["gravity"] is Dictionary:
+				var g: Dictionary = params["gravity"]
+				mat.gravity = Vector3(float(g.get("x", 0)), float(g.get("y", 98)), 0)
+			mat.scale_min = float(params.get("scale_min", 1.0))
+			mat.scale_max = float(params.get("scale_max", 1.0))
+			if params.has("color"):
+				mat.color = Color(params["color"])
+			# Color ramp
+			if params.has("color_ramp") and params["color_ramp"] is Array:
+				var gradient := Gradient.new()
+				gradient.offsets = PackedFloat32Array()
+				gradient.colors = PackedColorArray()
+				for stop in params["color_ramp"]:
+					if stop is Dictionary:
+						gradient.add_point(float(stop.get("offset", 0.0)), Color(stop.get("color", "#ffffff")))
+				var grad_tex := GradientTexture1D.new()
+				grad_tex.gradient = gradient
+				mat.color_ramp = grad_tex
+			# Emission shape
+			var emission_shape_str: String = params.get("emission_shape", "point")
+			var emission_radius: float = float(params.get("emission_radius", 50))
+			match emission_shape_str:
+				"ring":
+					mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
+					mat.emission_ring_radius = emission_radius
+					mat.emission_ring_inner_radius = emission_radius * 0.8
+					mat.emission_ring_height = 0.0
+				"sphere":
+					mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+					mat.emission_sphere_radius = emission_radius
+				"box":
+					mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+					mat.emission_box_extents = Vector3(emission_radius, emission_radius, 0)
+			particles.process_material = mat
+			parent.add_child(particles)
+			return {"status": "ok", "path": str(particles.get_path()), "type": "GPUParticles2D"}
 
 
 func handle_create_ui_node(params) -> Dictionary:
@@ -598,6 +685,7 @@ func handle_set_shader_parameter_live(params) -> Dictionary:
 	var node_path: String = params.get("node_path", "")
 	var parameter_name: String = params.get("parameter_name", "")
 	var value = params.get("value", null)
+	var return_previous: bool = params.get("return_previous", false)
 
 	if node_path.is_empty() or parameter_name.is_empty():
 		return {"error": "node_path and parameter_name are required"}
@@ -617,9 +705,49 @@ func handle_set_shader_parameter_live(params) -> Dictionary:
 	if mat == null:
 		return {"error": "No ShaderMaterial found on node: %s" % node_path}
 
+	var previous_value = null
+	if return_previous:
+		previous_value = mat.get_shader_parameter(parameter_name)
+
 	mat.set_shader_parameter(parameter_name, _convert_typed_value(value))
 
-	return {"status": "ok", "node": node_path, "parameter": parameter_name}
+	var result := {"status": "ok", "node": node_path, "parameter": parameter_name}
+	if return_previous:
+		result["previous_value"] = previous_value
+	return result
+
+
+func handle_batch_shader_updates(params) -> Dictionary:
+	if not params is Dictionary:
+		return {"error": "Invalid params"}
+
+	var node_path: String = params.get("node_path", "")
+	var parameters: Dictionary = params.get("parameters", {})
+
+	if node_path.is_empty() or parameters.is_empty():
+		return {"error": "node_path and parameters are required"}
+
+	var node := _safe_get_node_by_path(node_path)
+	if node == null:
+		return {"error": "Node not found: %s" % node_path}
+
+	var mat: ShaderMaterial = null
+	if node is CanvasItem and (node as CanvasItem).material is ShaderMaterial:
+		mat = (node as CanvasItem).material as ShaderMaterial
+	elif node is MeshInstance3D and (node as MeshInstance3D).material_override is ShaderMaterial:
+		mat = (node as MeshInstance3D).material_override as ShaderMaterial
+	elif node is GeometryInstance3D and (node as GeometryInstance3D).material_override is ShaderMaterial:
+		mat = (node as GeometryInstance3D).material_override as ShaderMaterial
+
+	if mat == null:
+		return {"error": "No ShaderMaterial found on node: %s" % node_path}
+
+	var count := 0
+	for key in parameters:
+		mat.set_shader_parameter(key, _convert_typed_value(parameters[key]))
+		count += 1
+
+	return {"status": "ok", "node": node_path, "updated_count": count, "parameters": parameters.keys()}
 
 
 func handle_capture_performance_snapshot(params) -> Dictionary:

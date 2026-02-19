@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/ingredients/salt.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "salt"
+display_name = "Salt"
+description = "Essential mineral seasoning."
+category = "battle_drop"
+icon_color = Color(0.95, 0.95, 0.95, 1)
+icon_texture = ExtResource("2")
+sell_price = 3

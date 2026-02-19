@@ -28,6 +28,6 @@ Explore -> Battle -> Collect -> Craft or Cook -> Social and Progress -> Repeat
 - Cooking: Implemented via the crafting system with recipe resources and stations.
 
 ## Current Build Alignment
-- 21 Munchies, 6 encounter zones, 58 recipes, 16 ingredients.
+- 21 Munchies, 6 encounter zones, 67 recipes, 34 ingredients.
 - Battle system, crafting stations, farming, NPC dialogue and gifting, quests, shops, and restaurant interiors are implemented.
 - Customer service loop, festivals, and expanded town simulation are planned but not yet built.

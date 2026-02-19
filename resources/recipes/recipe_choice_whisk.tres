@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "recipe_choice_whisk"
 display_name = "Forge Choice Whisk"
 result_item_id = "choice_whisk"
-ingredients = {"herbal_dew": 3, "mint": 2, "sour_essence": 1}
+ingredients = {"broth": 3, "mint": 2, "vinegar": 1}
 description = "A swift whisk that boosts Speed by 50% but locks the holder into one move."
 station = "workbench"

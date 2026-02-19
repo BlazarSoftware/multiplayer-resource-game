@@ -77,6 +77,30 @@ func handle_postfx_2d_apply(params) -> Dictionary:
 	if template.is_empty():
 		return {"error": "template is required"}
 
+	# Handle bloom template via WorldEnvironment glow
+	if template == "bloom":
+		var env_node := _find_world_environment(tree.root)
+		if env_node == null:
+			# Create a WorldEnvironment with Environment
+			env_node = WorldEnvironment.new()
+			env_node.name = "WorldEnvironment"
+			var env := Environment.new()
+			env_node.environment = env
+			var scene_root = tree.current_scene if tree.current_scene else tree.root
+			scene_root.add_child(env_node)
+		var env := env_node.environment
+		env.glow_enabled = true
+		env.glow_intensity = float(shader_params.get("intensity", 1.0))
+		env.glow_strength = float(shader_params.get("strength", 1.0))
+		env.glow_bloom = float(shader_params.get("bloom", 0.5))
+		return {
+			"status": "ok",
+			"effect_name": effect_name,
+			"template": "bloom",
+			"path": str(env_node.get_path()),
+			"note": "Bloom applied via WorldEnvironment glow properties",
+		}
+
 	# Get shader code from template or custom
 	var final_code: String = ""
 	if template == "custom":

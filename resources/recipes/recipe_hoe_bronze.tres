@@ -8,6 +8,6 @@ recipe_id = "hoe_bronze"
 display_name = "Forge Bronze Hoe"
 result_tool_id = "tool_hoe_bronze"
 requires_tool_ingredient = "tool_hoe_basic"
-ingredients = {"spicy_essence": 3}
+ingredients = {"chili_powder": 3}
 description = "Upgrade your hoe with bronze."
 station = "workbench"

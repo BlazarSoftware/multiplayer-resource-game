@@ -27,10 +27,10 @@ var random_spawn_points: Array[Vector3] = [
 var random_spawn_table: Array = [
 	{"item_id": "mushroom", "weight": 20},
 	{"item_id": "herb_basil", "weight": 20},
-	{"item_id": "sweet_crystal", "weight": 10},
-	{"item_id": "herbal_dew", "weight": 15},
-	{"item_id": "grain_core", "weight": 20},
-	{"item_id": "sour_essence", "weight": 15},
+	{"item_id": "sugar", "weight": 10},
+	{"item_id": "broth", "weight": 15},
+	{"item_id": "flour", "weight": 20},
+	{"item_id": "vinegar", "weight": 15},
 ]
 
 func _ready() -> void:

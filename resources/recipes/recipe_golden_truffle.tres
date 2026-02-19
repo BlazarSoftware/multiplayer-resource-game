@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "recipe_golden_truffle"
 display_name = "Craft Golden Truffle"
 result_item_id = "golden_truffle"
-ingredients = {"mushroom": 3, "umami_extract": 2, "sweet_crystal": 1}
+ingredients = {"mushroom": 3, "soy_sauce": 2, "sugar": 1}
 description = "A rare golden truffle. Restores 25% HP once when below 25%. Consumed on use."
 station = "workbench"

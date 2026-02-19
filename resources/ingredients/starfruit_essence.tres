@@ -1,14 +1,16 @@
-[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/ingredients/citrus.png" id="2"]
 
 [resource]
 script = ExtResource("1")
-ingredient_id = "starfruit_essence"
-display_name = "Starfruit Essence"
-description = "Concentrated starfruit extract with a sweet cosmic aroma."
+ingredient_id = "starfruit"
+display_name = "Starfruit"
+description = "An exotic tropical fruit with a sweet-tart flavor."
 category = "battle_drop"
 icon_color = Color(0.9, 0.75, 0.3, 1)
+icon_texture = ExtResource("2")
 sell_price = 45
 season = ""
 grow_time = 0.0

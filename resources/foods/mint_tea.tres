@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="FoodDef" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/foods/smoothie.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -8,6 +9,7 @@ food_id = "mint_tea"
 display_name = "Mint Tea"
 description = "A refreshing tea that makes you feel light on your feet."
 icon_color = Color(0.5, 0.9, 0.6, 1)
+icon_texture = ExtResource("2")
 sell_price = 30
 buff_type = "speed_boost"
 buff_value = 1.3

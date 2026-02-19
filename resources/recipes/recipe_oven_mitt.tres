@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "recipe_oven_mitt"
 display_name = "Craft Oven Mitt"
 result_item_id = "oven_mitt"
-ingredients = {"wheat": 2, "sweet_crystal": 2}
+ingredients = {"wheat": 2, "sugar": 2}
 description = "A thick oven mitt. Reduces special damage taken by 15%."
 station = "workbench"

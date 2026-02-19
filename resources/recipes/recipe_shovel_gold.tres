@@ -8,6 +8,6 @@ recipe_id = "shovel_gold"
 display_name = "Forge Gold Shovel"
 result_tool_id = "tool_shovel_gold"
 requires_tool_ingredient = "tool_shovel_iron"
-ingredients = {"stone": 8, "sweet_crystal": 5}
+ingredients = {"stone": 8, "sugar": 5}
 description = "Upgrade your shovel with gold."
 station = "workbench"

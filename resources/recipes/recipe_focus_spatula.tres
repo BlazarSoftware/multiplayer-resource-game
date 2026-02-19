@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "recipe_focus_spatula"
 display_name = "Forge Focus Spatula"
 result_item_id = "focus_spatula"
-ingredients = {"grain_core": 3, "umami_extract": 2, "mushroom": 2}
+ingredients = {"flour": 3, "soy_sauce": 2, "mushroom": 2}
 description = "A resilient spatula that lets the holder survive a KO at 1 HP when at full health. Consumed on use."
 station = "workbench"

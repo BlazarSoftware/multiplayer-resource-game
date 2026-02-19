@@ -12,5 +12,5 @@ party = [{"species_id": "mushroom_cap", "level": 11}, {"species_id": "tofu_block
 ai_difficulty = "medium"
 rematch_cooldown_sec = 600
 reward_money = 400
-reward_ingredients = {"umami_extract": 3, "mushroom": 2}
+reward_ingredients = {"soy_sauce": 3, "mushroom": 2}
 reward_recipe_scroll_id = "scroll_tofu_block"

@@ -13,7 +13,7 @@ items_for_sale = [{
 "item_id": "spice_pepper",
 "buy_price": 15
 }, {
-"item_id": "sweet_crystal",
+"item_id": "sugar",
 "buy_price": 20
 }, {
 "item_id": "grain_wheat",

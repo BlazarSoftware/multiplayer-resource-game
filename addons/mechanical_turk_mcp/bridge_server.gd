@@ -26,6 +26,7 @@ var _signal_handler: Node = null
 var _juice_handler: Node = null
 var _ui_theme_handler: Node = null
 var _postfx_handler: Node = null
+var _vfx_handler: Node = null
 
 
 func _ready() -> void:
@@ -43,6 +44,7 @@ func _ready() -> void:
 	_juice_handler = preload("res://addons/mechanical_turk_mcp/handlers/juice_handler.gd").new()
 	_ui_theme_handler = preload("res://addons/mechanical_turk_mcp/handlers/ui_theme_handler.gd").new()
 	_postfx_handler = preload("res://addons/mechanical_turk_mcp/handlers/postfx_handler.gd").new()
+	_vfx_handler = preload("res://addons/mechanical_turk_mcp/handlers/vfx_handler.gd").new()
 	add_child(_screenshot_handler)
 	add_child(_input_handler)
 	add_child(_scene_tree_handler)
@@ -57,6 +59,7 @@ func _ready() -> void:
 	add_child(_juice_handler)
 	add_child(_ui_theme_handler)
 	add_child(_postfx_handler)
+	add_child(_vfx_handler)
 
 	# Register method handlers — existing
 	_handlers["ping"] = _handle_ping
@@ -125,6 +128,10 @@ func _ready() -> void:
 
 	# Shader live parameter handler
 	_handlers["set_shader_parameter_live"] = _level_handler.handle_set_shader_parameter_live
+	_handlers["batch_shader_updates"] = _level_handler.handle_batch_shader_updates
+
+	# VFX composition handlers
+	_handlers["apply_spring_animation"] = _vfx_handler.handle_spring_animation
 
 	# Post-processing handlers
 	_handlers["postfx_2d_apply"] = _postfx_handler.handle_postfx_2d_apply

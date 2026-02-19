@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "recipe_choice_pot"
 display_name = "Forge Choice Pot"
 result_item_id = "choice_pot"
-ingredients = {"sweet_crystal": 3, "herbal_dew": 2, "spicy_essence": 1}
+ingredients = {"sugar": 3, "broth": 2, "chili_powder": 1}
 description = "A focused pot that boosts Sp.Atk by 50% but locks the holder into one move."
 station = "workbench"

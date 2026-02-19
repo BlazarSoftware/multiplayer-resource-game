@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "grain_bread"
 display_name = "Bake Grain Bread"
 result_food_id = "grain_bread"
-ingredients = {"wheat": 2, "grain_core": 1}
+ingredients = {"wheat": 2, "flour": 1}
 description = "Bake fresh grain bread."
 station = "kitchen"

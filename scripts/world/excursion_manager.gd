@@ -19,7 +19,7 @@ const EXCURSION_INGREDIENT_DROP_CHANCE: float = 0.15
 const EXCURSION_SEED_DROP_CHANCE: float = 0.05
 
 var EXCURSION_BONUS_INGREDIENTS: Array = [
-	"mystic_herb", "starfruit_essence", "truffle_shaving", "wild_honey",
+	"mystic_herb", "starfruit", "truffle_shaving", "wild_honey",
 ]
 var EXCURSION_BONUS_SEEDS: Array = [
 	"golden_seed", "ancient_grain_seed",

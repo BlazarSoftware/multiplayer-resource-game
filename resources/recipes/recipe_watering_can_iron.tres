@@ -8,6 +8,6 @@ recipe_id = "watering_can_iron"
 display_name = "Forge Iron Watering Can"
 result_tool_id = "tool_watering_can_iron"
 requires_tool_ingredient = "tool_watering_can_bronze"
-ingredients = {"umami_extract": 5}
+ingredients = {"soy_sauce": 5}
 description = "Upgrade your watering can with iron."
 station = "workbench"

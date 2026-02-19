@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "recipe_precision_grater"
 display_name = "Forge Precision Grater"
 result_item_id = "precision_grater"
-ingredients = {"sour_essence": 3, "grain_core": 2, "chili_pepper": 1}
+ingredients = {"vinegar": 3, "flour": 2, "chili_pepper": 1}
 description = "A finely-tuned grater that increases critical hit rate by one stage."
 station = "workbench"

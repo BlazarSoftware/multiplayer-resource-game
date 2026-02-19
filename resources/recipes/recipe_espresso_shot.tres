@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "recipe_espresso_shot"
 display_name = "Craft Espresso Shot"
 result_item_id = "espresso_shot"
-ingredients = {"umami_extract": 2, "grain_core": 2}
+ingredients = {"soy_sauce": 2, "flour": 2}
 description = "A strong espresso. Boosts speed by +2 when HP drops below 25%. Consumed on use."
 station = "workbench"

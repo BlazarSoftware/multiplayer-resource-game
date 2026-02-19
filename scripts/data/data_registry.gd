@@ -146,36 +146,36 @@ static func get_item_display_info(item_id: String) -> Dictionary:
 	# Check ingredients
 	if item_id in ingredients:
 		var ing = ingredients[item_id]
-		return {"display_name": ing.display_name, "category": "ingredient", "icon_color": ing.icon_color}
+		return {"display_name": ing.display_name, "category": "ingredient", "icon_color": ing.icon_color, "icon_texture": ing.icon_texture}
 	# Check held items
 	if item_id in held_items:
 		var hi = held_items[item_id]
-		return {"display_name": hi.display_name, "category": "held_item", "icon_color": Color.MEDIUM_PURPLE}
+		return {"display_name": hi.display_name, "category": "held_item", "icon_color": hi.icon_color, "icon_texture": hi.icon_texture}
 	# Check foods
 	if item_id in foods:
 		var f = foods[item_id]
-		return {"display_name": f.display_name, "category": "food", "icon_color": f.icon_color}
+		return {"display_name": f.display_name, "category": "food", "icon_color": f.icon_color, "icon_texture": f.icon_texture}
 	# Check tools
 	if item_id in tools:
 		var t = tools[item_id]
-		return {"display_name": t.display_name, "category": "tool", "icon_color": t.icon_color}
+		return {"display_name": t.display_name, "category": "tool", "icon_color": t.icon_color, "icon_texture": t.icon_texture}
 	# Check recipe scrolls
 	if item_id in recipe_scrolls:
 		var rs = recipe_scrolls[item_id]
-		return {"display_name": rs.display_name, "category": "recipe_scroll", "icon_color": rs.icon_color}
+		return {"display_name": rs.display_name, "category": "recipe_scroll", "icon_color": rs.icon_color, "icon_texture": rs.icon_texture}
 	# Check battle items
 	if item_id in battle_items:
 		var bi = battle_items[item_id]
-		return {"display_name": bi.display_name, "category": "battle_item", "icon_color": bi.icon_color}
+		return {"display_name": bi.display_name, "category": "battle_item", "icon_color": bi.icon_color, "icon_texture": bi.icon_texture}
 	# Check for fragment pattern (fragment_<scroll_id>)
 	if item_id.begins_with("fragment_"):
 		var scroll_id = item_id.substr(9) # Remove "fragment_" prefix
 		if scroll_id in recipe_scrolls:
 			var rs = recipe_scrolls[scroll_id]
-			return {"display_name": rs.display_name + " Fragment", "category": "fragment", "icon_color": Color(0.7, 0.6, 0.2)}
-		return {"display_name": item_id.replace("_", " ").capitalize(), "category": "fragment", "icon_color": Color(0.7, 0.6, 0.2)}
+			return {"display_name": rs.display_name + " Fragment", "category": "fragment", "icon_color": Color(0.7, 0.6, 0.2), "icon_texture": null}
+		return {"display_name": item_id.replace("_", " ").capitalize(), "category": "fragment", "icon_color": Color(0.7, 0.6, 0.2), "icon_texture": null}
 	# Unknown item
-	return {"display_name": item_id.replace("_", " ").capitalize(), "category": "unknown", "icon_color": Color.GRAY}
+	return {"display_name": item_id.replace("_", " ").capitalize(), "category": "unknown", "icon_color": Color.GRAY, "icon_texture": null}
 
 static func is_item_giftable(item_id: String) -> bool:
 	ensure_loaded()

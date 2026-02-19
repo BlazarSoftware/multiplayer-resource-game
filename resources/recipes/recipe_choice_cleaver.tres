@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "recipe_choice_cleaver"
 display_name = "Forge Choice Cleaver"
 result_item_id = "choice_cleaver"
-ingredients = {"umami_extract": 3, "grain_core": 2, "spicy_essence": 1}
+ingredients = {"soy_sauce": 3, "flour": 2, "chili_powder": 1}
 description = "A decisive cleaver that boosts Attack by 50% but locks the holder into one move."
 station = "workbench"

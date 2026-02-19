@@ -41,7 +41,7 @@ ExcursionGenerator (class_name, static functions)
 | `resources/encounters/excursion_rare.tres` | Rare grove encounter table (Lv 18-35) |
 | `resources/ingredients/golden_seed.tres` | Excursion-exclusive rare seed |
 | `resources/ingredients/mystic_herb.tres` | Excursion-exclusive ingredient |
-| `resources/ingredients/starfruit_essence.tres` | Excursion-exclusive ingredient |
+| `resources/ingredients/starfruit.tres` | Excursion-exclusive ingredient |
 | `resources/ingredients/truffle_shaving.tres` | Excursion-exclusive ingredient |
 | `resources/ingredients/ancient_grain_seed.tres` | Excursion-exclusive seed |
 | `resources/ingredients/wild_honey.tres` | Excursion-exclusive ingredient |
@@ -109,7 +109,7 @@ When a player picks up an excursion world item, all current members receive a co
 ### Harvestable Objects (Trees, Rocks, Bushes)
 Excursion instances spawn ~8-12 harvestable objects based on biome:
 - **Trees** (DENSE_FOREST): axe, 3 HP, drops wood + herb_basil + mystic_herb
-- **Rocks** (ROCKY_OUTCROP): axe, 4 HP, drops stone + spicy_essence + sweet_crystal
+- **Rocks** (ROCKY_OUTCROP): axe, 4 HP, drops stone + chili_powder + sugar
 - **Bushes** (GRASSLAND/FLOWER_FIELD): hands, 1 HP, drops berry + wild_honey
 
 When harvested, drops are shared to ALL excursion members (not just the harvester). Drop tables are richer than overworld. Harvestables respawn after their timer (120s/150s/90s).
@@ -117,7 +117,7 @@ When harvested, drops are shared to ALL excursion members (not just the harveste
 ### Dig Spots
 3-5 dig spots per excursion, placed in low-height valleys:
 - Require shovel equipped
-- Excursion-specific rare loot table (golden_seed, ancient_grain_seed, starfruit_essence, etc.)
+- Excursion-specific rare loot table (golden_seed, ancient_grain_seed, starfruit, etc.)
 - Per-player per-spot daily cooldown (unique spot_ids prevent overworld conflicts)
 - Drops shared to ALL excursion members
 

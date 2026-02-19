@@ -25,7 +25,7 @@ schedule = [{
 gift_preferences = {
 "loved": ["spice_pepper", "hot_sauce", "iron_ore"],
 "liked": ["grain_wheat", "salt_crystal"],
-"disliked": ["sweet_crystal", "sweet_honey"],
+"disliked": ["sugar", "sweet_honey"],
 "hated": ["herb_mint"]
 }
 dialogues = {
@@ -152,7 +152,7 @@ creature_trades = [{
 "creature_species_id": "sear_slug",
 "creature_level": 12,
 "creature_nickname": "Ember's Flame",
-"cost_items": { "chili_pepper": 10, "spicy_essence": 5 },
+"cost_items": { "chili_pepper": 10, "chili_powder": 5 },
 "cost_money": 800,
 "required_friendship": "love",
 "required_season": "",

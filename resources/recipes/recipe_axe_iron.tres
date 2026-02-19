@@ -8,6 +8,6 @@ recipe_id = "axe_iron"
 display_name = "Forge Iron Axe"
 result_tool_id = "tool_axe_iron"
 requires_tool_ingredient = "tool_axe_bronze"
-ingredients = {"umami_extract": 5}
+ingredients = {"soy_sauce": 5}
 description = "Upgrade your axe with iron."
 station = "workbench"

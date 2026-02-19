@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/foods/grilled_fish.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+food_id = "grilled_fish"
+display_name = "Grilled Fish"
+description = "Herb-seasoned fish with a squeeze of lemon."
+icon_color = Color(0.6, 0.75, 0.9, 1)
+icon_texture = ExtResource("2")
+sell_price = 35
+buff_type = "xp_multiplier"
+buff_value = 1.2
+buff_duration_sec = 150.0

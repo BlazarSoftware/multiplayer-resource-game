@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "mushroom_risotto"
 display_name = "Cook Mushroom Risotto"
 result_food_id = "mushroom_risotto"
-ingredients = {"mushroom": 2, "rice": 2, "umami_extract": 1}
+ingredients = {"mushroom": 2, "rice": 2, "soy_sauce": 1}
 description = "Cook a creamy mushroom risotto."
 station = "kitchen"

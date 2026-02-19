@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/foods/pasta_dish.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+food_id = "pasta_dish"
+display_name = "Pasta"
+description = "Fresh egg pasta in a rich tomato sauce."
+icon_color = Color(0.9, 0.6, 0.3, 1)
+icon_texture = ExtResource("2")
+sell_price = 38
+buff_type = "creature_heal"
+buff_value = 30.0
+buff_duration_sec = 0.0

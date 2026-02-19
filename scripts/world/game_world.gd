@@ -679,7 +679,7 @@ func _generate_harvestables() -> void:
 		h.respawn_time = 150.0
 		h.drops = [
 			{"item_id": "stone", "min": 1, "max": 2, "weight": 1.0},
-			{"item_id": "spicy_essence", "min": 1, "max": 1, "weight": 0.1},
+			{"item_id": "chili_powder", "min": 1, "max": 1, "weight": 0.1},
 		]
 		h.position = pos
 		h.name = "Rock_%d_%d" % [int(pos.x), int(pos.z)]
@@ -713,21 +713,21 @@ func _generate_dig_spots() -> void:
 	var dig_spot_script = load("res://scripts/world/dig_spot.gd")
 	var spots = [
 		# Herb Garden (2)
-		{"pos": Vector3(-14, 0, -13), "id": "herb_1", "loot": [{"item_id": "herbal_dew", "weight": 0.6, "min": 1, "max": 1}, {"item_id": "herb_basil", "weight": 0.4, "min": 1, "max": 2}]},
-		{"pos": Vector3(-10, 0, -17), "id": "herb_2", "loot": [{"item_id": "herbal_dew", "weight": 0.5, "min": 1, "max": 1}, {"item_id": "herb_basil", "weight": 0.5, "min": 1, "max": 2}]},
+		{"pos": Vector3(-14, 0, -13), "id": "herb_1", "loot": [{"item_id": "broth", "weight": 0.6, "min": 1, "max": 1}, {"item_id": "herb_basil", "weight": 0.4, "min": 1, "max": 2}]},
+		{"pos": Vector3(-10, 0, -17), "id": "herb_2", "loot": [{"item_id": "broth", "weight": 0.5, "min": 1, "max": 1}, {"item_id": "herb_basil", "weight": 0.5, "min": 1, "max": 2}]},
 		# Flame Kitchen (2)
-		{"pos": Vector3(14, 0, -13), "id": "flame_1", "loot": [{"item_id": "spicy_essence", "weight": 0.5, "min": 1, "max": 1}, {"item_id": "chili_pepper", "weight": 0.5, "min": 1, "max": 2}]},
-		{"pos": Vector3(10, 0, -17), "id": "flame_2", "loot": [{"item_id": "spicy_essence", "weight": 0.6, "min": 1, "max": 1}, {"item_id": "chili_pepper", "weight": 0.4, "min": 1, "max": 1}]},
+		{"pos": Vector3(14, 0, -13), "id": "flame_1", "loot": [{"item_id": "chili_powder", "weight": 0.5, "min": 1, "max": 1}, {"item_id": "chili_pepper", "weight": 0.5, "min": 1, "max": 2}]},
+		{"pos": Vector3(10, 0, -17), "id": "flame_2", "loot": [{"item_id": "chili_powder", "weight": 0.6, "min": 1, "max": 1}, {"item_id": "chili_pepper", "weight": 0.4, "min": 1, "max": 1}]},
 		# Frost Pantry (2)
 		{"pos": Vector3(-20, 0, -33), "id": "frost_1", "loot": [{"item_id": "mint", "weight": 0.6, "min": 1, "max": 2}]},
 		{"pos": Vector3(-16, 0, -37), "id": "frost_2", "loot": [{"item_id": "mint", "weight": 0.5, "min": 1, "max": 1}]},
 		# Harvest Field (2)
-		{"pos": Vector3(20, 0, -33), "id": "harvest_1", "loot": [{"item_id": "wheat", "weight": 0.6, "min": 1, "max": 2}, {"item_id": "grain_core", "weight": 0.3, "min": 1, "max": 1}]},
-		{"pos": Vector3(16, 0, -37), "id": "harvest_2", "loot": [{"item_id": "wheat", "weight": 0.5, "min": 1, "max": 2}, {"item_id": "grain_core", "weight": 0.4, "min": 1, "max": 1}]},
+		{"pos": Vector3(20, 0, -33), "id": "harvest_1", "loot": [{"item_id": "wheat", "weight": 0.6, "min": 1, "max": 2}, {"item_id": "flour", "weight": 0.3, "min": 1, "max": 1}]},
+		{"pos": Vector3(16, 0, -37), "id": "harvest_2", "loot": [{"item_id": "wheat", "weight": 0.5, "min": 1, "max": 2}, {"item_id": "flour", "weight": 0.4, "min": 1, "max": 1}]},
 		# Sour Springs (1)
 		{"pos": Vector3(20, 0, -46), "id": "sour_1", "loot": [{"item_id": "mushroom", "weight": 0.5, "min": 1, "max": 2}]},
 		# Fusion Kitchen (1)
-		{"pos": Vector3(-20, 0, -46), "id": "fusion_1", "loot": [{"item_id": "sweet_crystal", "weight": 0.4, "min": 1, "max": 1}, {"item_id": "umami_extract", "weight": 0.3, "min": 1, "max": 1}]},
+		{"pos": Vector3(-20, 0, -46), "id": "fusion_1", "loot": [{"item_id": "sugar", "weight": 0.4, "min": 1, "max": 1}, {"item_id": "soy_sauce", "weight": 0.3, "min": 1, "max": 1}]},
 	]
 
 	for spot in spots:

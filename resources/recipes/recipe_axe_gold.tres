@@ -8,6 +8,6 @@ recipe_id = "axe_gold"
 display_name = "Forge Gold Axe"
 result_tool_id = "tool_axe_gold"
 requires_tool_ingredient = "tool_axe_iron"
-ingredients = {"sweet_crystal": 8}
+ingredients = {"sugar": 8}
 description = "Upgrade your axe with gold."
 station = "workbench"

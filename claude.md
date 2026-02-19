@@ -72,6 +72,38 @@ services:
 ## Docker Server Build
 See `docs/docker-build.md` for full build instructions (two-phase engine + game build, SCons flags, local dev).
 
+## TestPlayer Dev Account
+- **Name**: "TestPlayer" (case-insensitive match via `name.to_lower() == "testplayer"`)
+- **When**: Every login, not just first creation. Runs in `_finalize_join()` after backfills.
+- **Where**: Works in all builds (editor, exported, deployed server). Not gated by `OS.has_feature("editor")`.
+- **What**: `_apply_testplayer_loadout(data)` in `network_manager.gd` grants:
+  - All ingredients x10, all foods x5, all battle items x10, all held items x3, all recipe scrolls x1, all tools x1
+  - $99,999 money
+  - All recipes unlocked (`known_recipes` = every recipe ID)
+  - One of every creature species at level 20 in `creature_storage` (skips species already in party/storage)
+  - Storage capacity expanded to fit all creatures + 10
+  - Full compendium (all items, all creatures seen + owned)
+- **Normal players**: Start with 4 basic tools, $0, 1 Rice Ball starter, no recipes. The old editor-only item grant block was removed.
+
+## Ingredient Renames (Migration System)
+8 fantasy ingredient IDs were renamed to real cooking terms. Old saves are auto-migrated on login via `_backfill_ingredient_renames(data)` in `_finalize_join()`.
+
+| Old ID | New ID | Display Name |
+|--------|--------|-------------|
+| `grain_core` | `flour` | Flour |
+| `sweet_crystal` | `sugar` | Sugar |
+| `umami_extract` | `soy_sauce` | Soy Sauce |
+| `herbal_dew` | `broth` | Broth |
+| `sour_essence` | `vinegar` | Vinegar |
+| `spicy_essence` | `chili_powder` | Chili Powder |
+| `starfruit_essence` | `starfruit` | Starfruit |
+| `frost_essence` | `mint` | Mint |
+
+- **Migration scope**: inventory keys, compendium items list, hotbar references
+- **INGREDIENT_RENAMES** const in `network_manager.gd` maps old → new
+- **All references updated**: recipe `.tres` files, creature drop tables, trainer rewards, NPC gifts/trades, shop listings, world item spawns, excursion loot, farm drops
+- **If adding new ingredient renames**: add to the `INGREDIENT_RENAMES` dict — the backfill function handles the rest automatically
+
 ## Multiplayer Join/Spawn Stabilization
 - **Client pre-loads GameWorld on connect**: `_on_connected_to_server()` calls `GameManager.start_game()` BEFORE `request_join`. This ensures the MultiplayerSpawner exists before spawn replication RPCs arrive.
 - **Name uniqueness**: `active_player_names` dict (name → peer_id) rejects duplicate online names. `_join_rejected` RPC tells client why.
@@ -102,8 +134,8 @@ See `docs/docker-build.md` for full build instructions (two-phase engine + game 
 See `docs/battle-system.md` for full details: IVs (formula, 0-31 range), bond levels (thresholds, modifiers), crit stages, taunt/trick room/substitutes, MoveDef properties, battle UI layout, battle items (HP values), XP/leveling.
 
 ## Crafting & Item System
-- **58 recipes**: 13 creature (cauldron), 18 held item (workbench), 12 food (kitchen), 9 tool upgrade (workbench), 6 battle item (kitchen)
-- **6 item types**: ingredients (16), held items (18), foods (12), tools (12), recipe scrolls (13), battle items (6) — single inventory namespace
+- **67 recipes**: 13 creature (cauldron), 18 held item (workbench), 18 food (kitchen), 9 tool upgrade (workbench), 6 battle item (kitchen), 3 other
+- **6 item types**: ingredients (34), held items (18), foods (20), tools (16), recipe scrolls (13), battle items (6) — single inventory namespace
 - **3 crafting stations**: Kitchen (restaurant), Workbench (near spawn), Cauldron (deep wild) — filtered by `station` field
 - **Crafting security**: Single-phase server-authoritative — `request_craft(recipe_id)` validates server-side, deducts, produces, syncs. No client-side deduction.
 - **Tool upgrades**: 3 types (hoe, axe, watering_can) x 4 tiers (basic→bronze→iron→gold)
@@ -116,7 +148,7 @@ See `docs/crafting-items.md` for full details: buff application points, PlayerDa
 - **Hub area**: Spawn near (0,1,3). Farm zone at (25,0,0). Restaurant doors at z=12.
 - **6 encounter zones**: Herb Garden, Flame Kitchen, Frost Pantry, Harvest Field, Sour Springs, Fusion Kitchen
 - **7 trainers**: 5 optional (Pepper, Green, Dulce, Vlad, Michelin), 2 gatekeepers (Umami, Roux). E-key prompt, `request_challenge` RPC.
-- **WorldItemManager**: Server-authoritative pickup via Area3D `body_entered`. Node naming: `"WorldItem_" + str(uid)`.
+- **WorldItemManager**: Server-authoritative pickup via Area3D `body_entered`. Node naming: `"WorldItem_" + str(uid)`. World items rendered as kawaii gift box (Synty present model) with toon shader, sparkle particles, and gentle pulse animation.
 - **Restaurant**: Per-player instances at `Vector3(1000+idx*200,0,1000)`. Auto-save position fix checks `RestaurantManager.overworld_positions`. Farm routing via `get_farm_manager_for_peer(peer_id)`.
 - **3 shops**: General Store, Battle Supplies, Rare Goods. `request_buy/sell_item` RPCs. Sets busy state.
 - **Trading**: T key, 5-unit range. Atomic swap via `_execute_trade()`. Sets busy state. Supports creature offers (party/storage) + receive preferences.
@@ -180,7 +212,7 @@ See `docs/social-quests.md` for full details (prereq types, NPC indicators, expl
 - **Exit triggers**: Voluntary (button/portal), disconnect, timeout (15 min), party kick/disband. Overworld position restored.
 - **FriendManager signals**: `party_member_removed(party_id, player_id, reason)`, `party_member_added(party_id, player_id)` — used by ExcursionManager.
 - **Encounter tables**: `excursion_common` (Lv 10-20, uncommon species), `excursion_rare` (Lv 18-35, rare/legendary species including Sushi Samurai).
-- **Excursion-exclusive items**: golden_seed, mystic_herb, starfruit_essence, truffle_shaving, ancient_grain_seed, wild_honey, rainbow_creature (food), excursion_berry (food).
+- **Excursion-exclusive items**: golden_seed, mystic_herb, starfruit, truffle_shaving, ancient_grain_seed, wild_honey, rainbow_creature (food), excursion_berry (food).
 - **ExcursionHUD**: CanvasLayer (layer 6). Timer countdown, member count, leave button. Time warnings at 2 min and 30 sec.
 - **RPCs**: Client→Server: `request_enter/exit_excursion`, `request_excursion_late_join`. Server→Client: `_enter/_exit_excursion_client`, `_excursion_status_update`, `_excursion_time_warning`, `_grant_excursion_battle_rewards`, `_notify_excursion_harvest`, `_notify_excursion_dig`.
 
@@ -262,7 +294,7 @@ See `docs/compendium-stats.md` for full tracked stat list and hook locations.
 
 ## UI Theme & Accessibility
 - **UITokens** (`scripts/ui/ui_tokens.gd`): Static color palette, font size constants (`FONT_H1`=36 through `FONT_TINY`=16), layout constants. No `class_name` — preloaded where needed.
-- **UITheme** (`scripts/ui/ui_theme.gd`): `class_name UITheme`. Semantic styling API (`style_title`, `style_body`, `style_button`, etc.), font loading, font scale + text speed state.
+- **UITheme** (`scripts/ui/ui_theme.gd`): `class_name UITheme`. Semantic styling API (`style_title`, `style_body`, `style_button`, etc.), font loading, font scale + text speed state, icon creation.
 - **Font scaling**: `UITheme.scaled(size)` multiplies any base font size by `_font_scale` (default 1.0). All UI code MUST use `UITheme.scaled(UITokens.FONT_*)` — never raw `UITokens.FONT_*` for runtime font sizes. Label3D in 3D scenes (battle arena, world labels) also use `UITheme.scaled()`.
 - **Text speed**: `UITheme.get_text_speed()` returns chars/sec (-1 = instant). Used by dialogue/trainer UI for typewriter effect.
 - **Settings persistence**: `user://settings.cfg` via ConfigFile. Saves both float values (`font_scale`, `text_speed_cps`) and integer indices (`font_scale_idx`, `text_speed_idx`). Load prefers index keys, falls back to float lookup for backward compat.
@@ -272,6 +304,18 @@ See `docs/compendium-stats.md` for full tracked stat list and hook locations.
 - **Fonts**: Lilita One (headings), Fredoka One (body). Loaded in `UITheme.init()`.
 
 See `docs/ui-accessibility.md` for full details.
+
+## Icon System (Synty POLYGON_Icons + Kawaii Shader)
+- **Source**: 520 Synty POLYGON_Icons `.glb` meshes in `assets/synty_icons/Models/`, shared color palette atlas in `assets/synty_icons/Textures/`.
+- **Pre-baked pipeline**: Icons are rendered at editor time via `tools/bake_icons_cli.gd` (SceneTree script), NOT runtime SubViewports. Zero runtime cost — icons are static 256x256 PNGs with transparent backgrounds.
+- **Shader stack**: `shaders/toon_icon.gdshader` (kawaii cel shader with pastel remap, two-tone light/shadow, rim light) + `shaders/icon_outline.gdshader` (inverted hull outline in soft purple-brown) + `shaders/icon_postprocess.gdshader` (optional bloom/vignette/color grading).
+- **Output**: `assets/ui/textures/icons/<category>/<item_id>.png` — subdirs: `ingredients/`, `foods/`, `tools/`, `battle_items/`, `held_items/`, `ui/`.
+- **Data layer**: All item defs (`IngredientDef`, `FoodDef`, `ToolDef`, `BattleItemDef`, `RecipeScrollDef`, `HeldItemDef`) have `@export var icon_texture: Texture2D`. `DataRegistry.get_item_display_info()` returns both `icon_color` and `icon_texture`.
+- **UI helper**: `UITheme.create_item_icon(info, base_size)` — returns `TextureRect` if `icon_texture` exists, falls back to `ColorRect` with `icon_color`. All sizes use `UITheme.scaled()`. Used by: `inventory_tab.gd`, `shop_ui.gd`, `trade_ui.gd`, `hotbar_ui.gd`.
+- **Hotbar**: `slot_icons: Array[Control]` dynamically swaps between TextureRect/ColorRect per slot via `_set_slot_icon()`.
+- **Re-bake command**: `'/Applications/Mechanical Turk.app/Contents/MacOS/Mechanical Turk' --path . --script tools/bake_icons_cli.gd`
+- **Adding new icons**: Add entry to `icon_manifest` in `tools/bake_icons_cli.gd`, re-bake, assign PNG to `.tres` file's `icon_texture` field.
+- **No networking impact**: Icons are client-side only (textures loaded from `res://`). No sync needed.
 
 ## GDScript Conventions
 - Use `class_name` for static utility classes (BattleCalculator, StatusEffects, FieldEffects, AbilityEffects, HeldItemEffects, BattleAI, StatTracker)

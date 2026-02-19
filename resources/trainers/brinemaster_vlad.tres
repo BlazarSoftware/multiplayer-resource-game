@@ -12,5 +12,5 @@ party = [{"species_id": "pickle_toad", "level": 10}, {"species_id": "lemon_imp",
 ai_difficulty = "medium"
 rematch_cooldown_sec = 600
 reward_money = 350
-reward_ingredients = {"sour_essence": 3}
+reward_ingredients = {"vinegar": 3}
 reward_recipe_scroll_id = "scroll_pickle_toad"

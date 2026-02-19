@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "recipe_dashi_bead"
 display_name = "Craft Dashi Bead"
 result_item_id = "dashi_bead"
-ingredients = {"umami_extract": 3, "mushroom": 1}
+ingredients = {"soy_sauce": 3, "mushroom": 1}
 description = "A bead of concentrated dashi. Boosts Umami moves by 20%."
 station = "workbench"

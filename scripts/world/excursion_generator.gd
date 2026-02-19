@@ -327,8 +327,8 @@ static func _get_harvestable_drops(harvestable_type: String, _season: String) ->
 		"rock":
 			return [
 				{"item_id": "stone", "min": 1, "max": 2, "weight": 1.0},
-				{"item_id": "spicy_essence", "min": 1, "max": 1, "weight": 0.15},
-				{"item_id": "sweet_crystal", "min": 1, "max": 1, "weight": 0.1},
+				{"item_id": "chili_powder", "min": 1, "max": 1, "weight": 0.15},
+				{"item_id": "sugar", "min": 1, "max": 1, "weight": 0.1},
 			]
 		"bush":
 			return [
@@ -343,7 +343,7 @@ static func _get_dig_spot_loot_table() -> Array:
 	return [
 		{"item_id": "golden_seed", "min": 1, "max": 1, "weight": 0.2},
 		{"item_id": "ancient_grain_seed", "min": 1, "max": 1, "weight": 0.15},
-		{"item_id": "starfruit_essence", "min": 1, "max": 1, "weight": 0.15},
+		{"item_id": "starfruit", "min": 1, "max": 1, "weight": 0.15},
 		{"item_id": "truffle_shaving", "min": 1, "max": 2, "weight": 0.25},
 		{"item_id": "mystic_herb", "min": 1, "max": 1, "weight": 0.2},
 		{"item_id": "stone", "min": 1, "max": 3, "weight": 0.5},
@@ -915,15 +915,15 @@ static func _get_excursion_item_table(season: String) -> Array:
 	var table: Array = [
 		{"item_id": "golden_seed", "weight": 5},
 		{"item_id": "mystic_herb", "weight": 8},
-		{"item_id": "starfruit_essence", "weight": 6},
+		{"item_id": "starfruit", "weight": 6},
 		{"item_id": "truffle_shaving", "weight": 10},
 		{"item_id": "rainbow_creature", "weight": 4},
 		{"item_id": "excursion_berry", "weight": 12},
 		{"item_id": "ancient_grain_seed", "weight": 5},
 		{"item_id": "wild_honey", "weight": 15},
 		{"item_id": "herb_basil", "weight": 15},
-		{"item_id": "sweet_crystal", "weight": 10},
-		{"item_id": "sour_essence", "weight": 10},
+		{"item_id": "sugar", "weight": 10},
+		{"item_id": "vinegar", "weight": 10},
 	]
 
 	# Season modifiers
@@ -936,7 +936,7 @@ static func _get_excursion_item_table(season: String) -> Array:
 		"summer":
 			# Boost fruits/essences
 			for entry in table:
-				if entry["item_id"] in ["starfruit_essence", "excursion_berry"]:
+				if entry["item_id"] in ["starfruit", "excursion_berry"]:
 					entry["weight"] += 5
 		"autumn":
 			# Boost mushroom-like ingredients

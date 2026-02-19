@@ -8,6 +8,6 @@ recipe_id = "hoe_iron"
 display_name = "Forge Iron Hoe"
 result_tool_id = "tool_hoe_iron"
 requires_tool_ingredient = "tool_hoe_bronze"
-ingredients = {"umami_extract": 5}
+ingredients = {"soy_sauce": 5}
 description = "Upgrade your hoe with iron."
 station = "workbench"

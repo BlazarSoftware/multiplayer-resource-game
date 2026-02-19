@@ -279,6 +279,142 @@ func _backfill_creature_stats(creature: Dictionary) -> void:
 	if not creature.has("battle_affinities"):
 		creature["battle_affinities"] = {}
 
+const INGREDIENT_RENAMES := {
+	"grain_core": "flour",
+	"sweet_crystal": "sugar",
+	"umami_extract": "soy_sauce",
+	"herbal_dew": "broth",
+	"sour_essence": "vinegar",
+	"spicy_essence": "chili_powder",
+	"starfruit_essence": "starfruit",
+	"frost_essence": "mint",
+}
+
+func _backfill_ingredient_renames(data: Dictionary) -> void:
+	var inv: Dictionary = data.get("inventory", {})
+	var changed := false
+	for old_id in INGREDIENT_RENAMES:
+		if old_id in inv:
+			var new_id: String = INGREDIENT_RENAMES[old_id]
+			var count: int = inv[old_id]
+			inv.erase(old_id)
+			inv[new_id] = inv.get(new_id, 0) + count
+			changed = true
+	if changed:
+		data["inventory"] = inv
+	# Migrate compendium items list
+	var compendium: Dictionary = data.get("compendium", {})
+	var items: Array = compendium.get("items", [])
+	for i in range(items.size()):
+		if items[i] in INGREDIENT_RENAMES:
+			items[i] = INGREDIENT_RENAMES[items[i]]
+	# Migrate hotbar references
+	var hotbar: Array = data.get("hotbar", [])
+	for i in range(hotbar.size()):
+		if hotbar[i] is String and hotbar[i] in INGREDIENT_RENAMES:
+			hotbar[i] = INGREDIENT_RENAMES[hotbar[i]]
+
+func _apply_testplayer_loadout(data: Dictionary) -> void:
+	var pname: String = data.get("player_name", "")
+	if pname.to_lower() != "testplayer":
+		return
+	DataRegistry.ensure_loaded()
+	var inv: Dictionary = data.get("inventory", {})
+	# All ingredients x10
+	for id in DataRegistry.ingredients:
+		inv[id] = 10
+	# All foods x5
+	for id in DataRegistry.foods:
+		inv[id] = 5
+	# All battle items x10
+	for id in DataRegistry.battle_items:
+		inv[id] = 10
+	# All held items x3
+	for id in DataRegistry.held_items:
+		inv[id] = 3
+	# All recipe scrolls x1
+	for id in DataRegistry.recipe_scrolls:
+		inv[id] = 1
+	# All tools x1
+	for id in DataRegistry.tools:
+		if id not in inv:
+			inv[id] = 1
+	data["inventory"] = inv
+	data["money"] = 99999
+	# All recipes unlocked
+	var all_recipes: Array = []
+	for id in DataRegistry.recipes:
+		all_recipes.append(id)
+	data["known_recipes"] = all_recipes
+	# One of every creature species in storage (level 20)
+	var storage: Array = data.get("creature_storage", [])
+	var existing_species: Dictionary = {}
+	for c in data.get("party", []):
+		existing_species[c.get("species_id", "")] = true
+	for c in storage:
+		existing_species[c.get("species_id", "")] = true
+	for species_id in DataRegistry.species:
+		if species_id in existing_species:
+			continue
+		var sp: CreatureSpecies = DataRegistry.species[species_id]
+		var creature := {
+			"species_id": species_id,
+			"nickname": sp.display_name,
+			"level": 20,
+			"hp": sp.base_hp,
+			"max_hp": sp.base_hp,
+			"attack": sp.base_attack,
+			"defense": sp.base_defense,
+			"sp_attack": sp.base_sp_attack,
+			"sp_defense": sp.base_sp_defense,
+			"speed": sp.base_speed,
+			"moves": Array(sp.moves).slice(0, 4),
+			"pp": [],
+			"types": Array(sp.types),
+			"xp": 0,
+			"xp_to_next": 400,
+			"ability_id": sp.ability_ids[0] if sp.ability_ids.size() > 0 else "",
+			"held_item_id": "",
+			"evs": {},
+			"creature_id": _generate_uuid(),
+			"ivs": {},
+			"bond_points": 0,
+			"bond_level": 0,
+			"battle_affinities": {},
+		}
+		for mid in creature["moves"]:
+			var mdef = DataRegistry.get_move(mid)
+			creature["pp"].append(mdef.pp if mdef else 10)
+		storage.append(creature)
+	data["creature_storage"] = storage
+	if data.get("storage_capacity", 10) < storage.size() + 10:
+		data["storage_capacity"] = storage.size() + 10
+	# Full compendium
+	var compendium: Dictionary = data.get("compendium", {})
+	var all_items: Array = []
+	for id in DataRegistry.ingredients:
+		all_items.append(id)
+	for id in DataRegistry.foods:
+		all_items.append(id)
+	for id in DataRegistry.battle_items:
+		all_items.append(id)
+	for id in DataRegistry.held_items:
+		all_items.append(id)
+	for id in DataRegistry.tools:
+		all_items.append(id)
+	for id in DataRegistry.recipe_scrolls:
+		all_items.append(id)
+	compendium["items"] = all_items
+	var all_seen: Array = []
+	var all_owned: Array = []
+	for id in DataRegistry.species:
+		all_seen.append(id)
+		all_owned.append(id)
+	compendium["creatures_seen"] = all_seen
+	compendium["creatures_owned"] = all_owned
+	data["compendium"] = compendium
+	print("[TestPlayer] Applied full loadout: ", inv.size(), " item types, ", storage.size(), " creatures in storage, ", all_recipes.size(), " recipes")
+
 # === Join Flow RPCs ===
 
 @rpc("any_peer", "reliable")
@@ -351,6 +487,9 @@ func _on_player_created(created_name: String, data: Dictionary, sender_id: int, 
 func _finalize_join(sender_id: int, player_name: String, data: Dictionary) -> void:
 	# Backfill creature IDs for old saves
 	_backfill_creature_ids(data)
+	# Migrate renamed ingredient IDs in old saves
+	_backfill_ingredient_renames(data)
+	_apply_testplayer_loadout(data)
 	# Backfill player color for old saves that lack it
 	var pc = data.get("player_color", {})
 	if not pc is Dictionary or pc.is_empty():
@@ -514,14 +653,15 @@ func _create_default_player_data(player_name: String) -> Dictionary:
 		"evs": {},
 		"creature_id": _generate_uuid(),
 	}
+	var inv: Dictionary = {
+		"tool_hoe_basic": 1,
+		"tool_axe_basic": 1,
+		"tool_watering_can_basic": 1,
+		"tool_shovel_basic": 1,
+	}
 	return {
 		"player_name": player_name,
-		"inventory": {
-			"tool_hoe_basic": 1,
-			"tool_axe_basic": 1,
-			"tool_watering_can_basic": 1,
-			"tool_shovel_basic": 1,
-		},
+		"inventory": inv,
 		"party": [starter],
 		"position": {},
 		"watering_can_current": 10,
@@ -1105,8 +1245,8 @@ func request_equip_tool(tool_id: String) -> void:
 const STORAGE_TIERS = [
 	{"name": "Pantry", "capacity": 10, "cost": 0, "ingredients": {}},
 	{"name": "Cold Storage", "capacity": 20, "cost": 500, "ingredients": {}},
-	{"name": "Walk-in Freezer", "capacity": 30, "cost": 2000, "ingredients": {"sweet_crystal": 5}},
-	{"name": "Deep Freeze Vault", "capacity": 50, "cost": 5000, "ingredients": {"sweet_crystal": 8, "frost_essence": 5}},
+	{"name": "Walk-in Freezer", "capacity": 30, "cost": 2000, "ingredients": {"sugar": 5}},
+	{"name": "Deep Freeze Vault", "capacity": 50, "cost": 5000, "ingredients": {"sugar": 8, "mint": 5}},
 ]
 
 func server_deposit_creature(peer_id: int, party_idx: int) -> bool:

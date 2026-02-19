@@ -7,7 +7,7 @@ const SLOT_COUNT := 8
 const SLOT_GAP := 4
 
 var slots: Array[PanelContainer] = []
-var slot_icons: Array[ColorRect] = []
+var slot_icons: Array[Control] = []
 var slot_labels: Array[Label] = []
 var cooldown_overlays: Array[ColorRect] = []
 var water_bars: Array[ColorRect] = []
@@ -94,7 +94,7 @@ func _build_ui() -> void:
 		hbox.add_child(panel)
 		slots.append(panel)
 
-		# Icon color indicator (square, centered)
+		# Icon placeholder (replaced dynamically in _refresh_slot)
 		var icon = ColorRect.new()
 		icon.custom_minimum_size = Vector2(32, 32)
 		icon.position = Vector2(16, 6)
@@ -170,6 +170,7 @@ func _refresh_slot(index: int) -> void:
 		return
 	var slot_data: Dictionary = PlayerData.hotbar[index]
 	var icon_color := Color.TRANSPARENT
+	var icon_texture: Texture2D = null
 	var label_text := ""
 	var is_empty := slot_data.is_empty()
 
@@ -178,50 +179,61 @@ func _refresh_slot(index: int) -> void:
 		var item_id: String = str(slot_data.get("item_id", ""))
 		match item_type:
 			"tool_slot":
+				var tid := ""
 				match item_id:
 					"hoe":
 						icon_color = UITokens.STAMP_BROWN
-						var tid = PlayerData.equipped_tools.get("hoe", "")
+						tid = PlayerData.equipped_tools.get("hoe", "")
 						label_text = _tool_short_name(tid, "Hoe")
 					"axe":
 						icon_color = UITokens.INK_MEDIUM
-						var tid = PlayerData.equipped_tools.get("axe", "")
+						tid = PlayerData.equipped_tools.get("axe", "")
 						label_text = _tool_short_name(tid, "Axe")
 					"watering_can":
 						icon_color = UITokens.STAMP_BLUE
-						var tid = PlayerData.equipped_tools.get("watering_can", "")
+						tid = PlayerData.equipped_tools.get("watering_can", "")
 						label_text = _tool_short_name(tid, "W. Can")
 					"shovel":
 						icon_color = UITokens.PARCHMENT_DARK
-						var tid = PlayerData.equipped_tools.get("shovel", "")
+						tid = PlayerData.equipped_tools.get("shovel", "")
 						label_text = _tool_short_name(tid, "Shovel")
 					_:
 						icon_color = UITokens.INK_LIGHT
 						label_text = item_id.substr(0, 8).capitalize()
+				if tid != "":
+					var tool_info := DataRegistry.get_item_display_info(tid)
+					var tex: Texture2D = tool_info.get("icon_texture")
+					if tex:
+						icon_texture = tex
 			"seed":
 				icon_color = UITokens.STAMP_GREEN
 				if item_id != "" and item_id != "seeds":
 					var info = DataRegistry.get_item_display_info(item_id)
 					label_text = str(info.get("display_name", item_id)).substr(0, 8)
+					icon_texture = info.get("icon_texture")
 				elif PlayerData.selected_seed_id != "":
 					var info = DataRegistry.get_item_display_info(PlayerData.selected_seed_id)
 					label_text = str(info.get("display_name", "Seeds")).substr(0, 8)
+					icon_texture = info.get("icon_texture")
 				else:
 					label_text = "Seeds"
 			"food":
 				var info = DataRegistry.get_item_display_info(item_id)
 				icon_color = info.get("icon_color", UITokens.STAMP_GOLD)
+				icon_texture = info.get("icon_texture")
 				label_text = str(info.get("display_name", item_id)).substr(0, 8)
 			"battle_item":
 				var info = DataRegistry.get_item_display_info(item_id)
 				icon_color = info.get("icon_color", UITokens.STAMP_RED)
+				icon_texture = info.get("icon_texture")
 				label_text = str(info.get("display_name", item_id)).substr(0, 8)
 			_:
 				var info = DataRegistry.get_item_display_info(item_id)
 				icon_color = info.get("icon_color", UITokens.INK_LIGHT)
+				icon_texture = info.get("icon_texture")
 				label_text = str(info.get("display_name", item_id)).substr(0, 8)
 
-	slot_icons[index].color = icon_color
+	_set_slot_icon(index, icon_color, icon_texture)
 	slot_labels[index].text = label_text
 
 	# Water bar
@@ -232,6 +244,48 @@ func _refresh_slot(index: int) -> void:
 		var pct = float(PlayerData.watering_can_current) / float(max(cap, 1))
 		water_bars[index].size.x = (SLOT_SIZE - 4) * pct
 	water_bars[index].visible = show_water
+
+func _set_slot_icon(index: int, icon_color: Color, icon_texture: Texture2D) -> void:
+	var old_icon := slot_icons[index]
+	if icon_texture:
+		# Need a TextureRect — replace ColorRect if necessary
+		if old_icon is TextureRect:
+			(old_icon as TextureRect).texture = icon_texture
+			old_icon.visible = icon_color != Color.TRANSPARENT
+		else:
+			var tex_rect := TextureRect.new()
+			tex_rect.texture = icon_texture
+			tex_rect.custom_minimum_size = Vector2(32, 32)
+			tex_rect.position = Vector2(16, 6)
+			tex_rect.size = Vector2(32, 32)
+			tex_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+			tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var parent := old_icon.get_parent()
+			var idx := old_icon.get_index()
+			parent.remove_child(old_icon)
+			old_icon.queue_free()
+			parent.add_child(tex_rect)
+			parent.move_child(tex_rect, idx)
+			slot_icons[index] = tex_rect
+	else:
+		# Need a ColorRect — replace TextureRect if necessary
+		if old_icon is ColorRect:
+			(old_icon as ColorRect).color = icon_color
+		else:
+			var color_rect := ColorRect.new()
+			color_rect.custom_minimum_size = Vector2(32, 32)
+			color_rect.position = Vector2(16, 6)
+			color_rect.size = Vector2(32, 32)
+			color_rect.color = icon_color
+			color_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var parent := old_icon.get_parent()
+			var idx := old_icon.get_index()
+			parent.remove_child(old_icon)
+			old_icon.queue_free()
+			parent.add_child(color_rect)
+			parent.move_child(color_rect, idx)
+			slot_icons[index] = color_rect
 
 func _tool_short_name(tool_id: String, fallback: String) -> String:
 	if tool_id == "":

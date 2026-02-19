@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="ToolDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="ToolDef" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/tool_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/tools/hoe.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -10,4 +11,5 @@ description = "A masterwork gold hoe. Tills twice as fast."
 tool_type = "hoe"
 tier = 3
 icon_color = Color(1.0, 0.84, 0.0, 1)
+icon_texture = ExtResource("2")
 effectiveness = {"speed_mult": 2.0}

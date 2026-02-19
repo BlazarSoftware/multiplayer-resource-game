@@ -23,7 +23,7 @@ schedule = [{
 "seasons": []
 }]
 gift_preferences = {
-"loved": ["grain_wheat", "grain_bread", "sweet_crystal"],
+"loved": ["grain_wheat", "grain_bread", "sugar"],
 "liked": ["herb_salad", "herb_leaf"],
 "disliked": ["sour_vinegar", "pickle_brine"],
 "hated": ["bitter_root"]
@@ -155,7 +155,7 @@ npc_gifts = [{
 "message": "I want you to have my secret wheat stash. Use it well!"
 }, {
 "threshold": 80,
-"item_id": "sweet_crystal",
+"item_id": "sugar",
 "quantity": 5,
 "message": "These rare crystals are my most prized baking ingredient. For you, my dearest friend."
 }]
@@ -163,7 +163,7 @@ creature_trades = [{
 "creature_species_id": "wheat_golem",
 "creature_level": 8,
 "creature_nickname": "Brioche Jr.",
-"cost_items": { "grain_wheat": 20, "sweet_crystal": 3 },
+"cost_items": { "grain_wheat": 20, "sugar": 3 },
 "cost_money": 500,
 "required_friendship": "like",
 "required_season": "spring",

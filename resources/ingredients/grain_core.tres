@@ -1,14 +1,16 @@
-[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/ingredients/flour.png" id="2"]
 
 [resource]
 script = ExtResource("1")
-ingredient_id = "grain_core"
-display_name = "Grain Core"
-description = "Dense core of grain energy."
+ingredient_id = "flour"
+display_name = "Flour"
+description = "Finely milled grain, essential for baking."
 category = "battle_drop"
 icon_color = Color(0.8, 0.7, 0.3, 1)
+icon_texture = ExtResource("2")
 season = ""
 grow_time = 0.0
 harvest_min = 0

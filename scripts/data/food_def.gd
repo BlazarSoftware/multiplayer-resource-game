@@ -5,6 +5,7 @@ extends Resource
 @export var display_name: String = ""
 @export var description: String = ""
 @export var icon_color: Color = Color.WHITE
+@export var icon_texture: Texture2D
 @export var sell_price: int = 0
 @export var buff_type: String = "" # speed_boost, xp_multiplier, encounter_rate, creature_heal, none
 @export var buff_value: float = 0.0

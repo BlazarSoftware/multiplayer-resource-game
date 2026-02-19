@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/ingredients/spice.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -9,6 +10,7 @@ display_name = "Chili Pepper"
 description = "A fiery red chili pepper."
 category = "farm_crop"
 icon_color = Color(0.95, 0.1, 0.1, 1)
+icon_texture = ExtResource("2")
 season = "summer"
 grow_time = 75.0
 harvest_min = 1

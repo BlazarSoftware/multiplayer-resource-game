@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="FoodDef" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/foods/rice_bowl.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -8,6 +9,7 @@ food_id = "rice_ball_deluxe"
 display_name = "Rice Ball Deluxe"
 description = "A perfectly crafted rice ball that heals all creatures."
 icon_color = Color(0.95, 0.95, 0.9, 1)
+icon_texture = ExtResource("2")
 sell_price = 60
 buff_type = "creature_heal"
 buff_value = 1.0

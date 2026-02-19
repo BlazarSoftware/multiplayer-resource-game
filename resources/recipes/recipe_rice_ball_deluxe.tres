@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "rice_ball_deluxe"
 display_name = "Cook Rice Ball Deluxe"
 result_food_id = "rice_ball_deluxe"
-ingredients = {"rice": 3, "herbal_dew": 1, "umami_extract": 1}
+ingredients = {"rice": 3, "broth": 1, "soy_sauce": 1}
 description = "Cook a premium healing rice ball."
 station = "kitchen"

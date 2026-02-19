@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "spicy_curry"
 display_name = "Cook Spicy Curry"
 result_food_id = "spicy_curry"
-ingredients = {"chili_pepper": 2, "rice": 1, "spicy_essence": 1}
+ingredients = {"chili_pepper": 2, "rice": 1, "chili_powder": 1}
 description = "Cook a fiery curry."
 station = "kitchen"

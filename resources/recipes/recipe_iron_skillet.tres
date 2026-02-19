@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "recipe_iron_skillet"
 display_name = "Craft Iron Skillet"
 result_item_id = "iron_skillet"
-ingredients = {"grain_core": 2, "spicy_essence": 2}
+ingredients = {"flour": 2, "chili_powder": 2}
 description = "A sturdy skillet. Reduces physical damage taken by 15%."
 station = "workbench"

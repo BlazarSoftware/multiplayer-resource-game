@@ -24,7 +24,7 @@ schedule = [{
 }]
 gift_preferences = {
 "loved": ["herb_leaf", "herb_salad", "herb_mint"],
-"liked": ["sweet_crystal", "grain_wheat"],
+"liked": ["sugar", "grain_wheat"],
 "disliked": ["spice_pepper", "hot_sauce"],
 "hated": ["bitter_root"]
 }

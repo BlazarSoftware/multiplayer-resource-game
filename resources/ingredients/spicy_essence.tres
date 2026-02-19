@@ -1,14 +1,16 @@
-[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/ingredients/spice.png" id="2"]
 
 [resource]
 script = ExtResource("1")
-ingredient_id = "spicy_essence"
-display_name = "Spicy Essence"
-description = "Fiery essence from spicy creatures."
+ingredient_id = "chili_powder"
+display_name = "Chili Powder"
+description = "Ground dried chili peppers, adds heat."
 category = "battle_drop"
 icon_color = Color(1, 0.3, 0.1, 1)
+icon_texture = ExtResource("2")
 season = ""
 grow_time = 0.0
 harvest_min = 0

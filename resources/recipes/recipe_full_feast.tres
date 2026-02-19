@@ -7,6 +7,6 @@ script = ExtResource("1")
 recipe_id = "full_feast"
 display_name = "Prepare Full Feast"
 result_item_id = "full_feast"
-ingredients = {"grain_wheat": 3, "spice_pepper": 2, "sweet_crystal": 2}
+ingredients = {"grain_wheat": 3, "spice_pepper": 2, "sugar": 2}
 description = "A lavish meal that fully heals a creature in battle."
 station = "kitchen"

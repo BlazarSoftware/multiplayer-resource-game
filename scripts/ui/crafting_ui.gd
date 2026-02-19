@@ -129,24 +129,38 @@ func _add_recipe_row(recipe: Dictionary) -> void:
 		label.add_theme_color_override("font_color", UITokens.INK_LIGHT)
 	hbox.add_child(label)
 
-	# Ingredients
-	var ing_label = Label.new()
-	UITheme.style_small(ing_label)
-	var ing_text = ""
+	# Ingredients with icons
+	var ing_hbox = HBoxContainer.new()
+	ing_hbox.add_theme_constant_override("separation", 4)
 	DataRegistry.ensure_loaded()
 	for ing_id in recipe.ingredients:
 		var info = recipe.ingredients[ing_id]
 		var item_info = DataRegistry.get_item_display_info(ing_id)
-		var ing_name = item_info.get("display_name", ing_id)
-		ing_text += "%s: %d/%d  " % [ing_name, info.have, info.needed]
+		var icon = UITheme.create_item_icon(item_info, 16)
+		ing_hbox.add_child(icon)
+		var count_label = Label.new()
+		count_label.text = "%d/%d " % [info.have, info.needed]
+		UITheme.style_small(count_label)
+		if info.have >= info.needed:
+			count_label.add_theme_color_override("font_color", UITokens.TEXT_SUCCESS)
+		else:
+			count_label.add_theme_color_override("font_color", UITokens.TEXT_DANGER)
+		ing_hbox.add_child(count_label)
 	# Show tool requirement
 	if recipe.get("requires_tool_ingredient", "") != "":
 		var tool_info = DataRegistry.get_item_display_info(recipe.requires_tool_ingredient)
-		var tool_name = tool_info.get("display_name", recipe.requires_tool_ingredient)
+		var tool_icon = UITheme.create_item_icon(tool_info, 16)
+		ing_hbox.add_child(tool_icon)
+		var tool_label = Label.new()
 		var has_it = recipe.get("has_tool_ingredient", false)
-		ing_text += "%s: %s  " % [tool_name, "OK" if has_it else "Need"]
-	ing_label.text = ing_text
-	hbox.add_child(ing_label)
+		tool_label.text = "OK " if has_it else "Need "
+		UITheme.style_small(tool_label)
+		if has_it:
+			tool_label.add_theme_color_override("font_color", UITokens.TEXT_SUCCESS)
+		else:
+			tool_label.add_theme_color_override("font_color", UITokens.TEXT_DANGER)
+		ing_hbox.add_child(tool_label)
+	hbox.add_child(ing_hbox)
 
 	# Craft button
 	var btn = Button.new()

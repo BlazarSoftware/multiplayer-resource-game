@@ -286,6 +286,26 @@ static func _get_label3d_role(role: String) -> Dictionary:
 		_:
 			return {"size": 24, "color": UITokens.PAPER_BASE, "outline": 6, "outline_color": Color(0.12, 0.09, 0.07, 0.85), "heading_font": false}
 
+## Creates an icon Control for an item. Uses icon_texture (TextureRect) if available,
+## falls back to a colored square (ColorRect). Sizes are scaled via UITheme.scaled().
+static func create_item_icon(info: Dictionary, base_size: int = 32) -> Control:
+	var icon_size := scaled(base_size)
+	var tex: Texture2D = info.get("icon_texture")
+	if tex:
+		var tex_rect := TextureRect.new()
+		tex_rect.texture = tex
+		tex_rect.custom_minimum_size = Vector2(icon_size, icon_size)
+		tex_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return tex_rect
+	else:
+		var color_rect := ColorRect.new()
+		color_rect.custom_minimum_size = Vector2(icon_size, icon_size)
+		color_rect.color = info.get("icon_color", Color.GRAY)
+		color_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return color_rect
+
 static func _style_label(label: Label, text: String, font: FontFile, size: int, color: Color) -> void:
 	init()
 	if label == null:

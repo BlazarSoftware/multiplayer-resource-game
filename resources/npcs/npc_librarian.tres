@@ -23,8 +23,8 @@ schedule = [{
 "seasons": []
 }]
 gift_preferences = {
-"loved": ["umami_extract", "mushroom_powder", "herb_salad"],
-"liked": ["grain_bread", "sweet_crystal"],
+"loved": ["soy_sauce", "mushroom_powder", "herb_salad"],
+"liked": ["grain_bread", "sugar"],
 "disliked": ["hot_sauce", "spice_pepper"],
 "hated": ["sour_vinegar"]
 }
@@ -139,7 +139,7 @@ npc_gifts = [{
 "message": "Brain food! Studies show herbs improve memory retention."
 }, {
 "threshold": 50,
-"item_id": "umami_extract",
+"item_id": "soy_sauce",
 "quantity": 3,
 "message": "Rare umami essence from my private collection. For science!"
 }, {

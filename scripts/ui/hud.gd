@@ -41,6 +41,22 @@ func _ready() -> void:
 	UITheme.style_body(money_label)
 	money_label.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 
+	# Add coin icon before money label
+	var coin_tex = load("res://assets/ui/textures/icons/ui/ui_coin.png") as Texture2D
+	if coin_tex:
+		var coin_icon := TextureRect.new()
+		coin_icon.texture = coin_tex
+		var icon_size := UITheme.scaled(16)
+		coin_icon.custom_minimum_size = Vector2(icon_size, icon_size)
+		coin_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		coin_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		coin_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var top_bar = money_label.get_parent()
+		if top_bar:
+			var idx = money_label.get_index()
+			top_bar.add_child(coin_icon)
+			top_bar.move_child(coin_icon, idx)
+
 	UITheme.style_small(grass_hint_label)
 	var legend = get_node_or_null("WildZoneLegend")
 	if legend and legend is Label:
@@ -106,6 +122,8 @@ func _process(delta: float) -> void:
 					"encounter_rate":
 						buff_text += "ENC x%.1f %d:%02d  " % [bval, mins, secs]
 		buff_label.text = buff_text
+		if buff_text != "":
+			buff_label.add_theme_color_override("font_color", UITokens.STAMP_GREEN)
 	# Update location display
 	if location_label:
 		if PlayerData.current_zone == "restaurant":
