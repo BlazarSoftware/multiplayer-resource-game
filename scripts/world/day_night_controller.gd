@@ -173,7 +173,7 @@ func _process(_delta: float) -> void:
 
 	# Lerp light properties (skip if lightning flash is active)
 	if not _lightning_flash_active:
-		var night_energy := 0.05
+		var night_energy := 0.15
 		_base_light_energy = lerpf(night_energy, _target_light_energy, day_factor)
 		_dir_light.light_energy = _base_light_energy
 	_dir_light.light_color = Color(1.0, 0.97, 0.92).lerp(Color(0.4, 0.45, 0.7), 1.0 - day_factor)
@@ -183,7 +183,7 @@ func _process(_delta: float) -> void:
 
 	# Ambient light (skip if lightning flash)
 	if _world_env and _world_env.environment and not _lightning_flash_active:
-		_world_env.environment.ambient_light_energy = lerpf(0.05, 0.3, day_factor)
+		_world_env.environment.ambient_light_energy = lerpf(0.12, 0.3, day_factor)
 
 	# Day/night mix for sky shader (-1 = night, 0 = sunset, 1 = day)
 	var mix: float = clampf(sun_height * 2.0, -1.0, 1.0)
