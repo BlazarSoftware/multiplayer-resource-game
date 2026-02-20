@@ -26,6 +26,30 @@ export function createPlayerRoutes(db: Db): Router {
     }
   });
 
+  // Batch resolve player_id -> player_name
+  router.post("/resolve-names", async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids)) {
+        return res.status(400).json({ error: "ids must be an array of player_id strings" });
+      }
+      if (ids.length === 0) {
+        return res.json({});
+      }
+      const capped = ids.slice(0, 200);
+      const docs = await col
+        .find({ player_id: { $in: capped } }, { projection: { player_id: 1, player_name: 1, _id: 0 } })
+        .toArray();
+      const result: Record<string, string> = {};
+      for (const doc of docs) {
+        result[doc.player_id] = doc.player_name;
+      }
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
   // Load player by UUID
   router.get("/:id", async (req, res) => {
     try {

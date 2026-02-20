@@ -117,6 +117,30 @@ func _refresh_name_cache() -> void:
 			if rid != "" and rname != "":
 				_player_name_cache[rid] = rname
 
+## Pre-fetch names for offline friends/blocked players so the cache is warm before first sync.
+func prefetch_friend_names(peer_id: int) -> void:
+	var nm = _get_nm()
+	if nm == null or peer_id not in nm.player_data_store:
+		return
+	var social = nm.player_data_store[peer_id].get("social", {})
+	var missing_ids: Array = []
+	for friend_id in social.get("friends", []):
+		var fid = str(friend_id)
+		if fid != "" and not _player_name_cache.has(fid):
+			# Check if online
+			if nm.get_peer_for_player_id(fid) <= 0:
+				missing_ids.append(fid)
+	for blocked_id in social.get("blocked", []):
+		var bid = str(blocked_id)
+		if bid != "" and not _player_name_cache.has(bid) and bid not in missing_ids:
+			if nm.get_peer_for_player_id(bid) <= 0:
+				missing_ids.append(bid)
+	if missing_ids.is_empty():
+		return
+	var resolved = await SaveManager.resolve_names_async(missing_ids)
+	for pid in resolved:
+		_player_name_cache[str(pid)] = str(resolved[pid])
+
 ## Push updated social data to a client so their PlayerData stays in sync.
 func _push_sync_to_peer(peer_id: int) -> void:
 	var nm = _get_nm()

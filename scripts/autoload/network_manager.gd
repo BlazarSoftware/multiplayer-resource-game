@@ -585,6 +585,10 @@ func _finalize_join(sender_id: int, player_name: String, data: Dictionary) -> vo
 		"player_name": player_name,
 		"joined_at_ms": Time.get_ticks_msec()
 	}
+	# Pre-fetch offline friend/blocked names so first sync shows names, not UUIDs
+	var friend_mgr = get_node_or_null("/root/Main/GameWorld/FriendManager")
+	if friend_mgr:
+		await friend_mgr.prefetch_friend_names(sender_id)
 	# Send data to client
 	_receive_player_data.rpc_id(sender_id, data)
 

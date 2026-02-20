@@ -48,12 +48,16 @@ func _ready() -> void:
 		return
 
 func _physics_process(delta: float) -> void:
-	if not multiplayer.is_server():
-		return
-	day_timer += delta
-	if day_timer >= DAY_DURATION:
-		day_timer -= DAY_DURATION
-		_advance_day()
+	if multiplayer.is_server():
+		day_timer += delta
+		if day_timer >= DAY_DURATION:
+			day_timer -= DAY_DURATION
+			_advance_day()
+	else:
+		# Client-side: locally advance timer between syncs for smooth visuals
+		day_timer += delta
+		if day_timer >= DAY_DURATION:
+			day_timer = DAY_DURATION # Clamp, wait for server sync
 
 func _advance_day() -> void:
 	var old_season = get_current_season()
@@ -83,7 +87,7 @@ func _advance_day() -> void:
 	for p_id in NetworkManager.player_data_store:
 		StatTracker.increment(p_id, "days_played")
 	print("Day ", total_day_count, " — Year ", current_year, " ", get_month_name(), " ", day_in_month, " — ", get_weather_name().capitalize())
-	_broadcast_time.rpc(current_year, current_month, day_in_month, total_day_count, current_weather)
+	_broadcast_time.rpc(current_year, current_month, day_in_month, total_day_count, current_weather, day_timer)
 	day_changed.emit()
 	weather_changed.emit(get_weather_name())
 
@@ -111,12 +115,13 @@ func _rain_water_all_farms() -> void:
 					plot.rain_water()
 
 @rpc("authority", "call_local", "reliable")
-func _broadcast_time(year: int, month: int, day: int, total_days: int, weather: int) -> void:
+func _broadcast_time(year: int, month: int, day: int, total_days: int, weather: int, timer: float = 0.0) -> void:
 	current_year = year
 	current_month = month
 	day_in_month = day
 	total_day_count = total_days
 	current_weather = weather as Weather
+	day_timer = timer
 	season_changed.emit(get_current_season())
 	day_changed.emit()
 	weather_changed.emit(get_weather_name())
@@ -146,13 +151,16 @@ func is_crop_in_season(crop_season: String) -> bool:
 	var seasons = crop_season.split("/")
 	return current in seasons
 
+func get_day_progress() -> float:
+	return clampf(day_timer / DAY_DURATION, 0.0, 1.0)
+
 func is_raining() -> bool:
 	return current_weather == Weather.RAINY or current_weather == Weather.STORMY
 
 @rpc("any_peer", "reliable")
 func request_season_sync() -> void:
 	var sender = multiplayer.get_remote_sender_id()
-	_broadcast_time.rpc_id(sender, current_year, current_month, day_in_month, total_day_count, current_weather)
+	_broadcast_time.rpc_id(sender, current_year, current_month, day_in_month, total_day_count, current_weather, day_timer)
 
 func get_save_data() -> Dictionary:
 	return {

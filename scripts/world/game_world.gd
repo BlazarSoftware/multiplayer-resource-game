@@ -628,7 +628,7 @@ func _sync_world_to_client(peer_id: int) -> void:
 	# Sync season/calendar/weather
 	var season_mgr = $SeasonManager
 	if season_mgr:
-		season_mgr._broadcast_time.rpc_id(peer_id, season_mgr.current_year, season_mgr.current_month, season_mgr.day_in_month, season_mgr.total_day_count, season_mgr.current_weather)
+		season_mgr._broadcast_time.rpc_id(peer_id, season_mgr.current_year, season_mgr.current_month, season_mgr.day_in_month, season_mgr.total_day_count, season_mgr.current_weather, season_mgr.day_timer)
 	# Sync farm plots
 	var farm_mgr = get_node_or_null(FARM_MANAGER_PATH)
 	if farm_mgr:

@@ -433,6 +433,66 @@ func _apply_social_ops(data: Dictionary, ops: Dictionary) -> void:
 				social["outgoing_requests"].remove_at(i)
 			i -= 1
 
+# === Batch Name Resolution ===
+
+## Resolve an array of player_id UUIDs to a {player_id: player_name} dictionary.
+## Uses POST /api/players/resolve-names. Returns empty dict on failure or file-fallback mode.
+func resolve_names_async(ids: Array) -> Dictionary:
+	if ids.is_empty():
+		return {}
+	if not use_api:
+		return _resolve_names_file(ids)
+	var http = _get_free_http()
+	if http == null:
+		return {}
+	var url = api_base_url + "/players/resolve-names"
+	var json_str = JSON.stringify({"ids": ids})
+	var headers = ["Content-Type: application/json"]
+	var err = http.request(url, headers, HTTPClient.METHOD_POST, json_str)
+	if err != OK:
+		print("[SaveManager] Failed to resolve names via API (err=", err, ")")
+		return {}
+	var result = await http.request_completed
+	var response_code = result[1] as int
+	var body = (result[3] as PackedByteArray).get_string_from_utf8()
+	if response_code == 200 and body != "":
+		var json = JSON.new()
+		var parse_err = json.parse(body)
+		if parse_err == OK and json.data is Dictionary:
+			return json.data as Dictionary
+	print("[SaveManager] resolve-names API failed (HTTP ", response_code, ")")
+	return {}
+
+func _resolve_names_file(ids: Array) -> Dictionary:
+	if save_base_path == "":
+		_init_file_fallback()
+	var result: Dictionary = {}
+	var id_set: Dictionary = {}
+	for pid in ids:
+		id_set[str(pid)] = true
+	var dir = DirAccess.open(save_base_path + "players")
+	if dir == null:
+		return result
+	dir.list_dir_begin()
+	var fname = dir.get_next()
+	while fname != "":
+		if fname.ends_with(".json"):
+			var path = save_base_path + "players/" + fname
+			var file = FileAccess.open(path, FileAccess.READ)
+			if file:
+				var text = file.get_as_text()
+				file.close()
+				var json = JSON.new()
+				if json.parse(text) == OK and json.data is Dictionary:
+					var data = json.data as Dictionary
+					var pid = str(data.get("player_id", ""))
+					if pid != "" and id_set.has(pid):
+						var pname = str(data.get("player_name", ""))
+						if pname != "":
+							result[pid] = pname
+		fname = dir.get_next()
+	return result
+
 # === UUID Generation ===
 
 func _generate_uuid() -> String:

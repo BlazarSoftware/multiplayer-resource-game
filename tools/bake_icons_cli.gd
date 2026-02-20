@@ -8,6 +8,8 @@ extends SceneTree
 
 const ICON_SIZE := 256
 const SYNTY_BASE := "res://assets/synty_icons/Models/"
+const FOOD_BASE := "res://assets/food_models/"
+const TREASURE_BASE := "res://assets/treasure_models/"
 const OUTPUT_BASE := "res://assets/ui/textures/icons/"
 const TOON_SHADER := "res://shaders/toon_icon.gdshader"
 const OUTLINE_SHADER := "res://shaders/icon_outline.gdshader"
@@ -102,6 +104,54 @@ var icon_manifest: Dictionary = {
 	# --- World Pickup ---
 	"world_pickup": {"glb": "SM_Icon_Present_01.glb", "category": "ui"},
 
+	# --- Food model icons (use food 3D models instead of Synty) ---
+	"tomato_3d": {"glb": "vegetables/Tomato_01.glb", "base": "food", "category": "ingredients"},
+	"carrot_3d": {"glb": "vegetables/Carrot_01.glb", "base": "food", "category": "ingredients"},
+	"potato_3d": {"glb": "vegetables/Potato_01.glb", "base": "food", "category": "ingredients"},
+	"onion_3d": {"glb": "vegetables/Onion_01.glb", "base": "food", "category": "ingredients"},
+	"mushroom_3d": {"glb": "mushrooms/Bell_Mushroom_01.glb", "base": "food", "category": "ingredients"},
+	"cheese_3d": {"glb": "cheese/Cheddar_Cheese.glb", "base": "food", "category": "ingredients"},
+	"pumpkin_3d": {"glb": "vegetables/Pumpkin.glb", "base": "food", "category": "ingredients"},
+	"chili_pepper_3d": {"glb": "vegetables/Chili_Pepper_01.glb", "base": "food", "category": "ingredients"},
+	"corn_3d": {"glb": "vegetables/Corn_01.glb", "base": "food", "category": "ingredients"},
+	"broccoli_3d": {"glb": "vegetables/Broccoli.glb", "base": "food", "category": "ingredients"},
+	"cabbage_3d": {"glb": "vegetables/Cabbage_01.glb", "base": "food", "category": "ingredients"},
+	"garlic_3d": {"glb": "vegetables/Garlic_01.glb", "base": "food", "category": "ingredients"},
+	"apple_3d": {"glb": "fruits/Apple_01.glb", "base": "food", "category": "ingredients"},
+	"lemon_3d": {"glb": "fruits/Lemon_01.glb", "base": "food", "category": "ingredients"},
+	"orange_3d": {"glb": "fruits/Orange_01.glb", "base": "food", "category": "ingredients"},
+	"grapes_3d": {"glb": "fruits/Grapes_Dark_01.glb", "base": "food", "category": "ingredients"},
+	"banana_3d": {"glb": "fruits/Banana_01.glb", "base": "food", "category": "ingredients"},
+	"starfruit_3d": {"glb": "fruits/Carambola_01.glb", "base": "food", "category": "ingredients"},
+	"salmon_3d": {"glb": "fish/Salmon_01.glb", "base": "food", "category": "ingredients"},
+	"bluegill_3d": {"glb": "fish/Bluegill.glb", "base": "food", "category": "ingredients"},
+	"honey_jar_3d": {"glb": "jars/Honey_01.glb", "base": "food", "category": "ingredients"},
+	"bottle_3d": {"glb": "drinks/Bottle_01.glb", "base": "food", "category": "ingredients"},
+	"carton_3d": {"glb": "drinks/Carton_01.glb", "base": "food", "category": "ingredients"},
+	# Food model icons
+	"loaf_3d": {"glb": "bread/Loaf_01.glb", "base": "food", "category": "foods"},
+	"baguette_3d": {"glb": "bread/Baguette.glb", "base": "food", "category": "foods"},
+	"cake_3d": {"glb": "dessert/Cake_01.glb", "base": "food", "category": "foods"},
+	"cake_slice_3d": {"glb": "dessert/Cake_Slice_01.glb", "base": "food", "category": "foods"},
+	"donut_3d": {"glb": "dessert/Donut_01.glb", "base": "food", "category": "foods"},
+	"macaron_3d": {"glb": "dessert/Macaron_01.glb", "base": "food", "category": "foods"},
+	"lollipop_3d": {"glb": "candy/Lollipop_01.glb", "base": "food", "category": "foods"},
+	"salmon_meat_3d": {"glb": "fish/Salmon_Meat_01.glb", "base": "food", "category": "foods"},
+	"ham_3d": {"glb": "meat/Ham_01.glb", "base": "food", "category": "foods"},
+	"sausage_3d": {"glb": "meat/Sausage_01.glb", "base": "food", "category": "foods"},
+	"jam_3d": {"glb": "jars/Jam_Round_01.glb", "base": "food", "category": "foods"},
+	"can_3d": {"glb": "drinks/Can_01.glb", "base": "food", "category": "foods"},
+	# Treasure model icons
+	"chest_3d": {"glb": "chests/Basic_Chest_Full.glb", "base": "treasure", "category": "treasure"},
+	"gold_chest_3d": {"glb": "chests/Gold_Chest_Full.glb", "base": "treasure", "category": "treasure"},
+	"scroll_3d": {"glb": "scrolls/Sealed_Scroll_01.glb", "base": "treasure", "category": "treasure"},
+	"gold_coin_3d": {"glb": "coins/Gold_Coin_01.glb", "base": "treasure", "category": "treasure"},
+	"ruby_3d": {"glb": "gems/Ruby_01.glb", "base": "treasure", "category": "treasure"},
+	"emerald_3d": {"glb": "gems/Emerald_01.glb", "base": "treasure", "category": "treasure"},
+	"diamond_3d": {"glb": "gems/Diamond_01.glb", "base": "treasure", "category": "treasure"},
+	"crown_3d": {"glb": "crowns/Crown_01.glb", "base": "treasure", "category": "treasure"},
+	"key_3d": {"glb": "keys/Gold_Key_01.glb", "base": "treasure", "category": "treasure"},
+
 	# --- UI Icons ---
 	"ui_settings": {"glb": "SM_Icon_Settings_01.glb", "category": "ui"},
 	"ui_inventory": {"glb": "SM_Icon_Chest_01.glb", "category": "ui"},
@@ -157,7 +207,7 @@ func _initialize() -> void:
 		printerr("WARNING: Could not load palette texture at %s — icons will be white" % SYNTY_PALETTE)
 
 	# Ensure output directories
-	for cat in ["ingredients", "foods", "tools", "battle_items", "held_items", "ui"]:
+	for cat in ["ingredients", "foods", "tools", "battle_items", "held_items", "ui", "treasure"]:
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUTPUT_BASE + cat))
 
 	# Queue all items
@@ -176,7 +226,12 @@ func _process_next_item() -> void:
 
 	_current_item_id = _pending_items.pop_front()
 	_current_entry = icon_manifest[_current_item_id]
-	var glb_path: String = SYNTY_BASE + _current_entry["glb"]
+	var base_dir: String = SYNTY_BASE
+	if _current_entry.has("base"):
+		match _current_entry["base"]:
+			"food": base_dir = FOOD_BASE
+			"treasure": base_dir = TREASURE_BASE
+	var glb_path: String = base_dir + _current_entry["glb"]
 
 	if not ResourceLoader.exists(glb_path):
 		printerr("  SKIP: %s — GLB not found: %s" % [_current_item_id, glb_path])

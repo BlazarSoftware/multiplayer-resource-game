@@ -23,6 +23,7 @@
 [ext_resource type="Script" path="res://scripts/world/quest_manager.gd" id="21"]
 [ext_resource type="Script" path="res://scripts/world/friend_manager.gd" id="22"]
 [ext_resource type="Script" path="res://scripts/world/excursion_manager.gd" id="23"]
+[ext_resource type="Script" path="res://scripts/world/day_night_controller.gd" id="24"]
 
 [sub_resource type="BoxShape3D" id="ground_shape"]
 size = Vector3(200, 0.2, 200)
@@ -759,6 +760,10 @@ script = ExtResource("15")
 ; === Excursion Manager ===
 [node name="ExcursionManager" type="Node" parent="."]
 script = ExtResource("23")
+
+; === Day/Night Controller (client-side sky + lighting) ===
+[node name="DayNightController" type="Node" parent="."]
+script = ExtResource("24")
 
 ; === UI Overlays ===
 [node name="UI" type="Node" parent="."]

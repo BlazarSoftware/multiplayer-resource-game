@@ -28,6 +28,49 @@ async function createPlayer(name: string, social?: object) {
   return res.body;
 }
 
+describe("POST /api/players/resolve-names", () => {
+  it("resolves known player IDs to names", async () => {
+    const alice = await createPlayer("Alice");
+    const bob = await createPlayer("Bob");
+    const res = await request(app)
+      .post("/api/players/resolve-names")
+      .send({ ids: [alice.player_id, bob.player_id] });
+    expect(res.status).toBe(200);
+    expect(res.body[alice.player_id]).toBe("Alice");
+    expect(res.body[bob.player_id]).toBe("Bob");
+  });
+
+  it("omits unknown IDs from result", async () => {
+    const alice = await createPlayer("Alice");
+    const res = await request(app)
+      .post("/api/players/resolve-names")
+      .send({ ids: [alice.player_id, "nonexistent-uuid"] });
+    expect(res.status).toBe(200);
+    expect(res.body[alice.player_id]).toBe("Alice");
+    expect(res.body["nonexistent-uuid"]).toBeUndefined();
+  });
+
+  it("returns empty object for empty ids array", async () => {
+    const res = await request(app)
+      .post("/api/players/resolve-names")
+      .send({ ids: [] });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({});
+  });
+
+  it("returns 400 when ids is missing or not an array", async () => {
+    const res1 = await request(app)
+      .post("/api/players/resolve-names")
+      .send({});
+    expect(res1.status).toBe(400);
+
+    const res2 = await request(app)
+      .post("/api/players/resolve-names")
+      .send({ ids: "not-an-array" });
+    expect(res2.status).toBe(400);
+  });
+});
+
 describe("PATCH /api/players/:id/social", () => {
   it("returns 404 for non-existent player", async () => {
     const res = await request(app)

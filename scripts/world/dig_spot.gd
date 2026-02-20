@@ -4,12 +4,16 @@ extends Area3D
 ## Per-player, per-spot daily cooldown (resets each game day).
 
 const UITokens = preload("res://scripts/ui/ui_tokens.gd")
+const EXCLAMATION_MODEL := "res://assets/synty_icons/Models/SM_Icon_ExclamationMark_01.glb"
 
 @export var spot_id: String = ""
 @export var loot_table: Array = [] # [{item_id, weight, min, max}]
 @export var dig_cooldown_days: int = 1
 
-var _visual_mesh: MeshInstance3D = null
+var _icon_node: Node3D = null
+var _ground_ring: MeshInstance3D = null
+var _bob_time: float = 0.0
+var _pulse_time: float = 0.0
 
 func _ready() -> void:
 	add_to_group("dig_spot")
@@ -21,24 +25,78 @@ func _ready() -> void:
 	add_child(col)
 	collision_layer = 0
 	collision_mask = 2
-	# Visual: dirt mound
-	_visual_mesh = MeshInstance3D.new()
-	var mesh = CylinderMesh.new()
-	mesh.top_radius = 0.4
-	mesh.bottom_radius = 0.6
-	mesh.height = 0.15
-	_visual_mesh.mesh = mesh
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.45, 0.35, 0.2)
-	_visual_mesh.set_surface_override_material(0, mat)
-	_visual_mesh.position.y = 0.08
-	add_child(_visual_mesh)
-	# Subtle sparkle label
-	var hint = Label3D.new()
-	UITheme.style_label3d(hint, "~", "interaction_hint")
-	hint.modulate = Color(UITokens.STAMP_GOLD.r, UITokens.STAMP_GOLD.g, UITokens.STAMP_GOLD.b, 0.75)
-	hint.position = Vector3(0, 0.5, 0)
-	add_child(hint)
+	_bob_time = randf() * TAU
+	_pulse_time = randf() * TAU
+	var is_headless := DisplayServer.get_name() == "headless"
+	if not is_headless:
+		_create_ground_ring()
+		_create_floating_icon()
+
+func _process(delta: float) -> void:
+	if not _icon_node:
+		return
+	_bob_time += delta * 2.0
+	_pulse_time += delta * 1.2
+	# Bob up and down
+	_icon_node.position.y = 1.5 + sin(_bob_time) * 0.15
+	# Slow rotation
+	_icon_node.rotation.y += delta * 1.2
+	# Gentle scale pulse
+	var s := 1.0 + sin(_pulse_time) * 0.06
+	_icon_node.scale = Vector3(s, s, s)
+	# Pulse ground ring alpha
+	if _ground_ring:
+		var ring_mat := _ground_ring.get_surface_override_material(0) as StandardMaterial3D
+		if ring_mat:
+			ring_mat.albedo_color.a = 0.25 + sin(_pulse_time * 1.5) * 0.1
+
+func _create_floating_icon() -> void:
+	if not ResourceLoader.exists(EXCLAMATION_MODEL):
+		_create_fallback_label()
+		return
+	var scene := load(EXCLAMATION_MODEL) as PackedScene
+	if not scene:
+		_create_fallback_label()
+		return
+	_icon_node = Node3D.new()
+	_icon_node.name = "IconPivot"
+	var model := scene.instantiate()
+	model.scale = Vector3(1.8, 1.8, 1.8)
+	_icon_node.add_child(model)
+	_icon_node.position.y = 1.5
+	add_child(_icon_node)
+	_apply_toon_to_node(model)
+
+func _create_fallback_label() -> void:
+	_icon_node = Node3D.new()
+	_icon_node.name = "IconPivot"
+	var lbl := Label3D.new()
+	UITheme.style_label3d(lbl, "!", "interaction_hint")
+	lbl.font_size = 64
+	lbl.modulate = Color(UITokens.STAMP_GOLD.r, UITokens.STAMP_GOLD.g, UITokens.STAMP_GOLD.b, 0.9)
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_icon_node.add_child(lbl)
+	_icon_node.position.y = 1.5
+	add_child(_icon_node)
+
+func _create_ground_ring() -> void:
+	_ground_ring = MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.7
+	torus.outer_radius = 0.9
+	torus.rings = 32
+	torus.ring_segments = 12
+	_ground_ring.mesh = torus
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(UITokens.STAMP_GOLD.r, UITokens.STAMP_GOLD.g, UITokens.STAMP_GOLD.b, 0.35)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.no_depth_test = true
+	_ground_ring.set_surface_override_material(0, mat)
+	_ground_ring.position.y = 0.02
+	# Flatten the torus to sit on the ground
+	_ground_ring.scale.y = 0.15
+	add_child(_ground_ring)
 
 @rpc("any_peer", "reliable")
 func request_dig() -> void:
@@ -132,3 +190,34 @@ func _dig_rejected(reason: String) -> void:
 func sync_to_client(_peer_id: int) -> void:
 	# Dig spots are stateless from a visual perspective (no destroyed state)
 	pass
+
+
+func _apply_toon_to_node(node: Node) -> void:
+	if node is MeshInstance3D:
+		var mi := node as MeshInstance3D
+		for i in mi.mesh.get_surface_count():
+			var toon_shader = load("res://shaders/toon_icon.gdshader") as Shader
+			var outline_shader = load("res://shaders/icon_outline.gdshader") as Shader
+			if not toon_shader or not outline_shader:
+				continue
+			var toon_mat := ShaderMaterial.new()
+			toon_mat.shader = toon_shader
+			var orig_mat = mi.mesh.surface_get_material(i)
+			if orig_mat is StandardMaterial3D:
+				var std_mat := orig_mat as StandardMaterial3D
+				if std_mat.albedo_texture:
+					toon_mat.set_shader_parameter("albedo_texture", std_mat.albedo_texture)
+					toon_mat.set_shader_parameter("albedo_color", std_mat.albedo_color)
+					toon_mat.set_shader_parameter("use_texture", true)
+				else:
+					toon_mat.set_shader_parameter("albedo_color", Color(0.6, 0.45, 0.2))
+					toon_mat.set_shader_parameter("use_texture", false)
+			else:
+				toon_mat.set_shader_parameter("albedo_color", Color(0.6, 0.45, 0.2))
+				toon_mat.set_shader_parameter("use_texture", false)
+			var outline_mat := ShaderMaterial.new()
+			outline_mat.shader = outline_shader
+			toon_mat.next_pass = outline_mat
+			mi.set_surface_override_material(i, toon_mat)
+	for child in node.get_children():
+		_apply_toon_to_node(child)
