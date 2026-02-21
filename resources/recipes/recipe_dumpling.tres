@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "dumpling"
+display_name = "Cook Dumpling"
+result_food_id = "dumpling"
+ingredients = {"flour": 2, "pork": 1, "cabbage": 1, "ginger": 1}
+description = "Juicy steamed dumplings."
+station = "kitchen"

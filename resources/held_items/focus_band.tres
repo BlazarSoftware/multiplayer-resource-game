@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HeldItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/held_item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_id = "focus_band"
+display_name = "Focus Band"
+description = "A band of pure concentration. Survives a fatal hit with 1 HP once per battle."
+effect_type = "on_hp_threshold"
+effect_params = {"threshold": 0.0, "effect": "endure", "stages": 1}
+consumable = true
+icon_color = Color(0.9, 0.2, 0.2, 1)

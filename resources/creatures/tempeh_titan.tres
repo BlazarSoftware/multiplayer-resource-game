@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "tempeh_titan"
+display_name = "Tempeh Titan"
+types = PackedStringArray("protein", "earthy")
+base_hp = 70
+base_attack = 14
+base_defense = 16
+base_sp_attack = 18
+base_sp_defense = 16
+base_speed = 6
+moves = PackedStringArray("ferment", "umami_bomb", "root_grip", "savory_slam")
+mesh_type = "box"
+mesh_color = Color(0.75, 0.6, 0.4, 1)
+mesh_scale = Vector3(0.9, 1.0, 0.9)
+rarity = "uncommon"
+drop_ingredient_ids = PackedStringArray("tofu", "mushroom")
+drop_min = 1
+drop_max = 3
+evolves_from = "tofu_sage"
+learnset = {3: "umami_bomb", 6: "ferment", 9: "root_grip", 12: "savory_slam", 15: "truffle_burst"}
+ability_ids = PackedStringArray("umami_essence", "harvest_spirit")
+ev_yield = {"sp_attack": 2}
+base_xp_yield = 80

@@ -414,7 +414,13 @@ func _notify_location_change(zone: String, owner_name: String, rest_index: int =
 
 func _client_enter_restaurant(owner_name: String, rest_index: int) -> void:
 	# Remove any existing client-side restaurant
-	_client_exit_restaurant()
+	if _client_restaurant_instance != null:
+		_client_restaurant_instance.queue_free()
+		_client_restaurant_instance = null
+	# Diamond wipe in
+	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
+	if hud and hud.has_method("play_screen_wipe"):
+		await hud.play_screen_wipe()
 	# Instantiate restaurant interior locally so farm plot RPCs can resolve
 	var instance = RESTAURANT_SCENE.instantiate()
 	instance.name = "Restaurant_" + owner_name.replace(" ", "_")
@@ -422,11 +428,29 @@ func _client_enter_restaurant(owner_name: String, rest_index: int) -> void:
 	game_world.add_child(instance)
 	instance.initialize(owner_name, rest_index, {})
 	_client_restaurant_instance = instance
+	# Restaurant music + ambience
+	AudioManager.play_music("restaurant")
+	AudioManager.play_ambience(0, "restaurant")
+	AudioManager.play_sfx("item_door")
+	# Diamond wipe out
+	if hud and hud.has_method("clear_screen_wipe"):
+		await hud.clear_screen_wipe()
 
 func _client_exit_restaurant() -> void:
 	if _client_restaurant_instance != null:
+		# Diamond wipe in
+		var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
+		if hud and hud.has_method("play_screen_wipe"):
+			await hud.play_screen_wipe()
 		_client_restaurant_instance.queue_free()
 		_client_restaurant_instance = null
+		# Restore overworld music + ambience
+		AudioManager.play_music("overworld")
+		AudioManager.play_ambience(0, "overworld")
+		AudioManager.play_sfx("item_door")
+		# Diamond wipe out
+		if hud and hud.has_method("clear_screen_wipe"):
+			await hud.clear_screen_wipe()
 	# Reactivate local player camera after leaving restaurant
 	var local_peer = multiplayer.get_unique_id()
 	var player = get_node_or_null("/root/Main/GameWorld/Players/%d" % local_peer)

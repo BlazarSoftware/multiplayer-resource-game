@@ -1,0 +1,167 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_gardener"
+display_name = "Iris Greenthumb"
+visual_color = Color(0.3, 0.75, 0.35, 1)
+birthday = {
+"month": 5,
+"day": 1
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": 20, "y": 2, "z": 10 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": 18, "y": 2, "z": 12 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["herb_basil", "tomato", "potato", "wheat"],
+"liked": ["berry", "mushroom", "onion"],
+"disliked": ["stone", "salt", "vinegar"],
+"hated": ["chili_powder", "wood"]
+}
+dialogues = {
+"neutral": [{
+"text": "Oh! Hello! Sorry, I've got dirt on my... everywhere. I just transplanted twenty seedlings and I am LIVING! Look at those little green shoots!",
+"choices": [{
+"label": "They look wonderful! You have such a green thumb.",
+"points": 3,
+"response": "Aww, thanks! Literally, though! Look at my thumb. It's stained green permanently. Occupational hazard!"
+}, {
+"label": "That's a lot of seedlings.",
+"points": 0,
+"response": "Is it? I thought about doing forty, but I ran out of pots. NEXT time, though!"
+}, {
+"label": "You're always covered in dirt.",
+"points": -2,
+"response": "It's not dirt, it's EARTH! The stuff that gives us everything! ...But yes, I should probably wash my hands more."
+}]
+}, {
+"text": "I've been talking to my tomato plants. Research says it helps them grow! Although, my neighbors think I'm losing it.",
+"choices": [{
+"label": "What do you talk to them about?",
+"points": 3,
+"response": "Oh, everything! The weather, my day, the latest creature sightings. Mr. Tomato is a great listener."
+}, {
+"label": "Does it actually work?",
+"points": 0,
+"response": "My tomatoes are three times bigger than last year, so... YES. Science doesn't lie!"
+}, {
+"label": "Your neighbors might have a point.",
+"points": -2,
+"response": "Hmph! At least my tomato plants don't judge me. Unlike SOME people."
+}]
+}, {
+"text": "I'm trying to grow a new herb hybrid! Cross-pollinating basil with mint. I'm calling it 'bintzil.' ...The name needs work.",
+"choices": [{
+"label": "That's so creative! I'd love to try it when it's ready.",
+"points": 3,
+"response": "Really?! You'll be my first taste tester! Fair warning, the last hybrid tasted like soap. But THIS time..."
+}, {
+"label": "Is that even possible?",
+"points": 0,
+"response": "Botanically questionable! Ethically ambiguous! But that's never stopped me before!"
+}, {
+"label": "Bintzil? That's a terrible name.",
+"points": -2,
+"response": "Hey! Naming things is hard! You try combining basil and mint into one word! ...Okay, yeah, it's terrible."
+}]
+}],
+"like": [{
+"text": "I grew these flowers just for you! They're called 'friendship blooms.' I made that up, but the sentiment is real!",
+"choices": [{
+"label": "Iris, that's the sweetest thing! They're beautiful!",
+"points": 3,
+"response": "EEEE! You like them! I was worried they were too much. I tend to over-garden. Is that a thing?"
+}, {
+"label": "You grew these yourself?",
+"points": 0,
+"response": "From seed! Took three months. But every time I watered them, I thought of you. So it was worth it!"
+}]
+}, {
+"text": "I have a secret garden behind the shop. Wild herbs, rare flowers, even a little pond with lily pads. Want to see?",
+"choices": [{
+"label": "I'd absolutely love to! Lead the way!",
+"points": 3,
+"response": "Yay! Watch your step, the moss is slippery. Oh, and don't pet the snapdragons. They bite. Not really. But maybe."
+}, {
+"label": "Maybe when I have time.",
+"points": 0,
+"response": "Sure! The garden will be here. Growing. Waiting. Like it do."
+}]
+}],
+"love": [{
+"text": "You know why I love gardening? Because you plant something small, nurture it every day, and it grows into something beautiful. Kind of like our friendship. I planted a tree for you in my garden. It's an oak. Because you're strong and steady.",
+"choices": [{
+"label": "Iris... that's the most meaningful gift anyone's given me.",
+"points": 3,
+"response": "Don't make me water my OWN face! ...Too late. I'm a mess. A happy, plant-loving mess."
+}, {
+"label": "I'll visit that tree every day.",
+"points": 2,
+"response": "It would like that. And so would I. There's a bench next to it. For us."
+}]
+}],
+"dislike": [{
+"text": "The shop's open, but my good mood isn't. Tread carefully.",
+"choices": [{
+"label": "I've been careless with your feelings. I'm sorry, Iris.",
+"points": 3,
+"response": "...Even weeds deserve a second chance to become something better. I'll give you one too."
+}, {
+"label": "Just looking around.",
+"points": 0,
+"response": "Browse away. The herbs don't hold grudges. I might."
+}]
+}],
+"hate": [{
+"text": "You know what kills a garden? Neglect. Same thing that killed our friendship. The shop's closed for you.",
+"choices": [{
+"label": "You're right. I want to tend to our friendship like you tend to your garden. Please.",
+"points": 5,
+"response": "...That's the most gardening-literate apology I've ever heard. Fine. But you're on probation. Like a wilting fern."
+}, {
+"label": "Fine, there are other shops.",
+"points": -1,
+"response": "But none with my heart in every leaf. Your loss. The plants and I agree."
+}]
+}],
+"birthday": [{
+"text": "IT'S MY BIRTHDAY AND EVERYTHING IS BLOOMING! I swear the flowers know! Look, even the stubborn orchid finally opened! Best. Birthday. EVER!",
+"choices": [{
+"label": "Happy birthday, Iris! Your joy is absolutely contagious!",
+"points": 3,
+"response": "Thank you! I'm so happy I could photosynthesize! Come on, I made flower crown party hats!"
+}, {
+"label": "I brought you a birthday gift!",
+"points": 2,
+"response": "A PRESENT?! You remembered! Is it a plant? It's a plant, isn't it?! Even if it's not, I love it!"
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "herb_basil",
+"quantity": 8,
+"message": "Fresh from my garden! This basil is extra fragrant. I sang to it every morning."
+}, {
+"threshold": 50,
+"item_id": "tomato",
+"quantity": 5,
+"message": "My prize-winning heirloom tomatoes! They took first place at the fair. Now they're yours!"
+}, {
+"threshold": 80,
+"item_id": "potato",
+"quantity": 10,
+"message": "These are from my secret underground garden. Potatoes so perfect they could be in a museum. But eating them is better."
+}]
+creature_trades = []
+occupation = "Gardener"

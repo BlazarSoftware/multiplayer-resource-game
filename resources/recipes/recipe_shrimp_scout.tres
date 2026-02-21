@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_shrimp_scout"
+display_name = "Cook Shrimp Scout"
+result_species_id = "shrimp_scout"
+ingredients = {"shrimp": 3, "lemon": 1}
+description = "Call forth a Shrimp Scout."
+station = "cauldron"
+unlockable = true

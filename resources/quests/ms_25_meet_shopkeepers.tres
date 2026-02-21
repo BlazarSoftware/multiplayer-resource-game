@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_25_meet_shopkeepers"
+display_name = "Around Town"
+description = "Mayor Rosemary thinks it's time you got to know the townsfolk better. Chat with a few of the locals!"
+category = "main_story"
+quest_giver_npc_id = "npc_mayor"
+prereq_quest_ids = ["ms_24_cook_dish"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "talk_to",
+"target_id": "",
+"target_count": 3,
+"description": "Talk to 3 different townsfolk"
+}]
+reward_money = 500
+reward_items = {}
+reward_friendship = {"npc_mayor": 5}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = "act2_complete"
+next_quest_id = "ms_30_morning"
+chapter = 2
+sort_order = 6
+offer_dialogue = "You've been so busy with munchies and cooking that you've barely had time to meet everyone! Cast Iron Cove is a small town, and around here, neighbors look out for each other. Go introduce yourself to a few folks — you'll be glad you did."
+in_progress_dialogue = "Still making the rounds? Take your time — everyone in town has a story to tell. You might be surprised what you learn over a friendly chat."
+completion_dialogue = "See? I told you this town was full of wonderful people! Now that you know your way around and the townsfolk know your name, I'd say you're truly one of us. Welcome home, chef. The best is yet to come."

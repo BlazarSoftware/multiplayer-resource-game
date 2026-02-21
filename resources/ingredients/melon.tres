@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "melon"
+display_name = "Melon"
+description = "A refreshing summer fruit with juicy, sweet flesh beneath a thick rind."
+category = "fruit"
+icon_color = Color(0.5, 0.8, 0.4, 1)
+sell_price = 8
+season = "summer"
+grow_time = 110.0
+harvest_min = 1
+harvest_max = 2

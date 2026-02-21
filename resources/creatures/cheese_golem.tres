@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "cheese_golem"
+display_name = "Cheese Golem"
+types = PackedStringArray("dairy")
+base_hp = 60
+base_attack = 14
+base_defense = 16
+base_sp_attack = 8
+base_sp_defense = 12
+base_speed = 6
+moves = PackedStringArray("grain_bash", "bread_wall", "slow_cook", "plate_cover")
+mesh_type = "box"
+mesh_color = Color(0.95, 0.85, 0.3, 1)
+mesh_scale = Vector3(0.8, 0.8, 0.8)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("cheese")
+drop_min = 1
+drop_max = 2
+learnset = {3: "grain_bash", 6: "bread_wall", 9: "slow_cook", 12: "plate_cover", 15: "savory_slam"}
+ability_ids = PackedStringArray("thick_skin", "grain_shield")
+ev_yield = {"defense": 1}
+base_xp_yield = 50

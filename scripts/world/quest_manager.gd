@@ -160,6 +160,7 @@ func handle_accept_quest(peer_id: int, quest_id: String) -> void:
 
 	# Sync to client
 	_sync_quest_state.rpc_id(peer_id, qdata.get("active", {}), qdata.get("completed", {}), qdata.get("unlock_flags", []))
+	_notify_quest_accepted.rpc_id(peer_id, quest_id)
 
 # === Notify Progress ===
 
@@ -486,6 +487,10 @@ func _send_available_quests(quests_data: Array) -> void:
 		quest_log.show_npc_quests(quests_data)
 
 @rpc("authority", "reliable")
+func _notify_quest_accepted(_quest_id: String) -> void:
+	AudioManager.play_sfx("quest_accept")
+
+@rpc("authority", "reliable")
 func _sync_quest_state(active: Dictionary, completed: Dictionary, flags: Array) -> void:
 	PlayerData.active_quests = active.duplicate(true)
 	PlayerData.completed_quests = completed.duplicate(true)
@@ -494,6 +499,7 @@ func _sync_quest_state(active: Dictionary, completed: Dictionary, flags: Array) 
 
 @rpc("authority", "reliable")
 func _notify_quest_progress(quest_id: String, obj_idx: int, progress: int, target: int) -> void:
+	AudioManager.play_sfx("quest_progress")
 	# Update local active quest state
 	if quest_id in PlayerData.active_quests:
 		var objectives = PlayerData.active_quests[quest_id].get("objectives", [])
@@ -516,6 +522,7 @@ func _notify_quest_progress(quest_id: String, obj_idx: int, progress: int, targe
 
 @rpc("authority", "reliable")
 func _notify_quest_complete(quest_id: String, quest_name: String, rewards: Dictionary) -> void:
+	AudioManager.play_sfx("quest_complete")
 	# Move from active to completed locally
 	PlayerData.active_quests.erase(quest_id)
 	PlayerData.completed_quests[quest_id] = int(Time.get_unix_time_from_system())

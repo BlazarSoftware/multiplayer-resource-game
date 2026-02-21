@@ -1,7 +1,6 @@
-[gd_resource type="Resource" script_class="HeldItemDef" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="HeldItemDef" load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/held_item_def.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/held_items/honey_drop.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -11,4 +10,3 @@ description = "Boosts Sweet moves by 20%."
 effect_type = "type_boost"
 effect_params = {"type": "sweet", "multiplier": 1.2}
 consumable = false
-icon_texture = ExtResource("2")

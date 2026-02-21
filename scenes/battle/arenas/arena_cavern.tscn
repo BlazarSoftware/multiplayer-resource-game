@@ -1,0 +1,117 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/synty/dungeon/models/SM_Prop_Brazier_01.glb" id="1"]
+[ext_resource type="PackedScene" path="res://assets/synty/dungeon/models/SM_Prop_Gem_01.glb" id="2"]
+[ext_resource type="PackedScene" path="res://assets/synty/dungeon/models/SM_Prop_Gem_03.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/synty/nature/models/SM_Rock_01.glb" id="4"]
+[ext_resource type="PackedScene" path="res://assets/synty/nature/models/SM_Rock_02.glb" id="5"]
+[ext_resource type="PackedScene" path="res://assets/synty/nature/models/SM_Rock_Wall_01.glb" id="6"]
+[ext_resource type="PackedScene" path="res://assets/synty/nature/models/SM_Rock_Boulder_01.glb" id="7"]
+
+[sub_resource type="BoxMesh" id="SubResource_ground"]
+size = Vector3(20, 0.2, 14)
+
+[sub_resource type="StandardMaterial3D" id="SubResource_dark_stone"]
+albedo_color = Color(0.25, 0.22, 0.2, 1)
+
+[sub_resource type="CylinderMesh" id="SubResource_stalactite"]
+top_radius = 0.0
+bottom_radius = 0.3
+height = 2.0
+
+[node name="Environment" type="Node3D"]
+
+[node name="CaveFloor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+mesh = SubResource("SubResource_ground")
+surface_material_override/0 = SubResource("SubResource_dark_stone")
+
+[node name="ArenaLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.25, 0.433, 0, 0.866, 0.5, -0.5, -0.433, 0.75, 0, 10, 0)
+light_color = Color(0.6, 0.55, 0.7, 1)
+light_energy = 0.6
+shadow_enabled = true
+
+[node name="AmbientFill" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+light_color = Color(0.4, 0.35, 0.6, 1)
+light_energy = 0.4
+omni_range = 20.0
+
+[node name="CrystalLight1" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 1.5, -3)
+light_color = Color(0.4, 0.6, 1, 1)
+light_energy = 1.0
+omni_range = 5.0
+
+[node name="CrystalLight2" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 1.5, 2)
+light_color = Color(0.6, 0.3, 0.9, 1)
+light_energy = 1.0
+omni_range = 5.0
+
+[node name="CrystalLight3" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -6)
+light_color = Color(0.3, 0.7, 0.8, 1)
+light_energy = 0.8
+omni_range = 4.0
+
+[node name="Brazier1" parent="." instance=ExtResource("1")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -7, 0, -3)
+
+[node name="BrazierLight1" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 2, -3)
+light_color = Color(1, 0.6, 0.2, 1)
+light_energy = 1.2
+omni_range = 5.0
+
+[node name="Brazier2" parent="." instance=ExtResource("1")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 7, 0, 2)
+
+[node name="BrazierLight2" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 2, 2)
+light_color = Color(1, 0.6, 0.2, 1)
+light_energy = 1.2
+omni_range = 5.0
+
+[node name="Gem1" parent="." instance=ExtResource("2")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -5, 0, -5)
+
+[node name="Gem2" parent="." instance=ExtResource("3")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 6, 0, -4)
+
+[node name="Gem3" parent="." instance=ExtResource("2")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 3, 0, 5)
+
+[node name="RockWall1" parent="." instance=ExtResource("6")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -10, 0, 0)
+
+[node name="RockWall2" parent="." instance=ExtResource("6")]
+transform = Transform3D(-1.5, 0, 0, 0, 1.5, 0, 0, 0, -1.5, 10, 0, 0)
+
+[node name="RockWall3" parent="." instance=ExtResource("6")]
+transform = Transform3D(0, 0, 1.5, 0, 1.5, 0, -1.5, 0, 0, 0, 0, -8)
+
+[node name="Rock1" parent="." instance=ExtResource("4")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -8, 0, 5)
+
+[node name="Rock2" parent="." instance=ExtResource("5")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 8, 0, -5)
+
+[node name="Boulder" parent="." instance=ExtResource("7")]
+transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, -3, 0, 6)
+
+[node name="Stalactite1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -1, 0, 0, 0, 1, -4, 8, -2)
+mesh = SubResource("SubResource_stalactite")
+surface_material_override/0 = SubResource("SubResource_dark_stone")
+
+[node name="Stalactite2" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.8, 0, 0, 0, -1.2, 0, 0, 0, 0.8, 3, 8, -4)
+mesh = SubResource("SubResource_stalactite")
+surface_material_override/0 = SubResource("SubResource_dark_stone")
+
+[node name="Stalactite3" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.6, 0, 0, 0, -0.9, 0, 0, 0, 0.6, 6, 8, 1)
+mesh = SubResource("SubResource_stalactite")
+surface_material_override/0 = SubResource("SubResource_dark_stone")

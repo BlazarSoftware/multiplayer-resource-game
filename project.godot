@@ -25,6 +25,7 @@ NetworkManager="*res://scripts/autoload/network_manager.gd"
 GameManager="*res://scripts/autoload/game_manager.gd"
 PlayerData="*res://scripts/autoload/player_data.gd"
 SaveManager="*res://scripts/autoload/save_manager.gd"
+AudioManager="*res://scripts/autoload/audio_manager.gd"
 PhantomCameraManager="*uid://duq6jhf6unyis"
 
 [display]

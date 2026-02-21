@@ -3,9 +3,9 @@ extends Control
 # Settings tab content for PauseMenu.
 const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
-var volume_slider: HSlider
-var volume_label: Label
-var controls_label: Label
+var _bus_sliders: Dictionary = {}   # bus_name → HSlider
+var _bus_labels: Dictionary = {}    # bus_name → Label (percentage)
+var mute_checkbox: CheckBox
 
 var font_size_slider: HSlider
 var font_size_label: Label
@@ -18,6 +18,11 @@ const FONT_SCALE_STEPS: Array = [0.85, 1.0, 1.15, 1.3]
 const FONT_SCALE_NAMES: Array = ["Small", "Normal", "Large", "Extra Large"]
 const TEXT_SPEED_CPS: Array = [20.0, 40.0, 80.0, -1.0]
 const TEXT_SPEED_NAMES: Array = ["Slow", "Normal", "Fast", "Instant"]
+
+const BUS_DISPLAY_NAMES: Dictionary = {
+	"Master": "Master", "Music": "Music", "SFX": "Sound Effects",
+	"UI": "UI Sounds", "Ambience": "Ambience", "Voice": "Voice",
+}
 
 func _ready() -> void:
 	UITheme.init()
@@ -36,29 +41,43 @@ func _build_ui() -> void:
 	audio_header.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 	vbox.add_child(audio_header)
 
-	var vol_row := HBoxContainer.new()
-	vbox.add_child(vol_row)
+	# Per-bus volume sliders
+	for bus_name in AudioManager.BUS_NAMES:
+		var row := HBoxContainer.new()
+		vbox.add_child(row)
 
-	var vol_text := Label.new()
-	vol_text.text = "Master Volume: "
-	UITheme.style_small(vol_text)
-	vol_row.add_child(vol_text)
+		var label := Label.new()
+		label.text = BUS_DISPLAY_NAMES.get(bus_name, bus_name) + ": "
+		label.custom_minimum_size.x = 120
+		UITheme.style_small(label)
+		row.add_child(label)
 
-	volume_slider = HSlider.new()
-	volume_slider.min_value = 0.0
-	volume_slider.max_value = 1.0
-	volume_slider.step = 0.05
-	volume_slider.value = 1.0
-	volume_slider.custom_minimum_size = Vector2(200, 20)
-	volume_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	volume_slider.value_changed.connect(_on_volume_changed)
-	vol_row.add_child(volume_slider)
+		var slider := HSlider.new()
+		slider.min_value = 0.0
+		slider.max_value = 1.0
+		slider.step = 0.05
+		slider.value = AudioManager.get_bus_volume(bus_name)
+		slider.custom_minimum_size = Vector2(180, 20)
+		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		slider.value_changed.connect(_on_bus_volume_changed.bind(bus_name))
+		row.add_child(slider)
 
-	volume_label = Label.new()
-	volume_label.text = "100%"
-	volume_label.custom_minimum_size.x = 60
-	UITheme.style_small(volume_label)
-	vol_row.add_child(volume_label)
+		var pct_label := Label.new()
+		pct_label.text = "%d%%" % int(slider.value * 100)
+		pct_label.custom_minimum_size.x = 50
+		UITheme.style_small(pct_label)
+		row.add_child(pct_label)
+
+		_bus_sliders[bus_name] = slider
+		_bus_labels[bus_name] = pct_label
+
+	# Mute checkbox
+	mute_checkbox = CheckBox.new()
+	mute_checkbox.text = "  Mute All Audio"
+	mute_checkbox.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_SMALL))
+	mute_checkbox.button_pressed = AudioManager.is_muted
+	mute_checkbox.toggled.connect(_on_mute_toggled)
+	vbox.add_child(mute_checkbox)
 
 	# Spacer
 	var spacer1 := Control.new()
@@ -145,7 +164,7 @@ func _build_ui() -> void:
 	controls_header.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
 	vbox.add_child(controls_header)
 
-	controls_label = Label.new()
+	var controls_label := Label.new()
 	controls_label.text = """WASD - Move
 Mouse - Look around
 E - Interact
@@ -156,7 +175,7 @@ M / Esc - Map
 I - Inventory
 P - Party (Creatures)
 J - Quest Log
-K - Compendium
+K - Journal
 F - Friends & Party
 N - NPCs
 
@@ -168,41 +187,63 @@ Scroll - Cycle hotbar"""
 	vbox.add_child(controls_label)
 
 func activate() -> void:
-	pass
+	# Refresh slider positions to match current volumes
+	for bus_name in AudioManager.BUS_NAMES:
+		if _bus_sliders.has(bus_name):
+			_bus_sliders[bus_name].value = AudioManager.get_bus_volume(bus_name)
+	if mute_checkbox:
+		mute_checkbox.button_pressed = AudioManager.is_muted
 
 func deactivate() -> void:
 	pass
 
 func _reset_to_defaults() -> void:
-	volume_slider.value = 1.0
+	for bus_name in AudioManager.BUS_NAMES:
+		var default_vol: float = AudioManager.BUS_DEFAULTS.get(bus_name, 0.8)
+		AudioManager.set_bus_volume(bus_name, default_vol)
+		if _bus_sliders.has(bus_name):
+			_bus_sliders[bus_name].value = default_vol
+	AudioManager.set_muted(false)
+	if mute_checkbox:
+		mute_checkbox.button_pressed = false
 	font_size_slider.value = 1
 	text_speed_slider.value = 1
 
-func _on_volume_changed(value: float) -> void:
-	var db := linear_to_db(value)
-	AudioServer.set_bus_volume_db(0, db)
-	volume_label.text = "%d%%" % int(value * 100)
-	_save_settings()
+func _on_bus_volume_changed(value: float, bus_name: String) -> void:
+	AudioManager.set_bus_volume(bus_name, value)
+	if _bus_labels.has(bus_name):
+		_bus_labels[bus_name].text = "%d%%" % int(value * 100)
+	AudioManager.save_bus_volumes()
+	_save_accessibility()
+
+func _on_mute_toggled(pressed: bool) -> void:
+	AudioManager.set_muted(pressed)
 
 func _on_font_size_changed(value: float) -> void:
 	var idx := int(value)
 	font_size_label.text = FONT_SCALE_NAMES[idx]
 	UITheme.set_font_scale(FONT_SCALE_STEPS[idx])
-	_save_settings()
+	_save_accessibility()
 
 func _on_text_speed_changed(value: float) -> void:
 	var idx := int(value)
 	text_speed_label.text = TEXT_SPEED_NAMES[idx]
 	UITheme.set_text_speed(TEXT_SPEED_CPS[idx])
-	_save_settings()
+	_save_accessibility()
 
 func _load_settings() -> void:
 	var config := ConfigFile.new()
 	if config.load(SETTINGS_PATH) == OK:
-		var vol = config.get_value("audio", "master_volume", 1.0)
-		volume_slider.value = vol
-		AudioServer.set_bus_volume_db(0, linear_to_db(vol))
-		volume_label.text = "%d%%" % int(vol * 100)
+		# Bus volumes are loaded by AudioManager._load_settings(), just sync sliders
+		for bus_name in AudioManager.BUS_NAMES:
+			var vol := AudioManager.get_bus_volume(bus_name)
+			if _bus_sliders.has(bus_name):
+				_bus_sliders[bus_name].value = vol
+			if _bus_labels.has(bus_name):
+				_bus_labels[bus_name].text = "%d%%" % int(vol * 100)
+
+		if mute_checkbox:
+			mute_checkbox.button_pressed = AudioManager.is_muted
 
 		# Font scale — prefer saved index, fall back to float lookup for old configs
 		var font_idx: int = config.get_value("accessibility", "font_scale_idx", -1)
@@ -226,9 +267,10 @@ func _load_settings() -> void:
 		text_speed_label.text = TEXT_SPEED_NAMES[speed_idx]
 		UITheme.set_text_speed(TEXT_SPEED_CPS[speed_idx])
 
-func _save_settings() -> void:
+func _save_accessibility() -> void:
 	var config := ConfigFile.new()
-	config.set_value("audio", "master_volume", volume_slider.value)
+	config.load(SETTINGS_PATH)
+	# Preserve audio keys written by AudioManager
 	var font_idx := int(font_size_slider.value)
 	config.set_value("accessibility", "font_scale", FONT_SCALE_STEPS[font_idx])
 	config.set_value("accessibility", "font_scale_idx", font_idx)

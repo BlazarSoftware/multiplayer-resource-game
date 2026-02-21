@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "side_river_art"
+display_name = "Seaside Sketches"
+description = "River wants to paint a still life of local fish but needs some fresh specimens to work from. Help them gather a few catches."
+category = "side"
+quest_giver_npc_id = "npc_river"
+prereq_quest_ids = ["ms_25_meet_shopkeepers"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "collect",
+"target_id": "fish",
+"target_count": 5,
+"description": "Catch fish for River (5)"
+}]
+reward_money = 300
+reward_items = {}
+reward_friendship = {"npc_river": 10}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = ""
+chapter = 0
+sort_order = 0
+offer_dialogue = "I'm working on a new painting — 'Twilight Catch,' I'm calling it. But I need real fish to paint from, not just my imagination. Could you catch a few for me? I promise I'll make them look beautiful on canvas."
+in_progress_dialogue = "Any fish yet? I've got my easel set up and everything — the light is perfect right now!"
+completion_dialogue = "Oh, these are gorgeous! Look at the scales, the way they shimmer... This painting is going to be my masterpiece. Thank you — you're officially my favorite muse's assistant."

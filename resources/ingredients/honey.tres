@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "honey"
+display_name = "Honey"
+description = "Liquid gold made by bees, with floral sweetness that never spoils."
+category = "sweet"
+icon_color = Color(0.9, 0.7, 0.2, 1)
+sell_price = 8
+season = ""
+grow_time = 60.0
+harvest_min = 1
+harvest_max = 2

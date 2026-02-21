@@ -9,6 +9,7 @@ extends Node
 const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 const BattleArenaScript = preload("res://scripts/battle/battle_arena.gd")
 const BattleEffects = preload("res://scripts/battle/battle_effects.gd")
+const BattleVFX = preload("res://scripts/battle/battle_vfx.gd")
 
 enum BattlePhase { INTRO, PROMPT, ACTION_SELECT, ANIMATING, WAITING, ENDED }
 var _phase: int = BattlePhase.INTRO
@@ -66,6 +67,9 @@ var move_replace_panel: PanelContainer = null
 var summary_panel: PanelContainer = null
 var waiting_label: Label = null
 
+# Screen flash overlay (white flash on crits)
+var _flash_overlay: ColorRect = null
+
 # Summary data accumulator
 var _summary_victory: bool = false
 var _is_animating_log: bool = false
@@ -73,14 +77,7 @@ var _initial_setup: bool = false
 var _battle_starting: bool = false  # Guards against battle_ended during _on_battle_started awaits
 
 
-const TYPE_COLORS = {
-	"spicy": UITokens.TYPE_SPICY,
-	"sweet": UITokens.TYPE_SWEET,
-	"sour": UITokens.TYPE_SOUR,
-	"herbal": UITokens.TYPE_HERBAL,
-	"umami": UITokens.TYPE_UMAMI,
-	"grain": UITokens.TYPE_GRAIN,
-}
+const TYPE_COLORS = UITokens.TYPE_COLORS
 
 const WEATHER_NAMES = {
 	"spicy": "Sizzle Sun",
@@ -89,6 +86,18 @@ const WEATHER_NAMES = {
 	"herbal": "Herb Breeze",
 	"umami": "Umami Fog",
 	"grain": "Grain Dust",
+	"mineral": "Crystal Storm",
+	"earthy": "Mudslide",
+	"liquid": "Downpour",
+	"aromatic": "Fragrant Mist",
+	"toxic": "Miasma",
+	"protein": "Iron Wind",
+	"tropical": "Monsoon Heat",
+	"dairy": "Cream Fog",
+	"bitter": "Dark Drizzle",
+	"spoiled": "Rot Cloud",
+	"fermented": "Yeast Storm",
+	"smoked": "Smoke Screen",
 }
 
 const STATUS_MAX_TURNS = {
@@ -212,6 +221,14 @@ func _build_action_layer() -> void:
 	waiting_label.anchors_preset = Control.PRESET_CENTER
 	waiting_label.visible = false
 	action_layer.add_child(waiting_label)
+
+	# Screen flash overlay (covers full screen, starts invisible)
+	_flash_overlay = ColorRect.new()
+	_flash_overlay.name = "FlashOverlay"
+	_flash_overlay.color = Color(1, 1, 1, 0)
+	_flash_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flash_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	action_layer.add_child(_flash_overlay)
 
 	# Legacy action_panel reference (used by _set_phase for visibility toggling)
 	action_panel = VBoxContainer.new()
@@ -644,7 +661,8 @@ func _on_battle_started() -> void:
 		add_child(arena)
 
 	var opp_name = battle_mgr.client_opponent_name if battle_mgr else ""
-	arena.build_arena(mode, battle_mgr.client_enemy, opp_name)
+	var theme = battle_mgr.client_arena_theme if battle_mgr else "docks"
+	arena.build_arena(mode, battle_mgr.client_enemy, opp_name, theme)
 
 	# Switch camera
 	_enter_arena_camera()
@@ -663,6 +681,13 @@ func _on_battle_started() -> void:
 
 	# INTRO phase — hide action panel, show intro text
 	_set_phase(BattlePhase.INTRO)
+
+	# Battle music — boss for trainer/PvP, regular for wild
+	if mode == 0:
+		AudioManager.play_music("battle")
+	else:
+		AudioManager.play_music("boss")
+	AudioManager.stop_all_ambience()
 
 	var intro_text = ""
 	match mode:
@@ -722,6 +747,11 @@ func _on_battle_ended(victory: bool) -> void:
 			return
 	_set_phase(BattlePhase.ENDED)
 	_summary_victory = victory
+	# Victory/defeat music
+	if victory:
+		AudioManager.play_music("victory")
+	else:
+		AudioManager.play_music("defeat")
 	await get_tree().create_timer(0.5).timeout
 	_show_summary_screen()
 
@@ -747,6 +777,10 @@ func _dismiss_summary() -> void:
 	# Restore HUD visibility
 	if hud:
 		hud.visible = true
+
+	# Restore overworld music + ambience
+	AudioManager.restore_previous_music()
+	AudioManager.play_ambience(0, "overworld")
 
 	if hud and hud.has_method("clear_battle_transition"):
 		await hud.clear_battle_transition()
@@ -1007,14 +1041,58 @@ func _animate_card_hp(side: String, target_hp: int, max_hp: int) -> void:
 	if text_label:
 		text_label.text = "%d/%d" % [target_hp, max_hp]
 
-func _animate_card_xp(xp: int, xp_to_next: int) -> void:
+func _animate_card_xp(xp: int, xp_to_next: int, leveled_up: bool = false) -> void:
 	if player_card_xp_bar == null:
 		return
-	player_card_xp_bar.max_value = xp_to_next
-	var tween = create_tween()
-	tween.tween_property(player_card_xp_bar, "value", float(xp), 0.8).set_ease(Tween.EASE_OUT)
+	if leveled_up:
+		# Fill to max, flash, reset to 0, then fill to new XP
+		var tween = create_tween()
+		tween.tween_property(player_card_xp_bar, "value", float(player_card_xp_bar.max_value), 0.4).set_ease(Tween.EASE_OUT)
+		tween.tween_callback(func():
+			# Flash gold
+			player_card_xp_bar.modulate = Color(1.0, 0.85, 0.2)
+		)
+		tween.tween_interval(0.2)
+		tween.tween_callback(func():
+			player_card_xp_bar.max_value = xp_to_next
+			player_card_xp_bar.value = 0
+			player_card_xp_bar.modulate = Color(0.4, 0.5, 0.9)
+		)
+		tween.tween_property(player_card_xp_bar, "value", float(xp), 0.6).set_ease(Tween.EASE_OUT)
+	else:
+		player_card_xp_bar.max_value = xp_to_next
+		var tween = create_tween()
+		tween.tween_property(player_card_xp_bar, "value", float(xp), 0.8).set_ease(Tween.EASE_OUT)
 	if player_card_xp_text:
 		player_card_xp_text.text = "%d/%d" % [xp, xp_to_next]
+
+func _flash_screen(color: Color = Color(1, 1, 1, 0.6), duration: float = 0.1) -> void:
+	if _flash_overlay == null:
+		return
+	_flash_overlay.color = color
+	var tween = create_tween()
+	tween.tween_property(_flash_overlay, "color:a", 0.0, duration).set_ease(Tween.EASE_OUT)
+
+func _shake_hp_bar(side: String) -> void:
+	var bar: ProgressBar
+	if side == "enemy":
+		bar = enemy_card_hp_bar
+	else:
+		bar = player_card_hp_bar
+	if bar == null:
+		return
+	var original_x = bar.position.x
+	var tween = create_tween()
+	for i in range(3):
+		var offset = 2.0 if i % 2 == 0 else -2.0
+		tween.tween_property(bar, "position:x", original_x + offset, 0.025)
+	tween.tween_property(bar, "position:x", original_x, 0.025)
+
+func _juice_button(btn: Button) -> void:
+	btn.pivot_offset = btn.size / 2.0
+	var tween = create_tween()
+	tween.tween_property(btn, "scale", Vector2(1.15, 1.15), 0.07).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(btn, "scale", Vector2.ONE, 0.08).set_ease(Tween.EASE_OUT)
 
 func _animate_card_hp_from_battle_mgr() -> void:
 	if battle_mgr == null:
@@ -1109,6 +1187,8 @@ func _on_fight_pressed() -> void:
 		return
 	if _phase != BattlePhase.PROMPT:
 		return
+	AudioManager.play_ui_sfx("ui_click")
+	_juice_button(fight_button)
 	_refresh_move_buttons()
 	_set_phase(BattlePhase.ACTION_SELECT)
 
@@ -1122,6 +1202,8 @@ func _on_move_pressed(idx: int) -> void:
 		return
 	if _phase != BattlePhase.ACTION_SELECT:
 		return
+	if idx < move_buttons.size():
+		_juice_button(move_buttons[idx])
 	var active_idx = battle_mgr.client_active_creature_idx
 	if active_idx >= PlayerData.party.size():
 		return
@@ -1135,6 +1217,8 @@ func _on_move_pressed(idx: int) -> void:
 
 func _on_flee_pressed() -> void:
 	if battle_mgr:
+		AudioManager.play_sfx("flee")
+		_juice_button(flee_button)
 		battle_mgr.send_flee()
 		_set_phase(BattlePhase.ANIMATING)
 
@@ -1143,6 +1227,8 @@ func _on_item_pressed() -> void:
 		return
 	if _phase != BattlePhase.PROMPT:
 		return
+	AudioManager.play_ui_sfx("ui_click")
+	_juice_button(item_button)
 	_show_item_panel()
 
 func _on_switch_pressed() -> void:
@@ -1150,6 +1236,8 @@ func _on_switch_pressed() -> void:
 		return
 	if _phase != BattlePhase.PROMPT:
 		return
+	AudioManager.play_ui_sfx("ui_click")
+	_juice_button(switch_button)
 	_show_switch_panel()
 
 # === ITEM PANEL ===
@@ -1616,34 +1704,89 @@ func _animate_turn_log(turn_log: Array) -> void:
 		var entry_type = entry.get("type", "move")
 
 		if entry_type == "move":
-			# Camera cut to attacker side
+			# Camera cut to attacker side (smooth tween)
 			var attacker_preset = "player_attack" if actor == "player" else "enemy_attack"
 			if arena:
-				arena.cut_camera(attacker_preset)
+				arena.cut_camera(attacker_preset, 0.35)
 
-			# Spawn move-type particle at target
+			# Spawn move-type particles + BinbunVFX scene at target
 			var move_type = entry.get("move_type", "")
+			var move_category = entry.get("category", "physical")
 			var target_side = "enemy" if actor == "player" else "player"
 			if move_type != "" and not entry.get("missed", false) and arena:
 				effect_pos = arena.get_creature_position(target_side)
 				BattleEffects.spawn_move_effect(arena, effect_pos, move_type)
+				BattleVFX.spawn_move_vfx(arena, effect_pos, move_type, move_category)
 
 			# Log text
 			if msg != "":
 				battle_log.append_text(msg + "\n")
 				await get_tree().create_timer(0.3).timeout
 
-			# Damage dealt — hit effect + damage number + flash + card HP update
+			# Damage dealt — hit VFX + knockback + damage number + flash + card HP update
 			if entry.has("damage") and entry.damage > 0:
+				var is_crit = entry.get("critical", false)
+				var effectiveness = entry.get("effectiveness", "")
+				var is_super = (effectiveness == "super_effective")
+
+				# Combat SFX
+				if is_crit:
+					AudioManager.play_sfx("hit_crit")
+				elif move_category == "physical":
+					AudioManager.play_sfx_varied("hit_physical")
+				else:
+					AudioManager.play_sfx_varied("hit_special")
+				if is_super:
+					AudioManager.play_sfx("super_effective")
+				elif effectiveness == "not_very_effective":
+					AudioManager.play_sfx("not_effective")
+
 				if arena:
 					effect_pos = arena.get_creature_position(target_side)
-					BattleEffects.spawn_hit_effect(arena, effect_pos, entry.get("effectiveness", ""))
-					arena.spawn_damage_number(entry.damage, target_side, entry.get("effectiveness", ""))
+
+					# Rich scene-based hit VFX
+					BattleVFX.spawn_hit_vfx(arena, effect_pos, effectiveness, is_crit)
+					# Keep existing particle hit for layering
+					BattleEffects.spawn_hit_effect(arena, effect_pos, effectiveness)
+
+					arena.spawn_damage_number(entry.damage, target_side, effectiveness)
 					arena.flash_creature(target_side)
-					if entry.get("critical", false):
-						arena.camera_shake()
+
+					# Knockback — scale with damage impact
+					var knock_intensity = 0.2
+					if is_crit:
+						knock_intensity = 0.5
+					elif is_super:
+						knock_intensity = 0.4
+					arena.knockback_creature(target_side, knock_intensity)
+
+					# Critical hit: screen flash + hit-stop + crit camera punch
+					if is_crit:
+						_flash_screen(Color(1, 1, 1, 0.6), 0.12)
+						arena.hit_stop(0.06)
+						arena.crit_camera_punch(target_side)
+						await get_tree().create_timer(0.15).timeout
+					elif is_super:
+						# Super effective: camera shake + mild flash
+						arena.camera_shake(0.25, 0.12)
+						_flash_screen(Color(0.3, 0.8, 0.3, 0.3), 0.15)
+
+				# HP bar shake + tween
+				_shake_hp_bar(target_side)
 				_animate_card_hp_from_battle_mgr()
 				await get_tree().create_timer(0.3).timeout
+
+				# KO check — dramatic wide camera if creature fainted
+				if arena and entry.has("target_fainted") and entry.target_fainted:
+					AudioManager.play_sfx("faint")
+					arena.ko_camera(target_side)
+					await get_tree().create_timer(0.8).timeout
+			elif entry.get("missed", false):
+				AudioManager.play_sfx("miss")
+				_animate_card_hp_from_battle_mgr()
+			else:
+				# No damage, but still sync HP
+				_animate_card_hp_from_battle_mgr()
 
 			# Stat change effects
 			if entry.has("stat_changes") and arena:
@@ -1654,13 +1797,16 @@ func _animate_turn_log(turn_log: Array) -> void:
 				effect_pos = arena.get_creature_position(target_side)
 				BattleEffects.spawn_stat_effect(arena, effect_pos, _has_any_positive(entry.target_stat_changes))
 
-			# Status applied effect
+			# Status applied effect + aura
 			if entry.has("status_applied") and arena:
+				AudioManager.play_sfx("status_apply")
 				effect_pos = arena.get_creature_position(target_side)
 				BattleEffects.spawn_status_effect(arena, effect_pos, entry.status_applied)
+				arena.update_status_aura(target_side, entry.status_applied)
 
 			# Heal effect
 			if (entry.has("heal") or entry.has("drain_heal") or entry.has("ability_heal")) and arena:
+				AudioManager.play_sfx("heal")
 				actor_side = actor if actor in ["player", "enemy"] else "player"
 				effect_pos = arena.get_creature_position(actor_side)
 				BattleEffects.spawn_heal_effect(arena, effect_pos)
@@ -1670,13 +1816,16 @@ func _animate_turn_log(turn_log: Array) -> void:
 			actor_side = actor if actor in ["player", "enemy"] else "player"
 			var cam_preset = "enemy_attack" if actor_side == "player" else "player_attack"
 			if arena:
-				arena.cut_camera(cam_preset)
+				arena.cut_camera(cam_preset, 0.35)
 			if msg != "":
 				battle_log.append_text(msg + "\n")
 			if entry.has("damage") and entry.damage > 0 and arena:
 				effect_pos = arena.get_creature_position(actor_side)
 				BattleEffects.spawn_hit_effect(arena, effect_pos, "")
+				BattleVFX.spawn_hit_vfx(arena, effect_pos, "", false)
 				arena.flash_creature(actor_side)
+				arena.knockback_creature(actor_side, 0.15)
+			_shake_hp_bar(actor_side)
 			_animate_card_hp_from_battle_mgr()
 			if msg != "":
 				await get_tree().create_timer(0.3).timeout
@@ -1693,11 +1842,13 @@ func _animate_turn_log(turn_log: Array) -> void:
 				await get_tree().create_timer(0.3).timeout
 
 		elif entry_type in ["switch", "trainer_switch", "forced_switch"]:
-			# Swap animation (existing logic)
+			# Swap animation — stop idle bob, swap, restart
 			if arena and battle_mgr:
 				var side = "player" if entry.get("actor", "player") == "player" else "enemy"
 				if entry_type == "trainer_switch":
 					side = "enemy"
+				arena.stop_idle_bob(side)
+				arena.update_status_aura(side, "")  # Clear aura on swap
 				var creature_data: Dictionary = {}
 				if side == "player":
 					var aidx = battle_mgr.client_active_creature_idx
@@ -1711,6 +1862,9 @@ func _animate_turn_log(turn_log: Array) -> void:
 				battle_log.append_text(msg + "\n")
 				await get_tree().create_timer(0.5).timeout
 			_refresh_cards()
+			# Restart idle bob after swap
+			if arena:
+				arena.start_idle_bobs()
 
 		else:
 			# All other entry types (weather, taunt, encore, etc.)
@@ -1720,7 +1874,7 @@ func _animate_turn_log(turn_log: Array) -> void:
 
 		# Return camera to neutral after each entry
 		if arena:
-			arena.cut_camera("neutral")
+			arena.cut_camera("neutral", 0.3)
 
 	_is_animating_log = false
 	_refresh_ui()
@@ -1738,8 +1892,10 @@ func _on_xp_result(results: Dictionary) -> void:
 		battle_mgr.summary_xp_results.append(r)
 		var xp = r.get("xp_gained", 0)
 		if xp > 0:
+			AudioManager.play_sfx("xp_gain")
 			battle_log.append_text("[color=#5B7EA6]+%d XP[/color]\n" % xp)
 		for lvl in r.get("level_ups", []):
+			AudioManager.play_sfx("level_up")
 			battle_log.append_text("[color=#D4A843]Level up! Now Lv.%d![/color]\n" % lvl)
 		for m in r.get("new_moves", []):
 			battle_mgr.summary_new_moves.append(m)
@@ -1758,9 +1914,13 @@ func _on_xp_result(results: Dictionary) -> void:
 
 	# Update XP card bar
 	var active_idx = battle_mgr.client_active_creature_idx if battle_mgr else 0
+	var any_level_up = false
+	for r2 in results.get("results", []):
+		if r2.get("level_ups", []).size() > 0:
+			any_level_up = true
 	if active_idx < PlayerData.party.size():
 		var creature = PlayerData.party[active_idx]
-		_animate_card_xp(creature.get("xp", 0), creature.get("xp_to_next", 100))
+		_animate_card_xp(creature.get("xp", 0), creature.get("xp_to_next", 100), any_level_up)
 
 	_refresh_ui()
 

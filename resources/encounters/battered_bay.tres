@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="EncounterTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/encounter_table.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+table_id = "battered_bay"
+display_name = "Battered Bay"
+entries = [{"species_id": "shrimp_scout", "weight": 22, "min_level": 8, "max_level": 12}, {"species_id": "jellyfish_drift", "weight": 22, "min_level": 10, "max_level": 14}, {"species_id": "vanilla_fairy", "weight": 22, "min_level": 8, "max_level": 12}, {"species_id": "squid_mystic", "weight": 10, "min_level": 12, "max_level": 16}, {"species_id": "butter_sprite", "weight": 10, "min_level": 10, "max_level": 14}, {"species_id": "lavender_moth", "weight": 8, "min_level": 12, "max_level": 16}, {"species_id": "cream_elemental", "weight": 4, "min_level": 16, "max_level": 20}, {"species_id": "moonlight_souffle", "weight": 2, "min_level": 25, "max_level": 30}]
+season_bonus = {"spring": "vanilla_fairy", "summer": "jellyfish_drift"}

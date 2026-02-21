@@ -1,0 +1,167 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_alex"
+display_name = "Alex Hartwell"
+visual_color = Color(0.35, 0.6, 0.85, 1)
+birthday = {
+"month": 1,
+"day": 25
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": -2, "y": 1, "z": 5 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": 7, "y": 1, "z": 12 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["chili_powder", "mushroom", "fish", "stone"],
+"liked": ["berry", "wood", "garlic"],
+"disliked": ["flour", "butter", "sugar"],
+"hated": ["milk", "honey"]
+}
+dialogues = {
+"neutral": [{
+"text": "Ugh, Grandma's making me organize the town hall filing cabinet again. Do you know how many files there are about FENCE PERMITS? This town needs more excitement!",
+"choices": [{
+"label": "Ha! What kind of excitement are you looking for?",
+"points": 3,
+"response": "Creature battles! Exploring caves! ANYTHING other than alphabetizing permit requests from 1987!"
+}, {
+"label": "Your grandma works hard. Try to help out.",
+"points": 0,
+"response": "I know, I know. She's great. I just wish she'd let me do something more... adventurous."
+}, {
+"label": "Seems like a fair chore to me.",
+"points": -2,
+"response": "You sound just like her! No offense. But also... a little offense."
+}]
+}, {
+"text": "I saw the COOLEST creature near the old mines yesterday! It had glowing eyes and crystal spikes! I tried to follow it but it disappeared. I'm going back tonight.",
+"choices": [{
+"label": "That sounds amazing! Can I come with you?",
+"points": 3,
+"response": "REALLY?! Yes! Finally, someone with actual guts! Meet me at the mine entrance after dark. Bring snacks."
+}, {
+"label": "Be careful out there. The mines can be dangerous.",
+"points": 0,
+"response": "Danger is just adventure wearing a scary mask! ...But yeah, I'll bring a flashlight. And maybe a rope."
+}, {
+"label": "You'll get in trouble sneaking out again.",
+"points": -2,
+"response": "Trouble is my middle name! ...It's actually James. But trouble sounds cooler."
+}]
+}, {
+"text": "I've been training my creature in secret. Grandma says I'm too young for battles, but I'm practically an ADULT. I'm almost... well, I'm getting there.",
+"choices": [{
+"label": "Everyone starts somewhere! What creature do you have?",
+"points": 3,
+"response": "A Pepper Imp! I named her Blaze. She's small but FIERCE. Just like me! Don't tell Grandma, okay?"
+}, {
+"label": "Maybe listen to your grandma on this one.",
+"points": 0,
+"response": "She means well, but she still thinks I need a jacket when it's sixty degrees. I can handle a creature battle!"
+}, {
+"label": "She's right, you know. You're just a kid.",
+"points": -2,
+"response": "I'm NOT just a kid! I've read every creature manual in the library! Twice! I know more than most adults!"
+}]
+}],
+"like": [{
+"text": "You're the only person in town who doesn't treat me like a little kid. That's why I'm telling you this: I found a map in the town hall basement. It shows tunnels under the whole town!",
+"choices": [{
+"label": "Whoa! That could be an incredible discovery! What do you want to do?",
+"points": 3,
+"response": "Explore them, obviously! But I need a partner. Someone brave. Someone like you. What do you say?"
+}, {
+"label": "Have you told your grandma about it?",
+"points": 0,
+"response": "Not yet. She'd just say it's 'too dangerous' and lock the basement. I'll tell her... after we explore it."
+}]
+}, {
+"text": "I've been keeping a journal of every creature I've spotted. Forty-three species so far! When I'm older, I want to see them ALL. Every single one.",
+"choices": [{
+"label": "That's an awesome goal, Alex. I'll help you whenever I can.",
+"points": 3,
+"response": "You mean it?! That's... wow. Nobody's ever said that before. You're officially my adventure partner!"
+}, {
+"label": "That's a lot of creatures to find.",
+"points": 0,
+"response": "The best quests are the longest ones! Plus, I've got time. And snacks. Lots of snacks."
+}]
+}],
+"love": [{
+"text": "I used to think adventure meant running away from this town. But you showed me it's about what you find RIGHT HERE. The creatures, the people, the hidden places. This town is the adventure. And you're the best part of it.",
+"choices": [{
+"label": "Alex, you've grown so much. I'm proud to be your friend.",
+"points": 3,
+"response": "Don't get sappy on me! ...Okay, maybe a LITTLE sappy. You're the big sibling I always wished I had. Thank you."
+}, {
+"label": "You're going to do amazing things, kid.",
+"points": 2,
+"response": "I already am! I have the best adventure partner in the world. That's a pretty amazing start."
+}]
+}],
+"dislike": [{
+"text": "Oh. Hey. I'm busy. Training Blaze. She's getting stronger. No thanks to you.",
+"choices": [{
+"label": "I've been a jerk and I know it. I'm sorry, Alex.",
+"points": 3,
+"response": "...Blaze says she forgives you. I'm... working on it. But at least you apologized. That's mature."
+}, {
+"label": "Good luck with that.",
+"points": 0,
+"response": "Don't need luck. I've got SKILL. ...Blaze, stop eating that rock!"
+}]
+}],
+"hate": [{
+"text": "I thought you were different from everyone else who dismisses me. Turns out you're just another adult who doesn't listen. That hurts more than anything.",
+"choices": [{
+"label": "You're right, and you deserve better. I want to be someone you can count on again.",
+"points": 5,
+"response": "...Okay. That felt real. I'm going to give you another chance. But only because Blaze seems to like you. Don't blow it."
+}, {
+"label": "You're overreacting.",
+"points": -1,
+"response": "I'm not. I'm REACTING. There's a difference. Grandma taught me that, ironically."
+}]
+}],
+"birthday": [{
+"text": "IT'S MY BIRTHDAY! Grandma's making her famous seven-layer cake! And I convinced her to let me have ONE unsupervised creature battle as my present! Best day EVER!",
+"choices": [{
+"label": "Happy birthday, Alex! You're going to crush that battle!",
+"points": 3,
+"response": "YEAH I AM! Blaze and I have been practicing all week! Come watch! I need someone to cheer us on!"
+}, {
+"label": "I got you something I think you'll really like!",
+"points": 2,
+"response": "A BIRTHDAY PRESENT?! If it's anything creature-related, I might actually explode with happiness! Let me see!"
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "berry",
+"quantity": 5,
+"message": "Found these on my latest exploration! They're from a bush near the old mines. Adventure berries! ...I made that up."
+}, {
+"threshold": 50,
+"item_id": "mushroom",
+"quantity": 5,
+"message": "These glow-in-the-dark mushrooms are from the tunnel under town hall. Don't ask how I got them. Okay, ask. It was awesome."
+}, {
+"threshold": 80,
+"item_id": "stone",
+"quantity": 10,
+"message": "These crystals are from the deepest part of the mines. I almost got lost finding them. But you're worth a little danger, adventure partner."
+}]
+creature_trades = []
+occupation = "Aspiring Explorer"

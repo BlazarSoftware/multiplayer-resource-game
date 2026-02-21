@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_potato_brute"
+display_name = "Cook Potato Brute"
+result_species_id = "potato_brute"
+ingredients = {"potato": 4, "butter": 1}
+description = "Grow a Potato Brute."
+station = "cauldron"
+unlockable = true

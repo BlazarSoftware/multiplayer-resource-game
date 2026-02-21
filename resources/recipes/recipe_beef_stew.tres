@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "beef_stew"
+display_name = "Cook Beef Stew"
+result_food_id = "beef_stew"
+ingredients = {"beef": 2, "potato": 1, "carrot": 1, "broth": 2}
+description = "Hearty beef stew."
+station = "kitchen"

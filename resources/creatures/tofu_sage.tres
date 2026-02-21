@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "tofu_sage"
+display_name = "Tofu Sage"
+types = PackedStringArray("protein")
+base_hp = 50
+base_attack = 8
+base_defense = 10
+base_sp_attack = 16
+base_sp_defense = 14
+base_speed = 12
+moves = PackedStringArray("umami_bomb", "taste_test", "herb_breeze", "bread_wall")
+mesh_type = "box"
+mesh_color = Color(0.95, 0.93, 0.8, 1)
+mesh_scale = Vector3(0.6, 0.7, 0.6)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("tofu")
+drop_min = 1
+drop_max = 2
+evolves_to = "tempeh_titan"
+evolution_level = 20
+evolution_move = "ferment"
+learnset = {3: "taste_test", 6: "umami_bomb", 9: "herb_breeze", 12: "bread_wall", 15: "ferment"}
+ability_ids = PackedStringArray("umami_essence", "natural_remedy")
+ev_yield = {"sp_attack": 1}
+base_xp_yield = 50

@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "moonlight_souffle"
+display_name = "Moonlight Souffle"
+types = PackedStringArray("sweet", "aromatic")
+base_hp = 80
+base_attack = 12
+base_defense = 16
+base_sp_attack = 28
+base_sp_defense = 22
+base_speed = 12
+moves = PackedStringArray("dream_feast", "sugar_hail", "herb_breeze", "sorbet_storm")
+mesh_type = "sphere"
+mesh_color = Color(0.9, 0.85, 1.0, 1)
+mesh_scale = Vector3(0.9, 1.0, 0.9)
+rarity = "legendary"
+drop_ingredient_ids = PackedStringArray("moon_salt")
+drop_min = 2
+drop_max = 4
+learnset = {3: "sugar_rush", 6: "herb_breeze", 9: "dream_feast", 12: "sugar_hail", 15: "sorbet_storm"}
+ability_ids = PackedStringArray("sweet_tooth", "sugar_coat")
+ev_yield = {"sp_attack": 3}
+base_xp_yield = 150

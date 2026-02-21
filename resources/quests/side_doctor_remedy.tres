@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "side_doctor_remedy"
+display_name = "Dr. Honey's Remedy"
+description = "Dr. Honey is developing a soothing remedy and needs fresh honey as the key ingredient. She's counting on you!"
+category = "side"
+quest_giver_npc_id = "npc_doctor"
+prereq_quest_ids = ["ms_25_meet_shopkeepers"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "deliver",
+"target_id": "honey",
+"target_count": 3,
+"description": "Deliver Honey to Dr. Honey (3)",
+"deliver_to_npc": "npc_doctor",
+"consumes_items": true
+}]
+reward_money = 350
+reward_items = {}
+reward_friendship = {"npc_doctor": 15}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = ""
+chapter = 0
+sort_order = 0
+offer_dialogue = "Good timing! I'm working on a new remedy — a honey-based salve for sore muscles. Farmers love it. But I need real, fresh honey, not the processed stuff. Three jars should do the trick. Can you help?"
+in_progress_dialogue = "Still searching for honey? Wild bees tend to nest near flowering meadows. Be gentle with them — they're doing important work!"
+completion_dialogue = "Perfect consistency, beautiful color — this honey is exactly what I needed. The remedy is going to work wonderfully. Thank you, dear. You've helped more people than you know."

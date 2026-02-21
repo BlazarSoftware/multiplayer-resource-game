@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_45_celebration"
+display_name = "A Toast to New Beginnings"
+description = "The whole town gathers at the square for a celebration. Mayor Rosemary has something special planned."
+category = "main_story"
+quest_giver_npc_id = "npc_mayor"
+prereq_quest_ids = ["ms_44_revelation"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "talk_to",
+"target_id": "npc_mayor",
+"target_count": 1,
+"description": "Attend the celebration and speak with Mayor Rosemary"
+}]
+reward_money = 1000
+reward_items = {}
+reward_friendship = {}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = "demo_complete"
+next_quest_id = ""
+chapter = 4
+sort_order = 6
+offer_dialogue = "Attention, everyone! Tonight, we celebrate. This wonderful person has done more for Cast Iron Cove in a few short weeks than most do in a lifetime. They've helped our bakers, braved the wilds, uncovered our history, and reminded us all what community means. Come — let's raise a glass!"
+in_progress_dialogue = "The celebration is in the town square! Everyone's waiting for you — you're the guest of honor, after all!"
+completion_dialogue = "To you — the newest heart of Cast Iron Cove. Cordelia's spirit lives on in what you've built here. Whatever mysteries remain, whatever the future holds... you won't face it alone. This town is your family now. Welcome home."

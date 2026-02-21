@@ -1,0 +1,167 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_potter"
+display_name = "Clay Brennan"
+visual_color = Color(0.6, 0.45, 0.35, 1)
+birthday = {
+"month": 9,
+"day": 18
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": -5, "y": 1, "z": 8 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": -3, "y": 1, "z": 12 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["stone", "mushroom", "salt", "seaweed"],
+"liked": ["wood", "honey", "herb_basil"],
+"disliked": ["sugar", "chili_powder", "butter"],
+"hated": ["vinegar"]
+}
+dialogues = {
+"neutral": [{
+"text": "...Hmm? Oh. Sorry. I was watching the way the light hits this glaze. See how it catches? Like a tiny captured sunset.",
+"choices": [{
+"label": "That's beautiful. You really see the world differently.",
+"points": 3,
+"response": "...Thanks. Most people just see a bowl. But every piece has a story in its surface."
+}, {
+"label": "It looks like a regular bowl to me.",
+"points": 0,
+"response": "...That's fine. Not everyone has to see it. But it's there."
+}, {
+"label": "You stare at bowls all day? Weird.",
+"points": -2,
+"response": "...I suppose to someone who doesn't create, it would seem that way."
+}]
+}, {
+"text": "I cracked my best piece this morning. Right down the middle. Three weeks of work, gone in a second.",
+"choices": [{
+"label": "That's heartbreaking. I'm sorry, Clay.",
+"points": 3,
+"response": "...Yeah. But there's a Japanese art called kintsugi. Repairing breaks with gold. Maybe this piece isn't finished yet."
+}, {
+"label": "Can you fix it?",
+"points": 0,
+"response": "Maybe. The crack could become part of the design. We'll see."
+}, {
+"label": "Just make another one.",
+"points": -2,
+"response": "...You can't just 'make another one.' Each piece is unique. Like people."
+}]
+}, {
+"text": "I found an unusual clay deposit near the cliffs yesterday. The color is remarkable. Almost purple.",
+"choices": [{
+"label": "That sounds amazing! Would you show me sometime?",
+"points": 3,
+"response": "...I don't usually bring people to my foraging spots. But... sure. I think you'd appreciate it."
+}, {
+"label": "What will you make with it?",
+"points": 0,
+"response": "I'm not sure yet. Sometimes I let the material tell me what it wants to become."
+}, {
+"label": "It's just dirt, Clay.",
+"points": -2,
+"response": "...Everything starts as 'just' something. Until someone sees its potential."
+}]
+}],
+"like": [{
+"text": "I made something for you. It's not much... just a small cup. But I chose the glaze to match your eyes.",
+"choices": [{
+"label": "Clay, this is gorgeous. I'll treasure it.",
+"points": 3,
+"response": "...Really? I mean... good. I'm glad. It took me a few tries to get the color right."
+}, {
+"label": "You made this just for me?",
+"points": 0,
+"response": "...Don't make it a big deal. I just... thought of you while I was working. That's all."
+}]
+}, {
+"text": "You know, my workshop used to feel lonely. Now when I'm shaping clay, I think about showing you the finished piece. It makes the work better somehow.",
+"choices": [{
+"label": "Having someone who appreciates your art matters.",
+"points": 3,
+"response": "...It does. More than I knew. Thank you for seeing what I make as art."
+}, {
+"label": "I'm always happy to look at your work.",
+"points": 0,
+"response": "...That means something. Even if you just glance at it. Someone is looking."
+}]
+}],
+"love": [{
+"text": "I've been working on my masterpiece for three years. Nobody's seen it. But... I want you to be the first. Will you come to the workshop tonight?",
+"choices": [{
+"label": "I would be honored, Clay. Truly.",
+"points": 3,
+"response": "...Okay. I'm nervous. But if anyone would understand what I was trying to say with it... it's you."
+}, {
+"label": "Of course. Your art deserves to be seen.",
+"points": 2,
+"response": "...Maybe. Or maybe it just deserves to be seen by the right person. And that's you."
+}]
+}],
+"dislike": [{
+"text": "...I'm working. The kiln needs attention.",
+"choices": [{
+"label": "I know I haven't been great. Can we start over?",
+"points": 3,
+"response": "...Starting over is what clay is all about. Fold it, reshape it. We'll see."
+}, {
+"label": "Fine, I'll leave you to it.",
+"points": 0,
+"response": "...Mm."
+}]
+}],
+"hate": [{
+"text": "The workshop is closed. To you, specifically.",
+"choices": [{
+"label": "I've been thoughtless and I want to change that.",
+"points": 5,
+"response": "...Words are soft clay. Easy to shape but fragile. Show me something fired and solid."
+}, {
+"label": "Have it your way.",
+"points": -1,
+"response": "...I always do."
+}]
+}],
+"birthday": [{
+"text": "It's my birthday. I usually spend it alone in the workshop, making something just for myself. A tradition.",
+"choices": [{
+"label": "Happy birthday, Clay! Would you like some company today?",
+"points": 3,
+"response": "...Company? I... yes. Actually, yes. Pull up a stool. I'll teach you to throw a pot."
+}, {
+"label": "I brought you something I thought you'd like.",
+"points": 2,
+"response": "You... remembered. And you brought a gift. I don't... thank you. Really."
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "stone",
+"quantity": 8,
+"message": "These stones have interesting mineral patterns. I thought you might find a use for them."
+}, {
+"threshold": 50,
+"item_id": "mushroom",
+"quantity": 5,
+"message": "I found these rare mushrooms near my clay deposit. They only grow in mineral-rich soil. Special, like our friendship."
+}, {
+"threshold": 80,
+"item_id": "salt",
+"quantity": 10,
+"message": "This is hand-harvested sea salt from the hidden tide pools. I use it in my glazes. My most guarded secret. For you."
+}]
+creature_trades = []
+occupation = "Potter"

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "crystal_smash"
+display_name = "Crystal Smash"
+type = "grain"
+category = "physical"
+power = 90
+accuracy = 85
+pp = 10
+description = "Smashes with crystal fists."

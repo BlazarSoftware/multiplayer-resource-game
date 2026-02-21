@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "cabbage"
+display_name = "Cabbage"
+description = "A dense, leafy head vegetable perfect for slaws, stews, and fermentation."
+category = "vegetable"
+icon_color = Color(0.4, 0.7, 0.35, 1)
+sell_price = 4
+season = "winter"
+grow_time = 75.0
+harvest_min = 1
+harvest_max = 2

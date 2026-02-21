@@ -245,6 +245,18 @@ static func bbcode_color(tag: String) -> String:
 		"herbal": color = UITokens.TYPE_HERBAL
 		"umami": color = UITokens.TYPE_UMAMI
 		"grain": color = UITokens.TYPE_GRAIN
+		"mineral": color = UITokens.TYPE_MINERAL
+		"earthy": color = UITokens.TYPE_EARTHY
+		"liquid": color = UITokens.TYPE_LIQUID
+		"aromatic": color = UITokens.TYPE_AROMATIC
+		"toxic": color = UITokens.TYPE_TOXIC
+		"protein": color = UITokens.TYPE_PROTEIN
+		"tropical": color = UITokens.TYPE_TROPICAL
+		"dairy": color = UITokens.TYPE_DAIRY
+		"bitter": color = UITokens.TYPE_BITTER
+		"spoiled": color = UITokens.TYPE_SPOILED
+		"fermented": color = UITokens.TYPE_FERMENTED
+		"smoked": color = UITokens.TYPE_SMOKED
 	return color.to_html(false)
 
 static func style_label3d(label: Label3D, text: String = "", role: String = "") -> void:

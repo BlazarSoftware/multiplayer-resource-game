@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "rye"
+display_name = "Rye"
+description = "A hardy winter grain with a deep, slightly sour flavor for dark breads."
+category = "grain"
+icon_color = Color(0.6, 0.5, 0.3, 1)
+sell_price = 5
+season = "winter"
+grow_time = 90.0
+harvest_min = 1
+harvest_max = 2

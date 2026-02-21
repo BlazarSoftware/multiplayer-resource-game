@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+food_id = "paella"
+display_name = "Paella"
+description = "Saffron-infused Spanish seafood paella."
+icon_color = Color(0.95, 0.8, 0.2, 1)
+sell_price = 85
+buff_type = "xp_multiplier"
+buff_value = 2.0
+buff_duration_sec = 180.0

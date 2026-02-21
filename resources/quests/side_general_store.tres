@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "side_general_store"
+display_name = "Supply Run"
+description = "Hazel at the general store is running low on wood for shelving and display crates. She'd appreciate a delivery."
+category = "side"
+quest_giver_npc_id = "npc_general_store"
+prereq_quest_ids = ["ms_25_meet_shopkeepers"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "deliver",
+"target_id": "wood",
+"target_count": 10,
+"description": "Deliver Wood to Hazel (10)",
+"deliver_to_npc": "npc_general_store",
+"consumes_items": true
+}]
+reward_money = 300
+reward_items = {}
+reward_friendship = {"npc_general_store": 10}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = ""
+chapter = 0
+sort_order = 0
+offer_dialogue = "Oh, you're a lifesaver! I've been meaning to build new display shelves, but I can't exactly close the shop to go chop wood, can I? If you could bring me some, I'd be ever so grateful."
+in_progress_dialogue = "Any luck finding wood? The forest has plenty — just watch out for the thorny patches near the old trail!"
+completion_dialogue = "This is wonderful! Sturdy, well-cut wood — exactly what I needed. The new shelves are going to look fantastic. Thank you, dear — come back anytime, I'll save the best stock for you!"

@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "iron_pot"
+display_name = "Iron Pot"
+types = PackedStringArray("mineral", "grain")
+base_hp = 70
+base_attack = 12
+base_defense = 22
+base_sp_attack = 8
+base_sp_defense = 16
+base_speed = 6
+moves = PackedStringArray("salt_lock", "grain_bash", "plate_cover", "slow_cook")
+mesh_type = "cylinder"
+mesh_color = Color(0.35, 0.35, 0.4, 1)
+mesh_scale = Vector3(0.8, 0.7, 0.8)
+rarity = "uncommon"
+drop_ingredient_ids = PackedStringArray("stone")
+drop_min = 1
+drop_max = 2
+learnset = {3: "salt_lock", 6: "grain_bash", 9: "plate_cover", 12: "slow_cook", 15: "bread_wall"}
+ability_ids = PackedStringArray("iron_gut", "grain_shield")
+ev_yield = {"defense": 2}
+base_xp_yield = 70

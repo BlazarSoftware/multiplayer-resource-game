@@ -314,9 +314,33 @@ func _backfill_ingredient_renames(data: Dictionary) -> void:
 		if hotbar[i] is String and hotbar[i] in INGREDIENT_RENAMES:
 			hotbar[i] = INGREDIENT_RENAMES[hotbar[i]]
 
+const LOCATION_RENAMES := {
+	"npc_brioche": "npc_hubert",
+	"npc_ember": "npc_pepper",
+	"npc_herbalist": "npc_murphy",
+	"npc_old_salt": "npc_captain_sal",
+	"cove_general_store": "general_store",
+}
+
+func _backfill_location_renames(data: Dictionary) -> void:
+	var locations: Array = data.get("discovered_locations", [])
+	var changed := false
+	var i: int = locations.size() - 1
+	while i >= 0:
+		if locations[i] in LOCATION_RENAMES:
+			var new_id: String = LOCATION_RENAMES[locations[i]]
+			if new_id not in locations:
+				locations[i] = new_id
+			else:
+				locations.remove_at(i)
+			changed = true
+		i -= 1
+	if changed:
+		data["discovered_locations"] = locations
+
 func _apply_testplayer_loadout(data: Dictionary) -> void:
 	var pname: String = data.get("player_name", "")
-	if pname.to_lower() != "testplayer":
+	if not pname.to_lower().begins_with("testplayer"):
 		return
 	DataRegistry.ensure_loaded()
 	var inv: Dictionary = data.get("inventory", {})
@@ -413,6 +437,21 @@ func _apply_testplayer_loadout(data: Dictionary) -> void:
 	compendium["creatures_seen"] = all_seen
 	compendium["creatures_owned"] = all_owned
 	data["compendium"] = compendium
+	# Pre-set appearance so TestPlayer skips character creator
+	var app: Dictionary = data.get("appearance", {})
+	if app.is_empty() or app.get("needs_customization", false):
+		data["appearance"] = {
+			"gender": "female",
+			"head_id": "HEAD_01_1",
+			"hair_id": "HAIR_01_1",
+			"torso_id": "TORSO_01_1",
+			"pants_id": "PANTS_01_1",
+			"shoes_id": "SHOES_01_1",
+			"arms_id": "",
+			"hat_id": "",
+			"glasses_id": "",
+			"beard_id": "",
+		}
 	print("[TestPlayer] Applied full loadout: ", inv.size(), " item types, ", storage.size(), " creatures in storage, ", all_recipes.size(), " recipes")
 
 # === Join Flow RPCs ===
@@ -492,6 +531,8 @@ func _finalize_join(sender_id: int, player_name: String, data: Dictionary) -> vo
 	_backfill_creature_ids(data)
 	# Migrate renamed ingredient IDs in old saves
 	_backfill_ingredient_renames(data)
+	# Migrate renamed location IDs in old saves
+	_backfill_location_renames(data)
 	_apply_testplayer_loadout(data)
 	# Backfill player color for old saves that lack it
 	var pc = data.get("player_color", {})
@@ -553,6 +594,9 @@ func _finalize_join(sender_id: int, player_name: String, data: Dictionary) -> vo
 	# Backfill bank data
 	if not data.has("bank"):
 		data["bank"] = {"balance": 0, "last_interest_day": 0}
+	# Backfill character appearance for old saves
+	if not data.has("appearance") or not data["appearance"] is Dictionary:
+		data["appearance"] = {"needs_customization": true}
 	# Prune expired friend requests on login
 	_prune_expired_requests(data)
 	# Backfill basic tools in inventory
@@ -706,6 +750,7 @@ func _create_default_player_data(player_name: String) -> Dictionary:
 		"selected_hotbar_slot": 0,
 		"discovered_locations": [],
 		"dig_cooldowns": {},
+		"appearance": {"needs_customization": true},
 		"bank": {"balance": 0, "last_interest_day": 0},
 		"restaurant": {
 			"restaurant_index": -1,
@@ -2283,3 +2328,52 @@ func _on_day_changed_bank_interest() -> void:
 	# Apply interest to all online players on day change
 	for peer_id in player_data_store:
 		_apply_bank_interest(peer_id)
+
+# ---------- Character Appearance ----------
+
+@rpc("any_peer", "reliable")
+func request_update_appearance(appearance: Dictionary) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	if sender_id not in player_data_store:
+		return
+	# Validate appearance
+	if not _validate_appearance(appearance):
+		print("[NetworkManager] Invalid appearance from peer ", sender_id)
+		return
+	# Remove needs_customization flag
+	appearance.erase("needs_customization")
+	# Update server store
+	player_data_store[sender_id]["appearance"] = appearance
+	# Save
+	SaveManager.save_player(player_data_store[sender_id])
+	# Update the spawned player node
+	var player_node = get_node_or_null("/root/Main/GameWorld/Players/" + str(sender_id))
+	if player_node:
+		player_node.appearance_data = appearance
+	# Broadcast to all clients
+	_sync_appearance.rpc(sender_id, appearance)
+
+
+@rpc("authority", "reliable")
+func _sync_appearance(peer_id: int, appearance: Dictionary) -> void:
+	# Client-side: update the target player's appearance
+	var player_node = get_node_or_null("/root/Main/GameWorld/Players/" + str(peer_id))
+	if player_node and player_node.has_method("update_appearance"):
+		player_node.update_appearance(appearance)
+	# Update local mirror if it's our player
+	if multiplayer.has_multiplayer_peer() and peer_id == multiplayer.get_unique_id():
+		PlayerData.appearance = appearance
+
+
+func _validate_appearance(app: Dictionary) -> bool:
+	var gender: String = app.get("gender", "")
+	if gender != "female" and gender != "male":
+		return false
+	# Required parts: head, torso, pants, shoes
+	for required_key in ["head_id", "torso_id", "pants_id", "shoes_id"]:
+		var val: String = app.get(required_key, "")
+		if val == "":
+			return false
+	return true

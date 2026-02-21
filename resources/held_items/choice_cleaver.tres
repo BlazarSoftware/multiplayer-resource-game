@@ -1,7 +1,6 @@
-[gd_resource type="Resource" script_class="HeldItemDef" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="HeldItemDef" load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/held_item_def.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/held_items/choice_cleaver.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -11,4 +10,3 @@ description = "Boosts Attack by 50%, but locks the holder into its first move."
 effect_type = "choice_lock"
 effect_params = {"stat": "attack", "multiplier": 1.5}
 consumable = false
-icon_texture = ExtResource("2")

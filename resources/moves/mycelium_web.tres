@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "mycelium_web"
+display_name = "Mycelium Web"
+type = "herbal"
+category = "status"
+power = 0
+accuracy = 100
+pp = 15
+description = "Spreads mycelium net."
+target_stat_changes = {"speed": -1}
+hazard_type = "mycelium"

@@ -22,16 +22,24 @@ var hotbar_ui_scene = preload("res://scenes/ui/hotbar_ui.tscn")
 var excursion_hud_scene = preload("res://scenes/ui/excursion_hud.tscn")
 var bank_ui_scene = preload("res://scenes/ui/bank_ui.tscn")
 
+var _toon_shader: Shader = null
+
 func _ready() -> void:
 	# Initialize DataRegistry
 	DataRegistry.ensure_loaded()
+	_toon_shader = load("res://shaders/world_toon.gdshader")
 	_apply_world_label_theme()
 
-	# Generate world decorations (paths, signposts, trees, zone overlays) on all peers
-	_generate_paths()
-	_generate_signposts()
-	_generate_trees()
-	_generate_zone_overlays()
+	# Generate world decorations for Cast Iron Cove
+	_generate_town_paths()
+	_generate_district_signs()
+	_generate_town_decorations()
+	_generate_encounter_zone_overlays()
+	_generate_horizon()
+	_generate_coastline()
+	_generate_lighthouse()
+	_generate_district_props()
+	_generate_wilderness_terrain()
 	_spawn_calendar_board()
 	_spawn_bank_npc()
 	_generate_harvestables()
@@ -244,12 +252,51 @@ func _setup_ui() -> void:
 	fishing_ui.set_script(fishing_ui_script)
 	ui_node.add_child(fishing_ui)
 
+	# Character creator (stays hidden until triggered)
+	var creator_script = load("res://scripts/ui/character_creator_ui.gd")
+	var creator = CanvasLayer.new()
+	creator.name = "CharacterCreatorUI"
+	creator.set_script(creator_script)
+	ui_node.add_child(creator)
+	creator.appearance_confirmed.connect(_on_appearance_confirmed)
+
+	# Start overworld music + ambience (client only)
+	AudioManager.play_music("overworld")
+	AudioManager.play_ambience(0, "overworld")
+
+	# Check if first-time customization is needed (deferred to let UI initialize)
+	_check_first_time_customization.call_deferred()
+
+func _check_first_time_customization() -> void:
+	var app: Dictionary = PlayerData.appearance
+	if app.get("needs_customization", false):
+		open_character_creator(true)
+
+
+func open_character_creator(first_time: bool = false) -> void:
+	var creator = get_node_or_null("UI/CharacterCreatorUI")
+	if creator and creator.has_method("open"):
+		var app: Dictionary = PlayerData.appearance.duplicate()
+		creator.open(app, first_time)
+
+
+func _on_appearance_confirmed(appearance: Dictionary) -> void:
+	# Send to server
+	NetworkManager.request_update_appearance.rpc_id(1, appearance)
+	# Optimistically update local player model
+	PlayerData.appearance = appearance
+	var local_id := multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else -1
+	var player_node = players_node.get_node_or_null(str(local_id))
+	if player_node and player_node.has_method("update_appearance"):
+		player_node.update_appearance(appearance)
+
+
 func _spawn_calendar_board() -> void:
 	var board_script = load("res://scripts/world/calendar_board.gd")
 	var board = Area3D.new()
 	board.set_script(board_script)
 	board.name = "CalendarBoard"
-	board.position = Vector3(5, 0, 5)
+	board.position = Vector3(3, 1, 10)  # Town Square, near Town Hall
 	add_child(board)
 
 func _spawn_bank_npc() -> void:
@@ -257,14 +304,30 @@ func _spawn_bank_npc() -> void:
 	var bank = Area3D.new()
 	bank.set_script(bank_script)
 	bank.name = "BankNPC"
-	bank.position = Vector3(10, 0, 5)
+	bank.position = Vector3(10, 1, 8)  # Town Square, near General Store
 	add_child(bank)
 
+const EXCURSION_PORTALS: Array = [
+	{"zone_type": "default", "position": Vector3(-18, 0, -15), "label": "The Wilds", "color": Color(0.6, 0.2, 0.8)},
+	{"zone_type": "coastal_wreckage", "position": Vector3(-25, 0, 10), "label": "Coastal Wreckage", "color": Color(0.2, 0.6, 0.8)},
+	{"zone_type": "fungal_hollow", "position": Vector3(30, 0, -20), "label": "Fungal Hollow", "color": Color(0.4, 0.2, 0.6)},
+	{"zone_type": "volcanic_crest", "position": Vector3(-35, 0, -30), "label": "Volcanic Crest", "color": Color(0.9, 0.3, 0.1)},
+	{"zone_type": "frozen_pantry", "position": Vector3(40, 0, -25), "label": "Frozen Pantry", "color": Color(0.5, 0.8, 0.95)},
+]
+
 func _spawn_excursion_entrance() -> void:
+	for portal_data in EXCURSION_PORTALS:
+		_spawn_single_portal(portal_data)
+
+func _spawn_single_portal(portal_data: Dictionary) -> void:
+	var zone_type: String = portal_data["zone_type"]
+	var portal_color: Color = portal_data["color"]
+
 	var entrance = Node3D.new()
-	entrance.name = "ExcursionEntrance"
-	entrance.position = Vector3(-15, 0, 0)
+	entrance.name = "ExcursionEntrance_" + zone_type
+	entrance.position = portal_data["position"]
 	entrance.add_to_group("excursion_portal")
+	entrance.set_meta("zone_type", zone_type)
 	add_child(entrance)
 
 	# Signpost
@@ -279,12 +342,12 @@ func _spawn_excursion_entrance() -> void:
 	entrance.add_child(post)
 
 	var sign_label = Label3D.new()
-	UITheme.style_label3d(sign_label, "Excursion Portal", "station")
+	UITheme.style_label3d(sign_label, portal_data["label"], "station")
 	sign_label.font_size = 36
 	sign_label.position = Vector3(0, 3.5, 0)
 	entrance.add_child(sign_label)
 
-	# Glowing portal visual
+	# Glowing portal visual — color matches zone theme
 	var portal_mesh = MeshInstance3D.new()
 	var torus = CylinderMesh.new()
 	torus.top_radius = 2.0
@@ -292,19 +355,30 @@ func _spawn_excursion_entrance() -> void:
 	torus.height = 0.3
 	portal_mesh.mesh = torus
 	var portal_mat = StandardMaterial3D.new()
-	portal_mat.albedo_color = Color(0.4, 0.3, 0.8, 0.5)
+	portal_mat.albedo_color = Color(portal_color.r, portal_color.g, portal_color.b, 0.5)
 	portal_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	portal_mat.emission_enabled = true
-	portal_mat.emission = Color(0.5, 0.3, 0.9)
+	portal_mat.emission = portal_color
 	portal_mat.emission_energy_multiplier = 2.0
 	portal_mesh.set_surface_override_material(0, portal_mat)
 	portal_mesh.position = Vector3(0, 0.2, 0)
 	entrance.add_child(portal_mesh)
 
+	# Magic pulse VFX on portal (client-side only)
+	if not multiplayer.is_server():
+		var vfx_path := "res://assets/vfx/magic_areas/assets/BinbunVFX/magic_areas/effects/pulse_area/pulse_area_vfx_01.tscn"
+		if ResourceLoader.exists(vfx_path):
+			var vfx_scene = load(vfx_path) as PackedScene
+			if vfx_scene:
+				var vfx_inst = vfx_scene.instantiate() as Node3D
+				vfx_inst.position = Vector3(0, 0.5, 0)
+				vfx_inst.scale = Vector3(1.5, 1.5, 1.5)
+				entrance.add_child(vfx_inst)
+
 	# Server-side interaction Area3D
 	if multiplayer.is_server():
 		var area = Area3D.new()
-		area.name = "ExcursionPortalArea"
+		area.name = "PortalArea"
 		area.position = Vector3(0, 0, 0)
 		area.collision_layer = 0
 		area.collision_mask = 3
@@ -326,175 +400,280 @@ func _spawn_excursion_entrance() -> void:
 	entrance.add_child(hint)
 
 
-# === WORLD DECORATION GENERATION ===
+# === CAST IRON COVE TOWN DECORATION ===
 
-func _generate_paths() -> void:
+func _generate_town_paths() -> void:
 	var paths_node = Node3D.new()
 	paths_node.name = "Paths"
 	add_child(paths_node)
 
-	var path_mat = StandardMaterial3D.new()
-	path_mat.albedo_color = Color(0.55, 0.45, 0.3)
+	var cobble_mat = StandardMaterial3D.new()
+	cobble_mat.albedo_color = Color(0.55, 0.5, 0.4)
+	var dirt_mat = StandardMaterial3D.new()
+	dirt_mat.albedo_color = Color(0.5, 0.4, 0.25)
 
-	# Path segments: {pos, size} — each is a BoxMesh strip
-	var segments = [
-		# Spawn hub to restaurant row (south)
-		{"pos": Vector3(0, 0.03, 7.5), "size": Vector3(3.5, 0.05, 9)},
-		# Spawn hub to starter fork (north)
-		{"pos": Vector3(0, 0.03, -2), "size": Vector3(3.5, 0.05, 10)},
-		# Spawn hub to farm zone (east)
-		{"pos": Vector3(12.5, 0.03, 3), "size": Vector3(25, 0.05, 3.5)},
-		# Starter fork to Herb Garden (west branch)
-		{"pos": Vector3(-6, 0.03, -12), "size": Vector3(12, 0.05, 3.5)},
-		# Starter fork to Flame Kitchen (east branch)
-		{"pos": Vector3(6, 0.03, -12), "size": Vector3(12, 0.05, 3.5)},
-		# Main path: starter fork to Chef Umami gate
-		{"pos": Vector3(0, 0.03, -14), "size": Vector3(3.5, 0.05, 14)},
-		# Past Chef Umami to junction
-		{"pos": Vector3(0, 0.03, -25), "size": Vector3(3.5, 0.05, 10)},
-		# Junction to Frost Pantry (west)
-		{"pos": Vector3(-9, 0.03, -32), "size": Vector3(18, 0.05, 3.5)},
-		# Junction to Harvest Field (east)
-		{"pos": Vector3(9, 0.03, -32), "size": Vector3(18, 0.05, 3.5)},
-		# Main path: junction to Head Chef Roux gate
-		{"pos": Vector3(0, 0.03, -35), "size": Vector3(3.5, 0.05, 10)},
-		# Past Head Chef Roux to deep zone
-		{"pos": Vector3(0, 0.03, -47), "size": Vector3(3.5, 0.05, 14)},
-		# Deep zone to Fusion Kitchen (west)
-		{"pos": Vector3(-9, 0.03, -48), "size": Vector3(18, 0.05, 3.5)},
-		# Deep zone to Sour Springs (east)
-		{"pos": Vector3(9, 0.03, -48), "size": Vector3(18, 0.05, 3.5)},
-		# Deep path to Cauldron
-		{"pos": Vector3(0, 0.03, -52), "size": Vector3(3.5, 0.05, 6)},
-		# Side path to Pastry Dulce (-18, -28)
-		{"pos": Vector3(-18, 0.03, -31), "size": Vector3(3.5, 0.05, 6)},
-		# Side path to Brinemaster Vlad (18, -28)
-		{"pos": Vector3(18, 0.03, -31), "size": Vector3(3.5, 0.05, 6)},
-		# Side path to Grand Chef Michelin (-25, -55)
-		{"pos": Vector3(-12, 0.03, -55), "size": Vector3(26, 0.05, 3.5)},
+	# Town Square paths (cobblestone)
+	var cobble_segments = [
+		# Central square plaza
+		{"pos": Vector3(0, 0.03, 6), "size": Vector3(20, 0.05, 12)},
+		# Town Square to Market Row (east)
+		{"pos": Vector3(12, 0.03, 7), "size": Vector3(8, 0.05, 3.5)},
+		# Market Row main street
+		{"pos": Vector3(18, 0.03, 7), "size": Vector3(12, 0.05, 3.5)},
+		# Town Square to Wharf Walk (west)
+		{"pos": Vector3(-8, 0.03, 0), "size": Vector3(12, 0.05, 3.5)},
+		# Wharf Walk boardwalk
+		{"pos": Vector3(-12, 0.03, -4), "size": Vector3(14, 0.05, 10)},
 	]
-
-	for seg in segments:
+	for seg in cobble_segments:
 		var mesh_inst = MeshInstance3D.new()
 		var box = BoxMesh.new()
 		box.size = seg.size
 		mesh_inst.mesh = box
-		mesh_inst.set_surface_override_material(0, path_mat)
+		mesh_inst.set_surface_override_material(0, cobble_mat)
 		mesh_inst.position = seg.pos
 		paths_node.add_child(mesh_inst)
 
-func _generate_signposts() -> void:
+	# Dirt paths to encounter zones and farm
+	var dirt_segments = [
+		# Town Square to wild zones (north)
+		{"pos": Vector3(0, 0.03, -5), "size": Vector3(3.5, 0.05, 14)},
+		# To Herb Garden & Fermented Hollow
+		{"pos": Vector3(-12, 0.03, -15), "size": Vector3(20, 0.05, 3.5)},
+		# To Flame Kitchen & Blackened Crest
+		{"pos": Vector3(12, 0.03, -15), "size": Vector3(20, 0.05, 3.5)},
+		# Deep wilderness path
+		{"pos": Vector3(0, 0.03, -25), "size": Vector3(3.5, 0.05, 16)},
+		# To Frost Pantry & Battered Bay
+		{"pos": Vector3(-12, 0.03, -32), "size": Vector3(20, 0.05, 3.5)},
+		# To Harvest Field & Salted Shipwreck
+		{"pos": Vector3(12, 0.03, -32), "size": Vector3(20, 0.05, 3.5)},
+		# Deep path to Cauldron
+		{"pos": Vector3(0, 0.03, -45), "size": Vector3(3.5, 0.05, 20)},
+		# To Sour Springs
+		{"pos": Vector3(9, 0.03, -48), "size": Vector3(18, 0.05, 3.5)},
+		# To Fusion Kitchen
+		{"pos": Vector3(-9, 0.03, -48), "size": Vector3(18, 0.05, 3.5)},
+		# Town to farm (east)
+		{"pos": Vector3(15, 0.03, 2), "size": Vector3(20, 0.05, 3.5)},
+		# Harbor Heights hill path
+		{"pos": Vector3(2, 0.03, 20), "size": Vector3(3.5, 0.05, 16)},
+		# Harbor Heights plateau
+		{"pos": Vector3(5, 6.03, 38), "size": Vector3(16, 0.05, 16)},
+	]
+	for seg in dirt_segments:
+		var mesh_inst = MeshInstance3D.new()
+		var box = BoxMesh.new()
+		box.size = seg.size
+		mesh_inst.mesh = box
+		mesh_inst.set_surface_override_material(0, dirt_mat)
+		mesh_inst.position = seg.pos
+		paths_node.add_child(mesh_inst)
+
+func _generate_district_signs() -> void:
 	var signs_node = Node3D.new()
-	signs_node.name = "Signposts"
+	signs_node.name = "DistrictSigns"
 	add_child(signs_node)
 
 	var post_mat = StandardMaterial3D.new()
 	post_mat.albedo_color = Color(0.4, 0.25, 0.1)
 
 	var signposts = [
-		{"pos": Vector3(3, 0, 3), "text": "N: Wild Zones\nE: Farm\nS: Restaurants"},
+		{"pos": Vector3(0, 1, 12), "text": "Town Square"},
+		{"pos": Vector3(-6, 0, -2), "text": "Wharf Walk"},
+		{"pos": Vector3(12, 2, 5), "text": "Market Row"},
+		{"pos": Vector3(2, 4, 25), "text": "Harbor Heights"},
 		{"pos": Vector3(0, 0, -8), "text": "W: Herb Garden\nE: Flame Kitchen\nN: Deeper Wilds"},
-		{"pos": Vector3(0, 0, -25), "text": "W: Frost Pantry\nE: Harvest Field\nN: Danger Ahead!"},
+		{"pos": Vector3(0, 0, -25), "text": "W: Frost Pantry / Battered Bay\nE: Harvest Field / Salted Shipwreck"},
 		{"pos": Vector3(0, 0, -42), "text": "N: Cauldron\nW: Fusion Kitchen\nE: Sour Springs"},
 		{"pos": Vector3(18, 0, 0), "text": "E: Community Farm"},
-		{"pos": Vector3(0, 0, 10), "text": "S: Restaurant Row"},
 	]
 
 	for sp in signposts:
-		# Post
 		var post = MeshInstance3D.new()
 		var post_mesh = BoxMesh.new()
 		post_mesh.size = Vector3(0.2, 2.0, 0.2)
 		post.mesh = post_mesh
 		post.set_surface_override_material(0, post_mat)
-		post.position = Vector3(sp.pos.x, 1.0, sp.pos.z)
+		post.position = Vector3(sp.pos.x, sp.pos.y + 1.0, sp.pos.z)
 		signs_node.add_child(post)
 
-		# Sign text
 		var label = Label3D.new()
 		UITheme.style_label3d(label, sp.text, "zone_sign")
 		label.font_size = 36
-		label.position = Vector3(sp.pos.x, 2.3, sp.pos.z)
+		label.position = Vector3(sp.pos.x, sp.pos.y + 2.3, sp.pos.z)
 		signs_node.add_child(label)
 
-	# Floating direction markers toward Restaurant Row
-	var marker_positions = [Vector3(0, 1.5, 6), Vector3(0, 1.5, 9)]
-	for mpos in marker_positions:
-		var marker = Label3D.new()
-		UITheme.style_label3d(marker, "v Restaurant Row v", "interaction_hint")
-		marker.font_size = 24
-		marker.outline_size = 6
-		marker.position = mpos
-		signs_node.add_child(marker)
+func _generate_town_decorations() -> void:
+	var decor_node = Node3D.new()
+	decor_node.name = "TownDecorations"
+	add_child(decor_node)
 
-func _generate_trees() -> void:
-	var trees_node = Node3D.new()
-	trees_node.name = "Trees"
-	add_child(trees_node)
-
-	var trunk_mat = StandardMaterial3D.new()
-	trunk_mat.albedo_color = Color(0.35, 0.2, 0.1)
-	var canopy_mat = StandardMaterial3D.new()
-	canopy_mat.albedo_color = Color(0.15, 0.45, 0.15)
-
-	var tree_positions = [
-		# Along spawn-to-wild path edges
-		Vector3(-3, 0, -5), Vector3(3, 0, -5),
-		Vector3(-3, 0, -10), Vector3(3, 0, -10),
-		# Near starter fork
-		Vector3(-5, 0, -8), Vector3(5, 0, -8),
-		# Along mid zone path
-		Vector3(-3, 0, -22), Vector3(3, 0, -22),
-		Vector3(-3, 0, -28), Vector3(3, 0, -28),
-		# Along deep path
-		Vector3(-3, 0, -45), Vector3(3, 0, -45),
-		# Near farm entrance
-		Vector3(15, 0, -2), Vector3(15, 0, 5),
-		# Near restaurant row
-		Vector3(-4, 0, 10), Vector3(4, 0, 10),
-		# Decorative clusters near zones
-		Vector3(-18, 0, -42), Vector3(-22, 0, -40),
-		Vector3(22, 0, -40), Vector3(18, 0, -42),
+	# --- Synty Trees by district ---
+	# Town Square — round trimmed trees (civic feel)
+	var town_trees = [
+		Vector3(-8, 0, 3), Vector3(8, 0, 3),
+		Vector3(-8, 0, 10), Vector3(8, 0, 10),
 	]
+	for pos in town_trees:
+		_place_synty(decor_node, "nature/models/SM_Tree_Round_01.glb", pos, 0.0, 1.5)
 
-	for pos in tree_positions:
-		# Trunk
-		var trunk = MeshInstance3D.new()
-		var trunk_mesh = CylinderMesh.new()
-		trunk_mesh.top_radius = 0.15
-		trunk_mesh.bottom_radius = 0.2
-		trunk_mesh.height = 2.5
-		trunk.mesh = trunk_mesh
-		trunk.set_surface_override_material(0, trunk_mat)
-		trunk.position = Vector3(pos.x, 1.25, pos.z)
-		trees_node.add_child(trunk)
+	# Market Row — birch trees
+	var market_trees = [
+		Vector3(14, 0, 3), Vector3(14, 0, 10),
+		Vector3(22, 0, 3), Vector3(22, 0, 10),
+	]
+	for i in market_trees.size():
+		var variant = "SM_Tree_Birch_0%d.glb" % (i % 4 + 1)
+		_place_synty(decor_node, "nature/models/" + variant, market_trees[i], 0.0, 1.2)
 
-		# Canopy
-		var canopy = MeshInstance3D.new()
-		var canopy_mesh = SphereMesh.new()
-		canopy_mesh.radius = 1.2
-		canopy_mesh.height = 2.0
-		canopy.mesh = canopy_mesh
-		canopy.set_surface_override_material(0, canopy_mat)
-		canopy.position = Vector3(pos.x, 3.0, pos.z)
-		trees_node.add_child(canopy)
+	# Wharf Walk — tropical palms
+	var wharf_trees = [Vector3(-6, 0, -8), Vector3(-16, 0, -8)]
+	for i in wharf_trees.size():
+		var variant = "SM_Env_Tree_Palm_0%d.glb" % (i % 4 + 1)
+		_place_synty(decor_node, "tropical/models/" + variant, wharf_trees[i], randf() * TAU, 1.0)
 
-func _generate_zone_overlays() -> void:
+	# Path to wilds — pine trees getting sparser
+	var wild_path_trees = [
+		Vector3(-3, 0, -10), Vector3(3, 0, -10),
+		Vector3(-3, 0, -22), Vector3(3, 0, -22),
+		Vector3(-3, 0, -35), Vector3(3, 0, -35),
+	]
+	for i in wild_path_trees.size():
+		var variant: String
+		if i < 2:
+			variant = "SM_Tree_Pine_01.glb"
+		elif i < 4:
+			variant = "SM_Tree_Pine_Small_01.glb"
+		else:
+			variant = "SM_Tree_Pine_Dead_01.glb"
+		_place_synty(decor_node, "nature/models/" + variant, wild_path_trees[i], randf() * TAU, 1.3)
+
+	# Harbor Heights — willow trees on hillside
+	var harbor_trees = [
+		Vector3(0, 7, 35), Vector3(10, 7, 40),
+		Vector3(-2, 7, 42), Vector3(12, 7, 35),
+	]
+	for pos in harbor_trees:
+		_place_synty(decor_node, "nature/models/SM_Tree_Willow_Medium_01.glb", pos, randf() * TAU, 1.3)
+
+	# Near farm — fruit trees
+	_place_synty(decor_node, "farm/models/SM_Env_Tree_Apple_01.glb", Vector3(18, 0, -2), 0.0, 1.2)
+	_place_synty(decor_node, "farm/models/SM_Env_Tree_Orange_01.glb", Vector3(18, 0, 5), 0.0, 1.2)
+
+	# Encounter zone border trees
+	_place_synty(decor_node, "nature/models/SM_Tree_Dead_01.glb", Vector3(-18, 0, -42), 0.0, 1.5)
+	_place_synty(decor_node, "nature/models/SM_Tree_Dead_02.glb", Vector3(22, 0, -42), 0.0, 1.5)
+
+	# --- Hedges along Town Square paths ---
+	var hedge_positions = [
+		{"pos": Vector3(-4, 0, 1), "rot": 0.0},
+		{"pos": Vector3(4, 0, 1), "rot": 0.0},
+		{"pos": Vector3(-4, 0, 11), "rot": 0.0},
+		{"pos": Vector3(4, 0, 11), "rot": 0.0},
+	]
+	for h in hedge_positions:
+		_place_synty(decor_node, "nature/models/SM_Plant_Hedge_Bush_01.glb", h.pos, h.rot, 1.5)
+
+	# --- Flowers around fountain and bakery ---
+	var flower_positions = [
+		Vector3(-2, 0, 5), Vector3(2, 0, 5),
+		Vector3(-2, 0, 7), Vector3(2, 0, 7),
+		Vector3(-5, 0, 9), Vector3(-1, 0, 9),
+	]
+	for i in flower_positions.size():
+		var variant = "SM_Plant_0%d.glb" % (i % 7 + 1)
+		_place_synty(decor_node, "nature/models/" + variant, flower_positions[i], randf() * TAU, 1.2)
+
+	# --- Ferns near wilderness edge ---
+	var fern_positions = [
+		Vector3(-5, 0, -7), Vector3(5, 0, -7),
+		Vector3(-2, 0, -9), Vector3(2, 0, -9),
+	]
+	for i in fern_positions.size():
+		var variant = "SM_Plant_Fern_0%d.glb" % (i % 3 + 1)
+		_place_synty(decor_node, "nature/models/" + variant, fern_positions[i], randf() * TAU, 1.5)
+
+	# --- Bushes in various districts ---
+	_place_synty(decor_node, "nature/models/SM_Plant_Bush_Leaves_01.glb", Vector3(-6, 0, 5), 0.0, 1.3)
+	_place_synty(decor_node, "nature/models/SM_Plant_Bush_Leaves_02.glb", Vector3(6, 0, 8), 0.0, 1.3)
+	_place_synty(decor_node, "nature/models/SM_Plant_Bush_01.glb", Vector3(10, 0, 2), 0.0, 1.2)
+	_place_synty(decor_node, "tropical/models/SM_Env_Bush_Palm_01.glb", Vector3(-14, 0, -5), 0.0, 1.0)
+	_place_synty(decor_node, "tropical/models/SM_Env_Bush_Palm_02.glb", Vector3(-18, 0, -3), 0.0, 1.0)
+
+	# Town fountain at Town Square center
+	var fountain_mat = StandardMaterial3D.new()
+	fountain_mat.albedo_color = Color(0.6, 0.6, 0.65)
+	var fountain = MeshInstance3D.new()
+	var fountain_mesh = CylinderMesh.new()
+	fountain_mesh.top_radius = 1.5
+	fountain_mesh.bottom_radius = 2.0
+	fountain_mesh.height = 1.0
+	fountain.mesh = fountain_mesh
+	fountain.set_surface_override_material(0, fountain_mat)
+	fountain.position = Vector3(0, 0.5, 6)
+	decor_node.add_child(fountain)
+
+	# Water in fountain
+	var water_mat = StandardMaterial3D.new()
+	water_mat.albedo_color = Color(0.3, 0.5, 0.8, 0.6)
+	water_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var water = MeshInstance3D.new()
+	var water_mesh = CylinderMesh.new()
+	water_mesh.top_radius = 1.4
+	water_mesh.bottom_radius = 1.4
+	water_mesh.height = 0.15
+	water.mesh = water_mesh
+	water.set_surface_override_material(0, water_mat)
+	water.position = Vector3(0, 1.05, 6)
+	decor_node.add_child(water)
+
+	# Harbor Heights elevation (simple raised platform)
+	var hill_mat = StandardMaterial3D.new()
+	hill_mat.albedo_color = Color(0.35, 0.5, 0.3)
+	var hill = MeshInstance3D.new()
+	var hill_mesh = BoxMesh.new()
+	hill_mesh.size = Vector3(30, 6, 30)
+	hill.mesh = hill_mesh
+	hill.set_surface_override_material(0, hill_mat)
+	hill.position = Vector3(5, 3, 38)
+	decor_node.add_child(hill)
+
+	# Ocean plane (west of town) — uses animated water shader
+	var water_shader = load("res://shaders/water.gdshader")
+	var ocean_shader_mat = ShaderMaterial.new()
+	ocean_shader_mat.shader = water_shader
+	var ocean = MeshInstance3D.new()
+	var ocean_mesh = PlaneMesh.new()
+	ocean_mesh.size = Vector2(200, 160)
+	ocean_mesh.subdivide_width = 40
+	ocean_mesh.subdivide_depth = 32
+	ocean.mesh = ocean_mesh
+	ocean.material_override = ocean_shader_mat
+	ocean.position = Vector3(-35, -0.3, -10)
+	decor_node.add_child(ocean)
+
+func _generate_encounter_zone_overlays() -> void:
 	var overlays_node = Node3D.new()
 	overlays_node.name = "ZoneOverlays"
 	add_child(overlays_node)
 
 	var zones = [
+		# Original 6 zones
 		{"pos": Vector3(-12, 0.02, -15), "color": Color(0.2, 0.5, 0.2, 0.3), "label": "Herb Garden"},
 		{"pos": Vector3(12, 0.02, -15), "color": Color(0.5, 0.25, 0.15, 0.3), "label": "Flame Kitchen"},
 		{"pos": Vector3(-18, 0.02, -35), "color": Color(0.25, 0.35, 0.6, 0.3), "label": "Frost Pantry"},
 		{"pos": Vector3(18, 0.02, -35), "color": Color(0.5, 0.45, 0.15, 0.3), "label": "Harvest Field"},
 		{"pos": Vector3(18, 0.02, -48), "color": Color(0.6, 0.7, 0.15, 0.3), "label": "Sour Springs"},
 		{"pos": Vector3(-18, 0.02, -48), "color": Color(0.5, 0.25, 0.5, 0.3), "label": "Fusion Kitchen"},
+		# 4 new zones
+		{"pos": Vector3(-25, 0.02, -20), "color": Color(0.4, 0.35, 0.15, 0.3), "label": "Fermented Hollow"},
+		{"pos": Vector3(25, 3.02, -20), "color": Color(0.5, 0.15, 0.1, 0.3), "label": "Blackened Crest"},
+		{"pos": Vector3(-20, 0.02, -30), "color": Color(0.25, 0.4, 0.6, 0.3), "label": "Battered Bay"},
+		{"pos": Vector3(20, 0.02, -30), "color": Color(0.45, 0.5, 0.35, 0.3), "label": "Salted Shipwreck"},
 	]
 
 	for z in zones:
-		# Ground overlay
 		var overlay = MeshInstance3D.new()
 		var box = BoxMesh.new()
 		box.size = Vector3(14, 0.02, 14)
@@ -506,21 +685,19 @@ func _generate_zone_overlays() -> void:
 		overlay.position = z.pos
 		overlays_node.add_child(overlay)
 
-		# Zone label (floating above)
 		var label = Label3D.new()
 		UITheme.style_label3d(label, z.label, "zone_sign")
 		label.font_size = 36
-		label.position = Vector3(z.pos.x, 3.5, z.pos.z)
+		label.position = Vector3(z.pos.x, z.pos.y + 3.5, z.pos.z)
 		overlays_node.add_child(label)
 
-	# Add some rocks/boulders at zone borders for visual separation
+	# Rocks at zone borders
 	var rock_mat = StandardMaterial3D.new()
 	rock_mat.albedo_color = Color(0.5, 0.48, 0.45)
 	var rock_positions = [
 		Vector3(-5, 0.4, -18), Vector3(5, 0.3, -18),
 		Vector3(-8, 0.35, -30), Vector3(8, 0.35, -30),
 		Vector3(-8, 0.4, -44), Vector3(8, 0.4, -44),
-		Vector3(-10, 0.3, -20), Vector3(10, 0.3, -20),
 	]
 	for rpos in rock_positions:
 		var rock = MeshInstance3D.new()
@@ -583,13 +760,14 @@ func _spawn_player(peer_id: int) -> void:
 			player.position = _get_spread_spawn_position()
 	else:
 		player.position = _get_spread_spawn_position()
-	# Set visual properties from server data
+	# Set visual properties from server data (BEFORE add_child for StateSync spawn-only replication)
 	if peer_id in NetworkManager.player_data_store:
 		var pdata = NetworkManager.player_data_store[peer_id]
 		var cd = pdata.get("player_color", {})
 		if cd is Dictionary and not cd.is_empty():
 			player.player_color = Color(cd.get("r", 0.2), cd.get("g", 0.5), cd.get("b", 0.9))
 		player.player_name_display = str(pdata.get("player_name", "Player"))
+		player.appearance_data = pdata.get("appearance", {})
 	# Keep exact numeric node names (peer_id) so authority/camera logic works on clients.
 	players_node.add_child(player)
 	print("Spawned player: ", peer_id)
@@ -620,7 +798,7 @@ func _get_spread_spawn_position() -> Vector3:
 	var idx = players_node.get_child_count() # 0-based count of existing children
 	var angle = idx * 2.399 # golden angle in radians
 	var radius = 2.0
-	return Vector3(cos(angle) * radius, 1.0, sin(angle) * radius + 3.0)
+	return Vector3(cos(angle) * radius, 1.0, sin(angle) * radius + 6.0)  # Town Square center
 
 func _sync_world_to_client(peer_id: int) -> void:
 	if not multiplayer.is_server():
@@ -765,9 +943,9 @@ func _spawn_fishing_spots() -> void:
 	add_child(fishing_node)
 
 	var spots = [
-		{"pos": Vector3(-8, 0, 8), "table_id": "pond", "label": "Pond"},
-		{"pos": Vector3(-20, 0, -20), "table_id": "river", "label": "River"},
-		{"pos": Vector3(0, 0, -55), "table_id": "ocean", "label": "Ocean"},
+		{"pos": Vector3(-14, 0, -6), "table_id": "pond", "label": "Cove Pond"},
+		{"pos": Vector3(-10, 0, -12), "table_id": "river", "label": "Wharf Pier"},
+		{"pos": Vector3(-22, 0, -10), "table_id": "ocean", "label": "Open Ocean"},
 	]
 
 	var water_mat = StandardMaterial3D.new()
@@ -805,3 +983,310 @@ func _spawn_fishing_spots() -> void:
 		UITheme.style_label3d(hint, "Equip Rod + Press E", "interaction_hint")
 		hint.position = Vector3(0, 2.0, 0)
 		spot_node.add_child(hint)
+
+# === SYNTY MODEL HELPERS ===
+
+func _place_synty(parent: Node3D, asset_path: String, pos: Vector3, rot_y: float = 0.0, scale_val: float = 1.0) -> Node3D:
+	var scene = load("res://assets/synty/" + asset_path) as PackedScene
+	if not scene:
+		push_warning("[GameWorld] Could not load Synty asset: " + asset_path)
+		return null
+	var instance = scene.instantiate()
+	instance.position = pos
+	if rot_y != 0.0:
+		instance.rotation.y = rot_y
+	if scale_val != 1.0:
+		instance.scale = Vector3(scale_val, scale_val, scale_val)
+	_apply_toon_shader(instance)
+	parent.add_child(instance)
+	return instance
+
+func _apply_toon_shader(node: Node) -> void:
+	if not _toon_shader:
+		return
+	if node is MeshInstance3D:
+		var mi := node as MeshInstance3D
+		var mesh := mi.mesh
+		if mesh:
+			for surf_idx in mesh.get_surface_count():
+				var existing_mat = mi.get_active_material(surf_idx)
+				var shader_mat = ShaderMaterial.new()
+				shader_mat.shader = _toon_shader
+				# Transfer texture from original material if present
+				if existing_mat is StandardMaterial3D:
+					var std_mat := existing_mat as StandardMaterial3D
+					if std_mat.albedo_texture:
+						shader_mat.set_shader_parameter("albedo_texture", std_mat.albedo_texture)
+						shader_mat.set_shader_parameter("use_texture", true)
+					else:
+						shader_mat.set_shader_parameter("use_texture", false)
+						shader_mat.set_shader_parameter("albedo_color", std_mat.albedo_color)
+				elif existing_mat is ShaderMaterial:
+					# Already a shader material — skip
+					continue
+				else:
+					shader_mat.set_shader_parameter("use_texture", false)
+				mi.set_surface_override_material(surf_idx, shader_mat)
+	for child in node.get_children():
+		_apply_toon_shader(child)
+
+# === PHASE 1: SKYBOX AND HORIZON ===
+
+func _generate_horizon() -> void:
+	var horizon_node = Node3D.new()
+	horizon_node.name = "Horizon"
+	add_child(horizon_node)
+
+	# North mountains — block the north void
+	_place_synty(horizon_node, "nature/models/MountainSkybox.glb", Vector3(0, -2, 90), 0.0, 4.0)
+	_place_synty(horizon_node, "nature/models/MountainSkybox.glb", Vector3(-35, -3, 95), 0.5, 3.5)
+	_place_synty(horizon_node, "nature/models/MountainSkybox.glb", Vector3(35, -1, 85), -0.3, 3.8)
+
+	# East ridge — block the east void
+	_place_synty(horizon_node, "nature/models/SM_Terrain_Mountain_01.glb", Vector3(70, -2, -20), 0.0, 5.0)
+	_place_synty(horizon_node, "nature/models/SM_Terrain_Mountain_02.glb", Vector3(65, -1, 10), 0.4, 4.5)
+
+	# South hills — behind the Cauldron area
+	_place_synty(horizon_node, "pirate/models/SM_Env_Background_Hills_01.glb", Vector3(0, -1, -75), 0.0, 3.0)
+	_place_synty(horizon_node, "nature/models/SM_Terrain_Mountain_03.glb", Vector3(-30, -2, -80), 0.3, 4.0)
+
+	# West islands — visible in the ocean, sells "cove" feel
+	_place_synty(horizon_node, "pirate/models/SM_Env_Background_Island_01.glb", Vector3(-80, -1, -15), 0.0, 2.5)
+	_place_synty(horizon_node, "pirate/models/SM_Env_Background_Island_02.glb", Vector3(-90, -1, -30), 0.5, 2.0)
+	_place_synty(horizon_node, "pirate/models/SM_Env_Background_Island_03.glb", Vector3(-75, -1, 5), -0.3, 2.2)
+
+# === PHASE 2: COASTLINE ===
+
+func _generate_coastline() -> void:
+	var coast_node = Node3D.new()
+	coast_node.name = "Coastline"
+	add_child(coast_node)
+
+	# --- Cliff face along western edge (defines the cove) ---
+	var cliff_positions = [
+		{"pos": Vector3(-27, 0, 15), "rot": 1.57, "scale": 2.0, "model": "SM_Env_Rock_Cliff_01.glb"},
+		{"pos": Vector3(-28, 0, 10), "rot": 1.6, "scale": 2.2, "model": "SM_Env_Rock_Cliff_02.glb"},
+		{"pos": Vector3(-26, 0, 5), "rot": 1.5, "scale": 1.8, "model": "SM_Env_Rock_Cliff_01.glb"},
+		{"pos": Vector3(-27, 0, 0), "rot": 1.57, "scale": 2.0, "model": "SM_Env_Rock_Cliff_03.glb"},
+		# Gap from z=-5 to z=-10 for beach access
+		{"pos": Vector3(-27, 0, -12), "rot": 1.57, "scale": 2.0, "model": "SM_Env_Rock_Cliff_02.glb"},
+		{"pos": Vector3(-28, 0, -16), "rot": 1.5, "scale": 1.8, "model": "SM_Env_Rock_Cliff_01.glb"},
+		{"pos": Vector3(-26, 0, -20), "rot": 1.6, "scale": 2.2, "model": "SM_Env_Rock_Cliff_03.glb"},
+		{"pos": Vector3(-27, 0, -25), "rot": 1.57, "scale": 2.0, "model": "SM_Env_Rock_Cliff_02.glb"},
+	]
+	for cliff in cliff_positions:
+		_place_synty(coast_node, "tropical/models/" + cliff.model, cliff.pos, cliff.rot, cliff.scale)
+
+	# --- Beach sand pieces in the gap ---
+	var beach_positions = [
+		{"pos": Vector3(-22, -0.1, -6), "model": "SM_Env_Beach_01.glb"},
+		{"pos": Vector3(-24, -0.1, -8), "model": "SM_Env_Beach_02.glb"},
+		{"pos": Vector3(-20, -0.1, -9), "model": "SM_Env_Beach_03.glb"},
+		{"pos": Vector3(-23, -0.1, -11), "model": "SM_Env_Beach_04.glb"},
+		{"pos": Vector3(-21, -0.1, -13), "model": "SM_Env_Beach_05.glb"},
+		{"pos": Vector3(-25, -0.2, -7), "model": "SM_Env_Beach_06.glb"},
+	]
+	for b in beach_positions:
+		_place_synty(coast_node, "pirate/models/" + b.model, b.pos, randf() * TAU, 1.5)
+
+	# --- Driftwood on beach ---
+	var driftwood_positions = [
+		Vector3(-23, 0, -7), Vector3(-21, 0, -10),
+		Vector3(-24, 0, -12), Vector3(-20, 0, -8),
+	]
+	for i in driftwood_positions.size():
+		var variant = "SM_Env_DriftWood_0%d.glb" % (i % 5 + 1)
+		_place_synty(coast_node, "tropical/models/" + variant, driftwood_positions[i], randf() * TAU, 1.2)
+
+	# --- Rock arch at beach entrance ---
+	_place_synty(coast_node, "tropical/models/SM_Env_Rock_Arch_01.glb", Vector3(-24, 0, -3), 1.2, 2.0)
+
+	# --- Wharf Pier docks extending over water ---
+	_place_synty(coast_node, "pirate/models/SM_Bld_Dock_01.glb", Vector3(-12, 0, -12), PI, 1.5)
+	_place_synty(coast_node, "pirate/models/SM_Bld_Dock_02.glb", Vector3(-15, 0, -12), PI, 1.5)
+	_place_synty(coast_node, "pirate/models/SM_Bld_Dock_03.glb", Vector3(-18, 0, -12), PI, 1.5)
+	_place_synty(coast_node, "pirate/models/SM_Bld_Dock_Stairs_01.glb", Vector3(-11, 0, -11), PI, 1.5)
+
+	# --- Rickety dock at Open Ocean fishing spot ---
+	_place_synty(coast_node, "pirate/models/SM_Bld_Rickety_Dock_01.glb", Vector3(-22, 0, -10), 0.0, 1.3)
+	_place_synty(coast_node, "pirate/models/SM_Bld_Rickety_Dock_02.glb", Vector3(-25, -0.1, -10), 0.0, 1.3)
+
+# === PHASE 4: THE LIGHTHOUSE ===
+
+func _generate_lighthouse() -> void:
+	var lighthouse_node = Node3D.new()
+	lighthouse_node.name = "Lighthouse"
+	add_child(lighthouse_node)
+
+	# Base — fort base on the cliff edge
+	_place_synty(lighthouse_node, "pirate/models/SM_Bld_Fort_Base_Circle_01.glb", Vector3(-25, 0, 15), 0.0, 2.0)
+
+	# Tower — stacked fort tower pieces for height
+	_place_synty(lighthouse_node, "pirate/models/SM_Bld_Fort_Tower_01.glb", Vector3(-25, 3, 15), 0.0, 2.0)
+	_place_synty(lighthouse_node, "pirate/models/SM_Bld_Fort_Tower_Room_01.glb", Vector3(-25, 8, 15), 0.0, 2.0)
+
+	# Beacon light at the top — warm yellow, visible at night
+	var beacon = OmniLight3D.new()
+	beacon.name = "LighthouseBeacon"
+	beacon.position = Vector3(-25, 13, 15)
+	beacon.light_color = Color(1.0, 0.9, 0.5)
+	beacon.light_energy = 2.0
+	beacon.omni_range = 50.0
+	lighthouse_node.add_child(beacon)
+
+	# Beacon glow mesh (small glowing sphere)
+	var glow_mesh = MeshInstance3D.new()
+	var sphere = SphereMesh.new()
+	sphere.radius = 0.5
+	sphere.height = 1.0
+	glow_mesh.mesh = sphere
+	var glow_mat = StandardMaterial3D.new()
+	glow_mat.albedo_color = Color(1.0, 0.95, 0.6)
+	glow_mat.emission_enabled = true
+	glow_mat.emission = Color(1.0, 0.9, 0.4)
+	glow_mat.emission_energy_multiplier = 3.0
+	glow_mesh.set_surface_override_material(0, glow_mat)
+	glow_mesh.position = Vector3(-25, 13, 15)
+	lighthouse_node.add_child(glow_mesh)
+
+	# Label
+	var label = Label3D.new()
+	UITheme.style_label3d(label, "The Lighthouse", "landmark")
+	label.font_size = 36
+	label.position = Vector3(-25, 15, 15)
+	lighthouse_node.add_child(label)
+
+# === PHASE 5: DISTRICT IDENTITY PROPS ===
+
+func _generate_district_props() -> void:
+	var props_node = Node3D.new()
+	props_node.name = "DistrictProps"
+	add_child(props_node)
+
+	# --- Town Square (civic center feel) ---
+
+	# Stone benches near fountain
+	_place_synty(props_node, "pirate/models/SM_Prop_Bench_01.glb", Vector3(-3, 0, 5), 0.0, 1.3)
+	_place_synty(props_node, "pirate/models/SM_Prop_Bench_01.glb", Vector3(3, 0, 7), PI, 1.3)
+
+	# --- Wharf Walk (maritime character) ---
+
+	# Anchor at the waterfront
+	_place_synty(props_node, "pirate/models/SM_Prop_Anchor_01.glb", Vector3(-15, 0, -5), 0.3, 1.5)
+
+	# Barrel clusters near warehouse and docks
+	_place_synty(props_node, "pirate/models/SM_Prop_Barrel_01.glb", Vector3(-8, 0, -6), 0.0, 1.2)
+	_place_synty(props_node, "pirate/models/SM_Prop_Barrel_02.glb", Vector3(-9, 0, -5.5), 0.3, 1.2)
+	_place_synty(props_node, "pirate/models/SM_Prop_Barrel_03.glb", Vector3(-7.5, 0, -5), -0.2, 1.2)
+	_place_synty(props_node, "pirate/models/SM_Prop_Barrel_01.glb", Vector3(-14, 0, -9), 0.0, 1.2)
+	_place_synty(props_node, "pirate/models/SM_Prop_Barrel_04.glb", Vector3(-13, 0, -10), 0.5, 1.2)
+
+	# Rope fence along waterfront
+	_place_synty(props_node, "pirate/models/SM_Prop_Rope_Fence_01.glb", Vector3(-10, 0, -7), 0.0, 1.3)
+	_place_synty(props_node, "pirate/models/SM_Prop_Rope_Fence_01.glb", Vector3(-14, 0, -7), 0.0, 1.3)
+
+	# --- Market Row (shopping street) ---
+
+	# Produce stand near Bloom & Grow
+	_place_synty(props_node, "farm/models/SM_Bld_ProduceStand_01.glb", Vector3(19, 0, 9), -PI / 2.0, 1.3)
+
+	# --- Farm Zone (pastoral) ---
+
+	# Scarecrow in plots
+	_place_synty(props_node, "farm/models/SM_Prop_Scarecrow_01.glb", Vector3(25, 0, 2), 0.5, 1.5)
+
+	# Greenhouse near water source
+	_place_synty(props_node, "farm/models/SM_Bld_Greenhouse_01.glb", Vector3(32, 0, 5), 0.0, 1.2)
+
+	# --- Harbor Heights (elevated garden district) ---
+
+	# Stone retaining walls
+	_place_synty(props_node, "nature/models/SM_Prop_StoneWall_01.glb", Vector3(-3, 3, 30), 0.0, 2.0)
+	_place_synty(props_node, "nature/models/SM_Prop_StoneWall_02.glb", Vector3(3, 3, 30), 0.0, 2.0)
+	_place_synty(props_node, "nature/models/SM_Prop_StoneWall_03.glb", Vector3(9, 3, 30), 0.0, 2.0)
+
+	# Boulder hillside dressing
+	_place_synty(props_node, "nature/models/SM_Rock_Boulder_01.glb", Vector3(-2, 1, 28), 0.4, 2.5)
+	_place_synty(props_node, "nature/models/SM_Rock_Boulder_01.glb", Vector3(8, 2, 29), -0.3, 2.0)
+	_place_synty(props_node, "nature/models/SM_Rock_Boulder_01.glb", Vector3(12, 1, 27), 0.6, 1.8)
+
+	# Vine wall for Cordelia's Cottage area
+	_place_synty(props_node, "pirate/models/SM_Bld_Cuba_VineWall_01.glb", Vector3(0, 6, 35), PI / 2.0, 1.5)
+
+# === PHASE 6: WILDERNESS PROGRESSION AND GATEKEEPER LANDMARKS ===
+
+func _generate_wilderness_terrain() -> void:
+	var wild_node = Node3D.new()
+	wild_node.name = "WildernessTerrain"
+	add_child(wild_node)
+
+	# --- Tier 1: Outskirts (z=-5 to z=-20) — healthy but thinning ---
+
+	# Small rocks along path edges
+	var tier1_rocks = [
+		Vector3(-5, 0, -8), Vector3(5, 0, -9),
+		Vector3(-7, 0, -12), Vector3(7, 0, -13),
+		Vector3(-4, 0, -16), Vector3(6, 0, -17),
+	]
+	for i in tier1_rocks.size():
+		var variant = "SM_Rock_0%d.glb" % (i % 4 + 1)
+		_place_synty(wild_node, "nature/models/" + variant, tier1_rocks[i], randf() * TAU, 1.5)
+
+	# Stumps and undergrowth
+	_place_synty(wild_node, "nature/models/SM_Tree_Stump_01.glb", Vector3(-6, 0, -14), 0.0, 1.5)
+	_place_synty(wild_node, "nature/models/SM_Tree_Stump_02.glb", Vector3(6, 0, -11), 0.3, 1.5)
+	_place_synty(wild_node, "nature/models/SM_Plant_Undergrowth_01.glb", Vector3(-4, 0, -11), 0.0, 2.0)
+	_place_synty(wild_node, "nature/models/SM_Plant_Undergrowth_01.glb", Vector3(4, 0, -15), 0.5, 2.0)
+
+	# --- Gatekeeper #1 Archway: Chef Umami at z=-20 ---
+	_place_synty(wild_node, "nature/models/SM_Prop_Pillar_Arch_01.glb", Vector3(0, 0, -20), 0.0, 2.5)
+
+	# --- Tier 2: Mid-Wilderness (z=-20 to z=-40) — larger formations ---
+
+	# Larger rock formations as natural walls
+	var tier2_rocks = [
+		Vector3(-8, 0, -24), Vector3(8, 0, -25),
+		Vector3(-10, 0, -28), Vector3(10, 0, -29),
+		Vector3(-6, 0, -33), Vector3(7, 0, -34),
+		Vector3(-9, 0, -37), Vector3(9, 0, -38),
+	]
+	for i in tier2_rocks.size():
+		_place_synty(wild_node, "nature/models/SM_Rock_Boulder_01.glb", tier2_rocks[i], randf() * TAU, 2.0 + randf() * 0.5)
+
+	# Stone wall fragments — old ruins
+	_place_synty(wild_node, "nature/models/SM_Prop_StoneWall_01.glb", Vector3(-7, 0, -26), 0.4, 1.5)
+	_place_synty(wild_node, "nature/models/SM_Prop_StoneWall_02.glb", Vector3(7, 0, -31), -0.3, 1.5)
+
+	# Swamp trees and dead trees for atmosphere
+	_place_synty(wild_node, "nature/models/SM_Tree_Swamp_01.glb", Vector3(-12, 0, -26), 0.0, 1.5)
+	_place_synty(wild_node, "nature/models/SM_Tree_Swamp_02.glb", Vector3(12, 0, -27), 0.3, 1.5)
+	_place_synty(wild_node, "nature/models/SM_Tree_Dead_02.glb", Vector3(-10, 0, -34), 0.0, 1.5)
+	_place_synty(wild_node, "nature/models/SM_Tree_Dead_03.glb", Vector3(10, 0, -36), -0.2, 1.5)
+
+	# --- Gatekeeper #2 Archway: Head Chef Roux at z=-40 ---
+	_place_synty(wild_node, "nature/models/SM_Prop_Pillar_Arch_Broken_Moss_01.glb", Vector3(0, 0, -40), 0.0, 2.5)
+
+	# --- Tier 3: Deep Wilds (z=-40 to z=-55) — sparse, atmospheric ---
+
+	# Cave entrances flanking the Cauldron
+	_place_synty(wild_node, "nature/models/SM_Rock_CaveEntrance_01.glb", Vector3(-6, 0, -52), 0.5, 2.5)
+	_place_synty(wild_node, "nature/models/SM_Rock_CaveEntrance_02.glb", Vector3(6, 0, -53), -0.5, 2.5)
+
+	# Broken pillars with moss — ancient site
+	_place_synty(wild_node, "nature/models/SM_Prop_Pillar_Broken_01.glb", Vector3(-4, 0, -48), 0.3, 2.0)
+	_place_synty(wild_node, "nature/models/SM_Prop_Pillar_Broken_02.glb", Vector3(4, 0, -49), -0.2, 2.0)
+	_place_synty(wild_node, "nature/models/SM_Prop_Pillar_Moss_01.glb", Vector3(-3, 0, -54), 0.0, 2.0)
+
+	# Large rock walls creating an arena feel around the Cauldron
+	_place_synty(wild_node, "nature/models/SM_Rock_Wall_01.glb", Vector3(-8, 0, -55), 0.8, 2.5)
+	_place_synty(wild_node, "nature/models/SM_Rock_Wall_02.glb", Vector3(8, 0, -55), -0.8, 2.5)
+
+	# Sparse dead trees and branches
+	_place_synty(wild_node, "nature/models/SM_Tree_Dead_01.glb", Vector3(-10, 0, -46), 0.2, 1.8)
+	_place_synty(wild_node, "nature/models/SM_Tree_Dead_03.glb", Vector3(10, 0, -50), -0.1, 1.8)
+	_place_synty(wild_node, "nature/models/SM_Tree_Branch_01.glb", Vector3(-5, 0, -44), 0.4, 2.0)
+	_place_synty(wild_node, "nature/models/SM_Tree_Stump_03.glb", Vector3(5, 0, -46), 0.0, 1.5)
+
+	# Mushrooms in the deep wilds
+	_place_synty(wild_node, "nature/models/SM_Plant_Mushrooms_01.glb", Vector3(-3, 0, -50), 0.0, 2.5)
+	_place_synty(wild_node, "nature/models/SM_Plant_Mushrooms_03.glb", Vector3(2, 0, -52), 0.5, 2.5)

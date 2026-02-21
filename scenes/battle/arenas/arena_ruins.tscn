@@ -1,0 +1,79 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/synty/tropical/models/SM_Bld_Ruins_Column_01.glb" id="1"]
+[ext_resource type="PackedScene" path="res://assets/synty/tropical/models/SM_Bld_Ruins_Column_02.glb" id="2"]
+[ext_resource type="PackedScene" path="res://assets/synty/tropical/models/SM_Bld_Ruins_Archway_01.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/synty/tropical/models/SM_Bld_Ruins_Wall_01.glb" id="4"]
+[ext_resource type="PackedScene" path="res://assets/synty/tropical/models/SM_Env_Vines_01.glb" id="5"]
+[ext_resource type="PackedScene" path="res://assets/synty/tropical/models/SM_Env_Rock_03.glb" id="6"]
+[ext_resource type="PackedScene" path="res://assets/synty/tropical/models/SM_Env_Rock_04.glb" id="7"]
+
+[sub_resource type="BoxMesh" id="SubResource_ground"]
+size = Vector3(20, 0.15, 14)
+
+[sub_resource type="StandardMaterial3D" id="SubResource_stone_mat"]
+albedo_color = Color(0.6, 0.55, 0.45, 1)
+
+[sub_resource type="StandardMaterial3D" id="SubResource_dark_stone"]
+albedo_color = Color(0.4, 0.38, 0.32, 1)
+
+[node name="Environment" type="Node3D"]
+
+[node name="StonePlatform" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.075, 0)
+mesh = SubResource("SubResource_ground")
+surface_material_override/0 = SubResource("SubResource_stone_mat")
+
+[node name="ArenaLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.25, 0.433, 0, 0.866, 0.5, -0.5, -0.433, 0.75, 0, 10, 0)
+light_color = Color(1, 0.88, 0.7, 1)
+light_energy = 1.1
+shadow_enabled = true
+
+[node name="AmbientFill" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+light_color = Color(0.9, 0.8, 0.65, 1)
+light_energy = 0.4
+omni_range = 18.0
+
+[node name="Column1" parent="." instance=ExtResource("1")]
+transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, -8, 0, -5)
+
+[node name="Column2" parent="." instance=ExtResource("2")]
+transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, 8, 0, -5)
+
+[node name="Column3" parent="." instance=ExtResource("1")]
+transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, -8, 0, 5)
+
+[node name="Column4" parent="." instance=ExtResource("2")]
+transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, 8, 0, 5)
+
+[node name="Archway" parent="." instance=ExtResource("3")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, -7)
+
+[node name="Wall1" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -7)
+
+[node name="Wall2" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -7)
+
+[node name="Vines1" parent="." instance=ExtResource("5")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -8, 2, -5)
+
+[node name="Vines2" parent="." instance=ExtResource("5")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 8, 2, -5)
+
+[node name="Vines3" parent="." instance=ExtResource("5")]
+transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, 0, 3, -7)
+
+[node name="Rock1" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 2)
+
+[node name="Rock2" parent="." instance=ExtResource("7")]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 7, 0, -1)
+
+[node name="Rock3" parent="." instance=ExtResource("6")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 3, 0, 5)
+
+[node name="Rock4" parent="." instance=ExtResource("7")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -4, 0, -3)

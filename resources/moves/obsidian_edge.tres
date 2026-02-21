@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "obsidian_edge"
+display_name = "Obsidian Edge"
+type = "spicy"
+category = "physical"
+power = 100
+accuracy = 80
+pp = 5
+description = "Slashes with volcanic glass."
+is_contact = true

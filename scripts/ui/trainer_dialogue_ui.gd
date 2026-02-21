@@ -39,6 +39,7 @@ func show_dialogue(trainer_name: String, text: String) -> void:
 	button_row.visible = false
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	ScreenTransition.open(self, "slide_up")
 	_typewrite_label(text_label, text)
 	# Wait for typewriter to finish before starting auto-dismiss timer
 	if _typewriter_tween and _typewriter_tween.is_valid():
@@ -56,6 +57,7 @@ func show_challenge(trainer_name: String, text: String, trainer_id: String) -> v
 	button_row.visible = true
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	ScreenTransition.open(self, "slide_up")
 	_typewrite_label(text_label, text)
 
 func _typewrite_label(label: Label, text: String) -> void:

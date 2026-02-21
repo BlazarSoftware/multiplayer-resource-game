@@ -116,6 +116,7 @@ func _build_toast() -> void:
 	_toast_container.add_child(_toast_label)
 
 func _close() -> void:
+	await ScreenTransition.close(self, "fade_scale")
 	visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	NetworkManager.request_set_busy.rpc_id(1, false)
@@ -148,6 +149,7 @@ func open_for_station(station: String) -> void:
 	if search_edit:
 		search_edit.text = ""
 	refresh()
+	ScreenTransition.open(self, "fade_scale")
 
 func refresh() -> void:
 	for child in recipe_list.get_children():
@@ -406,9 +408,20 @@ func _craft(recipe_id: String) -> void:
 func _on_craft_result(success: bool, result_name: String, message: String) -> void:
 	if success:
 		_show_toast("Crafted %s!" % result_name, result_name)
+		_play_craft_flash()
 	else:
 		_show_error(message)
 	refresh()
+
+func _play_craft_flash() -> void:
+	var flash := ColorRect.new()
+	flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	flash.color = UITokens.FLASH_CRAFT
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash)
+	var tween := create_tween()
+	tween.tween_property(flash, "color:a", 0.0, 0.4).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(flash.queue_free)
 
 func _show_toast(text: String, _item_name: String) -> void:
 	if _toast_tween and _toast_tween.is_valid():

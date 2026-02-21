@@ -1,7 +1,6 @@
-[gd_resource type="Resource" script_class="HeldItemDef" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="HeldItemDef" load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/held_item_def.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/held_items/iron_skillet.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -11,4 +10,3 @@ description = "Reduces physical damage taken by 15%."
 effect_type = "damage_reduction"
 effect_params = {"category": "physical", "multiplier": 0.85}
 consumable = false
-icon_texture = ExtResource("2")

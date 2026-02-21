@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "pineapple_slice"
+display_name = "Pineapple Slice"
+type = "sour"
+category = "physical"
+power = 75
+accuracy = 100
+pp = 15
+description = "Slices with pineapple crown."
+is_contact = true

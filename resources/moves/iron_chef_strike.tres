@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "iron_chef_strike"
+display_name = "Iron Chef Strike"
+type = "grain"
+category = "physical"
+power = 100
+accuracy = 85
+pp = 5
+description = "The ultimate chef's blow."
+is_contact = true

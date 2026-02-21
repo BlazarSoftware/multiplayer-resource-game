@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "mud_sling"
+display_name = "Mud Sling"
+type = "grain"
+category = "physical"
+power = 65
+accuracy = 95
+pp = 20
+description = "Flings mud."
+target_stat_changes = {"accuracy": -1}

@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "yogurt_wisp"
+display_name = "Yogurt Wisp"
+types = PackedStringArray("dairy")
+base_hp = 45
+base_attack = 6
+base_defense = 10
+base_sp_attack = 12
+base_sp_defense = 14
+base_speed = 12
+moves = PackedStringArray("herb_breeze", "taste_test", "sour_punch", "zest_shield")
+mesh_type = "sphere"
+mesh_color = Color(0.95, 0.95, 0.95, 1)
+mesh_scale = Vector3(0.6, 0.6, 0.6)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("yogurt")
+drop_min = 1
+drop_max = 2
+evolves_to = "cream_elemental"
+evolution_level = 16
+evolution_move = "sorbet_storm"
+learnset = {3: "taste_test", 6: "herb_breeze", 9: "sour_punch", 12: "zest_shield", 15: "sorbet_storm"}
+ability_ids = PackedStringArray("natural_remedy", "sugar_coat")
+ev_yield = {"sp_defense": 1}
+base_xp_yield = 50

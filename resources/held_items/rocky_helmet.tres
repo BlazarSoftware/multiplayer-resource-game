@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HeldItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/held_item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_id = "rocky_helmet"
+display_name = "Rocky Helmet"
+description = "A rugged helmet. Reduces physical damage taken by 16%."
+effect_type = "damage_reduction"
+effect_params = {"category": "physical", "multiplier": 0.84}
+consumable = false
+icon_color = Color(0.5, 0.5, 0.5, 1)

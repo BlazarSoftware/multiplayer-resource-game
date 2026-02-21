@@ -224,6 +224,8 @@ func _process(_delta: float) -> void:
 		var tcp_conn := _tcp_server.take_connection()
 		if tcp_conn:
 			var ws_peer := WebSocketPeer.new()
+			ws_peer.inbound_buffer_size = 1 << 23  # 8 MB
+			ws_peer.outbound_buffer_size = 1 << 24  # 16 MB — screenshots can be several MB
 			var err := ws_peer.accept_stream(tcp_conn)
 			if err == OK:
 				_peers.append(ws_peer)
@@ -290,10 +292,19 @@ func _handle_message(peer: WebSocketPeer, data: String) -> void:
 
 	# Handle deferred (async) results
 	if result is Dictionary and result.has("_deferred"):
-		# The handler returns a signal; we'll wait for it
+		# The handler returns a signal; we'll wait for it, with a safety timeout
 		var deferred_signal: Signal = result["_deferred"]
+		var resolved := false
+		var bridge_timeout := get_tree().create_timer(35.0)
+		bridge_timeout.timeout.connect(func() -> void:
+			if not resolved:
+				resolved = true
+				_send_error(peer, id, -32000, "Deferred handler timed out (35s)")
+		)
 		var deferred_result = await deferred_signal
-		_send_result(peer, id, deferred_result)
+		if not resolved:
+			resolved = true
+			_send_result(peer, id, deferred_result)
 	else:
 		_send_result(peer, id, result)
 

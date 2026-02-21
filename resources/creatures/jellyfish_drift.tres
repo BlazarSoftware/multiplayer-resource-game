@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "jellyfish_drift"
+display_name = "Jellyfish Drift"
+types = PackedStringArray("liquid", "toxic")
+base_hp = 40
+base_attack = 4
+base_defense = 6
+base_sp_attack = 16
+base_sp_defense = 14
+base_speed = 16
+moves = PackedStringArray("acid_splash", "brine_splash", "pollen_cloud", "slippery_oil")
+mesh_type = "sphere"
+mesh_color = Color(0.7, 0.85, 0.95, 1)
+mesh_scale = Vector3(0.6, 0.7, 0.6)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("seaweed")
+drop_min = 1
+drop_max = 2
+learnset = {3: "acid_splash", 6: "brine_splash", 9: "pollen_cloud", 12: "slippery_oil", 15: "acid_rain"}
+ability_ids = PackedStringArray("brine_body", "sour_stomach")
+ev_yield = {"speed": 1}
+base_xp_yield = 45

@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_42_lighthouse"
+display_name = "Lighthouse at Dusk"
+description = "Murphy mentioned the lighthouse. Captain Sal seems to know something about Cordelia's connection to it. Visit the lighthouse and see what you can find."
+category = "main_story"
+quest_giver_npc_id = "npc_captain_sal"
+prereq_quest_ids = ["ms_41_murphy_hint"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "discover_location",
+"target_id": "lighthouse",
+"target_count": 1,
+"description": "Visit the lighthouse"
+}]
+reward_money = 500
+reward_items = {}
+reward_friendship = {}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = "lighthouse_visited"
+next_quest_id = "ms_43_letter"
+chapter = 4
+sort_order = 3
+offer_dialogue = "The lighthouse, eh? Murphy sent you? ...Aye, I suppose it's time. Cordelia used to climb up there every evening to watch the sun go down. Said the view helped her think. Go see it for yourself — but go at dusk, when the light hits just right. You'll understand."
+in_progress_dialogue = "The lighthouse is at the far end of the point. Best go when the sun's low — that's when it reveals its secrets."
+completion_dialogue = "You saw it, didn't you? The way the light catches the old stones... Cordelia carved something into the wall up there. A message. I've read it a hundred times and still don't fully understand it. But maybe you will."

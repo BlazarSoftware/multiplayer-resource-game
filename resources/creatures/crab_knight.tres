@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "crab_knight"
+display_name = "Crab Knight"
+types = PackedStringArray("liquid", "mineral")
+base_hp = 55
+base_attack = 16
+base_defense = 18
+base_sp_attack = 6
+base_sp_defense = 10
+base_speed = 8
+moves = PackedStringArray("brine_splash", "salt_lock", "plate_cover", "sharpen_knife")
+mesh_type = "box"
+mesh_color = Color(0.9, 0.4, 0.3, 1)
+mesh_scale = Vector3(0.8, 0.6, 0.9)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("crab")
+drop_min = 1
+drop_max = 2
+evolves_to = "lobster_lord"
+evolution_level = 22
+evolution_move = "brine_wave"
+learnset = {3: "brine_splash", 6: "salt_lock", 9: "plate_cover", 12: "sharpen_knife", 15: "brine_wave"}
+ability_ids = PackedStringArray("brine_body", "thick_skin")
+ev_yield = {"defense": 1}
+base_xp_yield = 55

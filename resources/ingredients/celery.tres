@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "celery"
+display_name = "Celery"
+description = "Crisp, watery stalks that add a fresh crunch to salads and stir-fries."
+category = "vegetable"
+icon_color = Color(0.5, 0.75, 0.4, 1)
+sell_price = 3
+season = "spring"
+grow_time = 50.0
+harvest_min = 1
+harvest_max = 2

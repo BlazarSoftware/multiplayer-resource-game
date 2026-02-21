@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "rosemary_elk"
+display_name = "Rosemary Elk"
+types = PackedStringArray("aromatic", "herbal")
+base_hp = 65
+base_attack = 16
+base_defense = 14
+base_sp_attack = 14
+base_sp_defense = 16
+base_speed = 10
+moves = PackedStringArray("herb_breeze", "vine_whip", "herb_reversal", "seed_barrage")
+mesh_type = "capsule"
+mesh_color = Color(0.4, 0.6, 0.35, 1)
+mesh_scale = Vector3(0.8, 1.0, 0.8)
+rarity = "uncommon"
+drop_ingredient_ids = PackedStringArray("herb_leaf")
+drop_min = 1
+drop_max = 2
+learnset = {3: "herb_breeze", 6: "vine_whip", 9: "herb_reversal", 12: "seed_barrage", 15: "harvest_move"}
+ability_ids = PackedStringArray("herbivore", "photosynthesis")
+ev_yield = {"sp_defense": 2}
+base_xp_yield = 70

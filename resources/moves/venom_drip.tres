@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "venom_drip"
+display_name = "Venom Drip"
+type = "sour"
+category = "special"
+power = 50
+accuracy = 100
+pp = 20
+status_effect = "poisoned"
+status_chance = 50
+description = "Drips corrosive venom."

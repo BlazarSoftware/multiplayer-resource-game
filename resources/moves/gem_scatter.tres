@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "gem_scatter"
+display_name = "Gem Scatter"
+type = "grain"
+category = "special"
+power = 25
+accuracy = 90
+pp = 10
+description = "Scatters sharp gems."
+multi_hit_min = 2
+multi_hit_max = 5

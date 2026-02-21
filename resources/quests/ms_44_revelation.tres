@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_44_revelation"
+display_name = "What Sal Saw"
+description = "Cordelia's letter points to Captain Sal. He was there the night she disappeared. It's time to hear the truth — but only if he trusts you enough to share it."
+category = "main_story"
+quest_giver_npc_id = "npc_captain_sal"
+prereq_quest_ids = ["ms_43_letter"]
+prereq_friendship = {"npc_captain_sal": 50}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "talk_to",
+"target_id": "npc_captain_sal",
+"target_count": 1,
+"description": "Ask Captain Sal about the night Cordelia left"
+}]
+reward_money = 600
+reward_items = {}
+reward_friendship = {"npc_captain_sal": 25}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = "sal_revelation"
+next_quest_id = "ms_45_celebration"
+chapter = 4
+sort_order = 5
+offer_dialogue = "...You found the letter. I knew this day would come. Alright, alright — sit down. I owe you the truth, and I owe it to her, too. That night, the sea was wild, and Cordelia... she said she'd found something beneath the Cove. Something ancient. She walked into the mist and never came back. I've carried that guilt for years."
+in_progress_dialogue = "I'm ready to talk whenever you are. Find me by the docks — where I always am."
+completion_dialogue = "She didn't run away. She went somewhere — somewhere connected to the heart of this land. I don't know if she's still out there, but I know she believed the Cove needed a protector. And now... I think that's you. Take care of this place. That's what she would have wanted."

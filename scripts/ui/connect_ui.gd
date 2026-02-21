@@ -13,6 +13,7 @@ const PUBLIC_SERVER_IP = "207.32.216.76"
 const CONNECTION_TIMEOUT_SEC = 10.0
 var DEFAULT_IP: String = "127.0.0.1" if OS.has_feature("editor") else PUBLIC_SERVER_IP
 var _timeout_timer: Timer
+var _mute_button: Button
 
 func _ready() -> void:
 	UITheme.init()
@@ -28,6 +29,30 @@ func _ready() -> void:
 	add_child(_timeout_timer)
 	# Load saved preferences
 	_load_prefs()
+	# Mute toggle button (top-right corner)
+	_mute_button = Button.new()
+	_mute_button.text = "🔊" if not AudioManager.is_muted else "🔇"
+	_mute_button.anchor_left = 1.0
+	_mute_button.anchor_right = 1.0
+	_mute_button.anchor_top = 0.0
+	_mute_button.anchor_bottom = 0.0
+	_mute_button.offset_left = -60
+	_mute_button.offset_right = -10
+	_mute_button.offset_top = 10
+	_mute_button.offset_bottom = 46
+	UITheme.style_button(_mute_button, "secondary")
+	_mute_button.pressed.connect(_on_mute_pressed)
+	add_child(_mute_button)
+	# Start menu music
+	AudioManager.play_music("menu")
+	# Auto-join from CLI args (Run Instances or MCP session)
+	var auto_name := ""
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--name="):
+			auto_name = arg.substr("--name=".length())
+	if auto_name != "":
+		name_input.text = auto_name
+		call_deferred("_on_join_pressed")
 
 func _apply_cookbook_theme() -> void:
 	var bg := ColorRect.new()
@@ -76,7 +101,12 @@ func _apply_cookbook_theme() -> void:
 	UITheme.style_input(ip_input)
 	UITheme.style_caption(status_label)
 
+func _on_mute_pressed() -> void:
+	AudioManager.toggle_mute()
+	_mute_button.text = "🔇" if AudioManager.is_muted else "🔊"
+
 func _on_join_pressed() -> void:
+	AudioManager.play_ui_sfx("ui_confirm")
 	var player_name = name_input.text.strip_edges()
 	if player_name == "":
 		player_name = "Player"

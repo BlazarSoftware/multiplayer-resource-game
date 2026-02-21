@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "clam_chowder"
+display_name = "Cook Clam Chowder"
+result_food_id = "clam_chowder"
+ingredients = {"clam": 3, "potato": 1, "cream": 1}
+description = "Hearty clam chowder."
+station = "kitchen"

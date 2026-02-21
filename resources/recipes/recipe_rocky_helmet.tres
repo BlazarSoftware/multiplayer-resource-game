@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_rocky_helmet"
+display_name = "Craft Rocky Helmet"
+result_item_id = "rocky_helmet"
+ingredients = {"moon_salt": 2, "crystal_sugar": 1}
+description = "Deals 16% HP to attacker on contact."
+station = "workbench"

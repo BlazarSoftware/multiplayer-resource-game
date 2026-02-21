@@ -1,0 +1,165 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_murphy"
+display_name = "Old Sage Murphy"
+visual_color = Color(0.2, 0.55, 0.2, 1)
+birthday = {
+"month": 7,
+"day": 10
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": 5, "y": 7, "z": 35 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": 0, "y": 6, "z": 32 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["herb_leaf", "herb_salad", "herb_mint"],
+"liked": ["sugar", "grain_wheat"],
+"disliked": ["spice_pepper", "hot_sauce"],
+"hated": ["bitter_root"]
+}
+dialogues = {
+"neutral": [{
+"text": "These moonpetal flowers only bloom at night. I've been staying up to harvest them.",
+"choices": [{
+"label": "That's so dedicated!",
+"points": 3,
+"response": "Healing salves, mostly. They're incredibly potent when fresh."
+}, {
+"label": "Sounds exhausting.",
+"points": -3,
+"response": "Because some things are worth losing sleep over."
+}, {
+"label": "Need help with the harvest?",
+"points": 4,
+"response": "Really? That would be wonderful! Come find me tonight."
+}]
+}, {
+"text": "A creature ate half my herb garden last night. Little rascal...",
+"choices": [{
+"label": "Do you need supplies to replant?",
+"points": 3,
+"response": "That's very kind. I could use some seeds, honestly."
+}, {
+"label": "Maybe build a fence.",
+"points": 1,
+"response": "I've been meaning to... just never get around to it."
+}, {
+"label": "Survival of the fittest!",
+"points": -3,
+"response": "That's... not how gardening works."
+}]
+}, {
+"text": "I discovered a new herb variety growing by the stream. Its aroma is incredible!",
+"choices": [{
+"label": "Can you show me sometime?",
+"points": 3,
+"response": "Of course! Knowledge should always be shared."
+}, {
+"label": "What's it good for?",
+"points": 2,
+"response": "I'm still researching, but it seems to boost creature vitality."
+}]
+}],
+"like": [{
+"text": "I've prepared an herbal tea blend just for you. It promotes clarity of mind.",
+"choices": [{
+"label": "You're so thoughtful!",
+"points": 3,
+"response": "A healthy body and mind make the best adventurer."
+}, {
+"label": "Does it actually work?",
+"points": 0,
+"response": "Science and tradition agree — herbs heal, friend."
+}]
+}],
+"love": [{
+"text": "I've been saving my rarest pressed herb collection for someone special. That's you.",
+"choices": [{
+"label": "I'll treasure it always.",
+"points": 3,
+"response": "May it bring you peace in your journeys."
+}, {
+"label": "We make a great team.",
+"points": 2,
+"response": "The best partnerships grow like gardens — with care and patience."
+}]
+}],
+"dislike": [{
+"text": "Hmm. The wind blows a sour breeze today.",
+"choices": [{
+"label": "I'd like to start fresh with you.",
+"points": 3,
+"response": "...Plants can regrow from damaged roots. Perhaps we can too."
+}, {
+"label": "Is that about me?",
+"points": 0,
+"response": "If the shoe fits."
+}]
+}],
+"hate": [{
+"text": "Even weeds have more charm than some visitors.",
+"choices": [{
+"label": "I've been thoughtless. I'm sorry.",
+"points": 5,
+"response": "...Apologies are like rain to parched soil. Thank you."
+}, {
+"label": "Rude.",
+"points": -1,
+"response": "Truth often is."
+}]
+}],
+"birthday": [{
+"text": "Today marks another year of learning nature's secrets. The garden is in full bloom!",
+"choices": [{
+"label": "Happy birthday, Sage!",
+"points": 3,
+"response": "Thank you! The best gift is good company."
+}, {
+"label": "Your garden looks amazing today!",
+"points": 2,
+"response": "It does, doesn't it? Even the stubborn rosemary cooperated."
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "herb_leaf",
+"quantity": 5,
+"message": "Fresh herbs from my garden. May they serve you well!"
+}, {
+"threshold": 50,
+"item_id": "herb_salad",
+"quantity": 3,
+"message": "My special healing salad recipe. It restores body and spirit."
+}, {
+"threshold": 80,
+"item_id": "herb_mint",
+"quantity": 5,
+"message": "Rare moonpetal mint — I've only shared this with one other person. You."
+}]
+creature_trades = [{
+"creature_species_id": "basil_sprite",
+"creature_level": 10,
+"creature_nickname": "Sage's Sprout",
+"cost_items": { "herb_leaf": 15 },
+"cost_money": 300,
+"required_friendship": "like",
+"required_season": "summer",
+"required_quest_id": "",
+"dialogue_text": "This Basil Sprite has been my garden companion for years. I think it would be happier adventuring with you. Some herbs and a small fee would help me start a new seedling...",
+"dialogue_accept_label": "I'll take great care of it!",
+"dialogue_decline_label": "Not right now, thanks.",
+"one_time": true
+}]
+occupation = "Herbalist"

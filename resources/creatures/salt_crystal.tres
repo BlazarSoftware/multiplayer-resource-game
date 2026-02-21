@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "salt_crystal"
+display_name = "Salt Crystal"
+types = PackedStringArray("mineral")
+base_hp = 55
+base_attack = 10
+base_defense = 20
+base_sp_attack = 12
+base_sp_defense = 18
+base_speed = 4
+moves = PackedStringArray("salt_lock", "brine_splash", "plate_cover", "slow_cook")
+mesh_type = "box"
+mesh_color = Color(0.9, 0.9, 0.95, 1)
+mesh_scale = Vector3(0.6, 0.8, 0.6)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("salt")
+drop_min = 1
+drop_max = 2
+learnset = {3: "salt_lock", 6: "brine_splash", 9: "plate_cover", 12: "slow_cook", 15: "brine_wave"}
+ability_ids = PackedStringArray("thick_skin", "iron_gut")
+ev_yield = {"defense": 1, "sp_defense": 1}
+base_xp_yield = 50

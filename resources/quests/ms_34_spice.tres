@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_34_spice"
+display_name = "Pepper's Spice Challenge"
+description = "Pepper Santos has challenged you to prove your kitchen skills. She wants to see you craft three different dishes — no shortcuts!"
+category = "main_story"
+quest_giver_npc_id = "npc_pepper"
+prereq_quest_ids = ["ms_33_rare_herb"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "craft",
+"target_id": "",
+"target_count": 3,
+"description": "Craft any 3 food recipes"
+}]
+reward_money = 500
+reward_items = {}
+reward_friendship = {"npc_pepper": 15}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = "ms_35_beach"
+chapter = 3
+sort_order = 5
+offer_dialogue = "So, you think you've got what it takes in the kitchen? Ha! I've heard the talk, but talk is cheap. Craft me three dishes — any three — and show me you're more than just a farmer with a spatula. I'll be watching!"
+in_progress_dialogue = "Still cooking? Don't rush it — a good dish takes patience. But don't take forever, either. I've got standards to uphold!"
+completion_dialogue = "Well, well, well! Color me impressed. You've got real talent, kid. Maybe one day you'll even give me a run for my money. Here — you've earned every coin of this."

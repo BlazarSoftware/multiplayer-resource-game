@@ -27,6 +27,7 @@ func show_challenge(player_name: String, peer: int) -> void:
 	message_label.add_theme_color_override("font_color", UITokens.INK_DARK)
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	ScreenTransition.open(self, "slide_up")
 
 func _on_accept() -> void:
 	var battle_mgr = get_node_or_null("/root/Main/GameWorld/BattleManager")

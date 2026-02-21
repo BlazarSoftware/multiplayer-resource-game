@@ -51,6 +51,7 @@ var client_enemy_taunt_turns: int = 0
 var client_enemy_encore_turns: int = 0
 var client_enemy_substitute_hp: int = 0
 var client_opponent_name: String = ""
+var client_arena_theme: String = ""
 
 # Summary accumulation (client-side)
 var summary_xp_results: Array = []
@@ -61,6 +62,22 @@ var summary_defeat_penalty: int = 0
 var summary_pvp_loss: Dictionary = {}
 var summary_evolutions: Array = [] # [{creature_idx, new_species_id}]
 var summary_new_moves: Array = [] # [{creature_idx, move_id, auto}]
+
+# Zone/context → arena theme mapping
+const ZONE_TO_ARENA_THEME: Dictionary = {
+	"herb_garden": "garden",
+	"flame_kitchen": "ruins",
+	"fusion_kitchen": "ruins",
+	"frost_pantry": "cavern",
+	"harvest_field": "farm",
+	"sour_springs": "garden",
+	"excursion_common": "ruins",
+	"excursion_rare": "ruins",
+	"battered_bay": "beach",
+	"salted_shipwreck": "cavern",
+	"blackened_crest": "cavern",
+	"fermented_hollow": "cavern",
+}
 
 # Battle state structure (server-side):
 # {
@@ -280,7 +297,7 @@ func _build_party_from_store(peer_id: int) -> Array:
 
 # === SERVER SIDE — Wild Battles ===
 
-func server_start_battle(peer_id: int, enemy_data: Dictionary) -> void:
+func server_start_battle(peer_id: int, enemy_data: Dictionary, table_id: String = "") -> void:
 	if not multiplayer.is_server():
 		return
 	if peer_id in player_battle_map:
@@ -307,9 +324,10 @@ func server_start_battle(peer_id: int, enemy_data: Dictionary) -> void:
 		return
 	battle.side_a_party = player_party
 	# Send battle start to client
+	var arena_theme = ZONE_TO_ARENA_THEME.get(table_id, "docks")
 	var enemy_active = battle.side_b_party[battle.side_b_active_idx]
-	print("[BattleManager] Sending _start_battle_client to peer ", peer_id, " mode=", battle.mode)
-	_start_battle_client.rpc_id(peer_id, enemy_active, battle.mode, "")
+	print("[BattleManager] Sending _start_battle_client to peer ", peer_id, " mode=", battle.mode, " arena=", arena_theme)
+	_start_battle_client.rpc_id(peer_id, enemy_active, battle.mode, "", arena_theme)
 	# Fire on_enter abilities for both sides at battle start
 	var player_active = battle.side_a_party[battle.side_a_active_idx]
 	var initial_log: Array = []
@@ -372,7 +390,7 @@ func server_start_trainer_battle(peer_id: int, trainer_id: String) -> void:
 	_trainer_dialogue_client.rpc_id(peer_id, trainer.display_name, trainer.dialogue_before, true)
 	var enemy_active = battle.side_b_party[battle.side_b_active_idx]
 	print("[BattleManager] Sending _start_battle_client to peer ", peer_id, " mode=", battle.mode)
-	_start_battle_client.rpc_id(peer_id, enemy_active, battle.mode, trainer.display_name)
+	_start_battle_client.rpc_id(peer_id, enemy_active, battle.mode, trainer.display_name, "farm")
 	# Fire on_enter abilities
 	var player_active = battle.side_a_party[battle.side_a_active_idx]
 	var initial_log: Array = []
@@ -460,8 +478,8 @@ func _start_pvp_battle(battle: Dictionary) -> void:
 	var b_active = battle.side_b_party[battle.side_b_active_idx]
 	var a_name = NetworkManager.players.get(battle.side_a_peer, {}).get("name", "Player")
 	var b_name = NetworkManager.players.get(battle.side_b_peer, {}).get("name", "Player")
-	_start_battle_client.rpc_id(battle.side_a_peer, b_active, BattleMode.PVP, b_name)
-	_start_battle_client.rpc_id(battle.side_b_peer, a_active, BattleMode.PVP, a_name)
+	_start_battle_client.rpc_id(battle.side_a_peer, b_active, BattleMode.PVP, b_name, "docks")
+	_start_battle_client.rpc_id(battle.side_b_peer, a_active, BattleMode.PVP, a_name, "docks")
 	# Fire on_enter abilities for both sides
 	var a_log: Array = []
 	var b_log: Array = []
@@ -1253,6 +1271,11 @@ func _check_battle_outcome(battle: Dictionary, turn_log: Array) -> void:
 						npc.update_gate_for_peer(peer_id)
 				# Send post-battle dialogue
 				_trainer_dialogue_client.rpc_id(peer_id, trainer.display_name, trainer.dialogue_after, false)
+				# Share poacher ingredient rewards with excursion party members
+				if battle.trainer_id.begins_with("poacher_"):
+					var poacher_exc_mgr = get_node_or_null("/root/Main/GameWorld/ExcursionManager")
+					if poacher_exc_mgr and poacher_exc_mgr.is_player_in_excursion(peer_id):
+						poacher_exc_mgr.distribute_excursion_battle_rewards(peer_id, trainer.reward_ingredients.duplicate())
 
 		# Quest progress hooks
 		var quest_mgr = get_node_or_null("/root/Main/GameWorld/QuestManager")
@@ -1981,8 +2004,8 @@ func handle_player_disconnect(peer_id: int) -> void:
 # === CLIENT RPCs ===
 
 @rpc("authority", "reliable")
-func _start_battle_client(enemy_data: Dictionary, battle_mode: int, opponent_name: String = "") -> void:
-	start_battle_client(enemy_data, battle_mode, opponent_name)
+func _start_battle_client(enemy_data: Dictionary, battle_mode: int, opponent_name: String = "", arena_theme: String = "") -> void:
+	start_battle_client(enemy_data, battle_mode, opponent_name, arena_theme)
 
 @rpc("authority", "reliable")
 func _send_turn_result(turn_log: Array, player_hp: int, player_pp: Array, enemy_hp: int) -> void:
@@ -2117,7 +2140,7 @@ func skip_move_learn() -> void:
 
 # === CLIENT ACTIONS ===
 
-func start_battle_client(enemy_data: Dictionary, battle_mode: int = BattleMode.WILD, opponent_name: String = "") -> void:
+func start_battle_client(enemy_data: Dictionary, battle_mode: int = BattleMode.WILD, opponent_name: String = "", arena_theme: String = "") -> void:
 	if in_battle:
 		print("[BattleManager] Client: ignoring duplicate _start_battle_client (already in battle)")
 		return
@@ -2127,6 +2150,7 @@ func start_battle_client(enemy_data: Dictionary, battle_mode: int = BattleMode.W
 	awaiting_action = true
 	client_battle_mode = battle_mode
 	client_opponent_name = opponent_name
+	client_arena_theme = arena_theme if arena_theme != "" else "docks"
 	# Reset client state
 	client_weather = ""
 	client_weather_turns = 0

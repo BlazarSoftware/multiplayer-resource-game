@@ -4,12 +4,26 @@ extends RefCounted
 # Type effectiveness chart
 # super effective = 2.0, not very effective = 0.5, neutral = 1.0
 const TYPE_CHART: Dictionary = {
-	"spicy": {"sweet": 2.0, "herbal": 2.0, "sour": 0.5, "umami": 0.5},
-	"sweet": {"sour": 2.0, "umami": 2.0, "spicy": 0.5, "grain": 0.5},
-	"sour": {"spicy": 2.0, "grain": 0.0, "sweet": 0.5, "herbal": 0.5},
-	"herbal": {"sour": 2.0, "sweet": 2.0, "spicy": 0.5, "umami": 0.0},
-	"umami": {"herbal": 2.0, "spicy": 2.0, "sweet": 0.5, "grain": 0.5},
-	"grain": {"sweet": 2.0, "umami": 2.0, "sour": 0.5, "herbal": 0.5},
+	# Original 6 types (unchanged)
+	"spicy": {"sweet": 2.0, "herbal": 2.0, "sour": 0.5, "umami": 0.5, "liquid": 0.5, "dairy": 2.0, "smoked": 0.5},
+	"sweet": {"sour": 2.0, "umami": 2.0, "spicy": 0.5, "grain": 0.5, "bitter": 2.0, "spoiled": 0.5},
+	"sour": {"spicy": 2.0, "grain": 0.0, "sweet": 0.5, "herbal": 0.5, "mineral": 2.0, "dairy": 2.0},
+	"herbal": {"sour": 2.0, "sweet": 2.0, "spicy": 0.5, "umami": 0.0, "earthy": 2.0, "aromatic": 0.5, "toxic": 0.5},
+	"umami": {"herbal": 2.0, "spicy": 2.0, "sweet": 0.5, "grain": 0.5, "aromatic": 2.0},
+	"grain": {"sweet": 2.0, "umami": 2.0, "sour": 0.5, "herbal": 0.5, "mineral": 0.5, "protein": 2.0},
+	# New 12 types
+	"mineral": {"grain": 2.0, "toxic": 2.0, "smoked": 2.0, "sour": 0.5, "earthy": 0.5, "liquid": 0.5},
+	"earthy": {"mineral": 2.0, "liquid": 2.0, "fermented": 2.0, "herbal": 0.5, "toxic": 0.5, "tropical": 0.5},
+	"liquid": {"spicy": 2.0, "mineral": 2.0, "smoked": 2.0, "herbal": 0.5, "earthy": 0.5, "tropical": 0.5},
+	"aromatic": {"herbal": 2.0, "toxic": 2.0, "tropical": 2.0, "umami": 0.5, "protein": 0.5, "bitter": 0.5},
+	"toxic": {"herbal": 2.0, "earthy": 2.0, "protein": 2.0, "dairy": 2.0, "mineral": 0.5, "spoiled": 0.5},
+	"protein": {"aromatic": 2.0, "bitter": 2.0, "spoiled": 2.0, "grain": 0.5, "toxic": 0.5, "smoked": 0.5},
+	"tropical": {"earthy": 2.0, "liquid": 2.0, "dairy": 2.0, "aromatic": 0.5, "fermented": 0.5},
+	"dairy": {"bitter": 2.0, "spoiled": 2.0, "fermented": 2.0, "spicy": 0.5, "sour": 0.5, "toxic": 0.5, "tropical": 0.5},
+	"bitter": {"aromatic": 2.0, "spoiled": 2.0, "fermented": 2.0, "sweet": 0.5, "protein": 0.5, "dairy": 0.5},
+	"spoiled": {"sweet": 2.0, "toxic": 2.0, "fermented": 2.0, "smoked": 2.0, "aromatic": 0.5, "protein": 0.5, "dairy": 0.5},
+	"fermented": {"protein": 2.0, "tropical": 2.0, "smoked": 2.0, "earthy": 0.5, "dairy": 0.5, "bitter": 0.5, "spoiled": 0.5},
+	"smoked": {"spicy": 2.0, "protein": 2.0, "mineral": 0.5, "liquid": 0.5, "spoiled": 0.5, "fermented": 0.5},
 }
 
 # Crit stage thresholds: stage -> denominator (1/N chance)

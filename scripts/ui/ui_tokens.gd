@@ -44,6 +44,8 @@ const STAMP_GOLD: Color = ACCENT_HONEY
 const STAMP_BLUE: Color = ACCENT_OCEAN
 const STAMP_BROWN: Color = ACCENT_CHESTNUT
 const SCRIM: Color = SCRIM_MENU
+const PAPER_BG: Color = PAPER_BASE
+const TEXT_INK: Color = INK_PRIMARY
 
 # Text semantics
 const TEXT_SUCCESS: Color = ACCENT_BASIL
@@ -59,6 +61,18 @@ const TYPE_SOUR: Color = Color("6E7A2F")
 const TYPE_HERBAL: Color = Color("4A6B3E")
 const TYPE_UMAMI: Color = Color("6B4E38")
 const TYPE_GRAIN: Color = Color("8C6A2D")
+const TYPE_MINERAL: Color = Color("7A8B99")
+const TYPE_EARTHY: Color = Color("8B6D4A")
+const TYPE_LIQUID: Color = Color("4A7B9B")
+const TYPE_AROMATIC: Color = Color("9B6B8A")
+const TYPE_TOXIC: Color = Color("6B8A4A")
+const TYPE_PROTEIN: Color = Color("8B4A4A")
+const TYPE_TROPICAL: Color = Color("6B9B5A")
+const TYPE_DAIRY: Color = Color("C8B89A")
+const TYPE_BITTER: Color = Color("5A4A3A")
+const TYPE_SPOILED: Color = Color("7A6B5A")
+const TYPE_FERMENTED: Color = Color("8A7A4A")
+const TYPE_SMOKED: Color = Color("6B5A4A")
 
 const TYPE_COLORS := {
 	"spicy": TYPE_SPICY,
@@ -67,6 +81,18 @@ const TYPE_COLORS := {
 	"herbal": TYPE_HERBAL,
 	"umami": TYPE_UMAMI,
 	"grain": TYPE_GRAIN,
+	"mineral": TYPE_MINERAL,
+	"earthy": TYPE_EARTHY,
+	"liquid": TYPE_LIQUID,
+	"aromatic": TYPE_AROMATIC,
+	"toxic": TYPE_TOXIC,
+	"protein": TYPE_PROTEIN,
+	"tropical": TYPE_TROPICAL,
+	"dairy": TYPE_DAIRY,
+	"bitter": TYPE_BITTER,
+	"spoiled": TYPE_SPOILED,
+	"fermented": TYPE_FERMENTED,
+	"smoked": TYPE_SMOKED,
 }
 
 # Typography
@@ -76,6 +102,12 @@ const FONT_H3: int = 24
 const FONT_BODY: int = 20
 const FONT_SMALL: int = 18
 const FONT_TINY: int = 16
+
+# VFX & screen flash colors
+const FLASH_GOLD: Color = Color(1.0, 0.9, 0.6, 0.4)
+const FLASH_CRAFT: Color = Color(1.0, 0.95, 0.7, 0.35)
+const SHIMMER_GOLD: Color = Color(1.2, 1.1, 0.8, 1.0)
+const TRANSITION_EDGE: Color = Color(0.85, 0.75, 0.55, 1.0)
 
 # Layout
 const PANEL_MARGIN: int = 14

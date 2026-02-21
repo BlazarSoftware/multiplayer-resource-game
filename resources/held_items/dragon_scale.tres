@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HeldItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/held_item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_id = "dragon_scale"
+display_name = "Dragon Scale"
+description = "A scale from a legendary dragon pepper. Reduces special damage taken by 20%."
+effect_type = "damage_reduction"
+effect_params = {"category": "special", "multiplier": 0.8}
+consumable = false
+icon_color = Color(0.8, 0.2, 0.1, 1)

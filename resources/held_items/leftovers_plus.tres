@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HeldItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/held_item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_id = "leftovers_plus"
+display_name = "Leftovers+"
+description = "An upgraded container of leftovers. Restores 12% max HP at end of turn."
+effect_type = "end_of_turn"
+effect_params = {"heal_percent": 0.12}
+consumable = false
+icon_color = Color(0.6, 0.8, 0.4, 1)

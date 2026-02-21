@@ -124,8 +124,25 @@ func request_farm_action(plot_index: int, action: String, extra: String) -> void
 
 @rpc("authority", "reliable")
 func _farm_action_result(_plot_index: int, _action: String, _success: bool) -> void:
-	# Client receives result - could show feedback
-	pass
+	# Client receives result - play SFX based on action type
+	if _success:
+		match _action:
+			"till":
+				AudioManager.play_sfx("tool_hoe")
+			"plant":
+				AudioManager.play_sfx("tool_hoe")
+			"water":
+				AudioManager.play_sfx("tool_water")
+			"harvest":
+				AudioManager.play_sfx("tool_harvest")
+				# Green sparkle VFX at plot location
+				if _plot_index >= 0 and _plot_index < plots.size():
+					var plot_node: Node3D = plots[_plot_index]
+					var vfx_path := "res://assets/vfx/magic_orbs/assets/BinbunVFX/magic_orbs/effects/magic_orb_basic/magic_orb_basic_vfx_01.tscn"
+					var game_world := get_node_or_null("/root/Main/GameWorld")
+					if game_world and ResourceLoader.exists(vfx_path):
+						var BVfx := preload("res://scripts/battle/battle_vfx.gd")
+						BVfx.spawn_vfx(game_world, plot_node.global_position + Vector3(0, 0.5, 0), vfx_path, 1.0)
 
 @rpc("authority", "reliable")
 func _farm_cooldown_rejected(_action: String, _remaining_ms: int) -> void:

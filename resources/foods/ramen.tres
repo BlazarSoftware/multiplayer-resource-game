@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+food_id = "ramen"
+display_name = "Ramen"
+description = "A steaming bowl of rich ramen."
+icon_color = Color(0.85, 0.7, 0.4, 1)
+sell_price = 55
+buff_type = "xp_multiplier"
+buff_value = 1.5
+buff_duration_sec = 180.0

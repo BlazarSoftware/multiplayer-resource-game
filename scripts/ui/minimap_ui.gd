@@ -34,17 +34,22 @@ func _ready() -> void:
 func _on_locations_changed() -> void:
 	queue_redraw()
 
-func _gui_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
+	if not visible:
+		return
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 			zoom_level = minf(zoom_level * 1.2, MAX_ZOOM)
 			queue_redraw()
-			accept_event()
+			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 			zoom_level = maxf(zoom_level / 1.2, MIN_ZOOM)
 			queue_redraw()
-			accept_event()
-		elif event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			get_viewport().set_input_as_handled()
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			_handle_click(event.position)
 			accept_event()
 
@@ -58,7 +63,12 @@ func _handle_click(click_pos: Vector2) -> void:
 	for loc in _locations_cache:
 		if loc.location_id not in PlayerData.discovered_locations:
 			continue
-		var screen_pos = _world_to_map(loc.world_position, player_pos, map_center)
+		var world_pos: Vector3 = loc.world_position
+		if loc.category == "social_npc":
+			var live_pos := _get_live_npc_position(loc.location_id)
+			if live_pos != Vector3.ZERO:
+				world_pos = live_pos
+		var screen_pos = _world_to_map(world_pos, player_pos, map_center)
 		var d = click_pos.distance_to(screen_pos)
 		if d < best_dist:
 			best_dist = d
@@ -82,7 +92,13 @@ func _draw() -> void:
 
 	# Draw ALL location icons (discovered = filled, undiscovered = outline)
 	for loc in _locations_cache:
-		var sp = _world_to_map(loc.world_position, player_pos, map_center)
+		var world_pos: Vector3 = loc.world_position
+		# Use live NPC position if available
+		if loc.category == "social_npc":
+			var live_pos := _get_live_npc_position(loc.location_id)
+			if live_pos != Vector3.ZERO:
+				world_pos = live_pos
+		var sp = _world_to_map(world_pos, player_pos, map_center)
 		if sp.x < -20 or sp.x > size.x + 20 or sp.y < -20 or sp.y > size.y + 20:
 			continue
 
@@ -107,6 +123,9 @@ func _draw() -> void:
 			label_color = Color(UITokens.INK_MEDIUM.r, UITokens.INK_MEDIUM.g, UITokens.INK_MEDIUM.b, 0.65)
 		var text_size = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
 		draw_string(font, sp + Vector2(-text_size.x / 2.0, ICON_RADIUS + 12), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, label_color)
+
+	# Quest objective markers
+	_draw_quest_markers(player_pos, map_center)
 
 	# Player marker (triangle pointing in facing direction)
 	var camera_yaw = _get_camera_yaw()
@@ -356,3 +375,80 @@ func _get_local_player() -> Node:
 		return null
 	var local_id = str(multiplayer.get_unique_id())
 	return players_node.get_node_or_null(local_id)
+
+func _get_live_npc_position(location_id: String) -> Vector3:
+	var npcs = get_tree().get_nodes_in_group("social_npc")
+	for npc in npcs:
+		if "npc_id" in npc and npc.npc_id == location_id:
+			return npc.global_position
+	return Vector3.ZERO
+
+func _draw_quest_markers(player_pos: Vector3, map_center: Vector2) -> void:
+	var pause_menu = get_node_or_null("/root/Main/GameWorld/UI/PauseMenu")
+	if pause_menu == null or not pause_menu.has_method("get_tracked_quest_info"):
+		return
+	var info: Dictionary = pause_menu.get_tracked_quest_info()
+	if info.is_empty():
+		return
+	var objectives: Array = info.get("objectives", [])
+	var state: Dictionary = info.get("state", {})
+	var obj_states: Array = state.get("objectives", [])
+	for i in objectives.size():
+		# Skip completed objectives
+		if i < obj_states.size() and int(obj_states[i].get("progress", 0)) >= int(objectives[i].get("target_count", 1)):
+			continue
+		var world_pos := _resolve_objective_position(objectives[i])
+		if world_pos == Vector3.ZERO:
+			continue
+		var sp = _world_to_map(world_pos, player_pos, map_center)
+		if sp.x < -20 or sp.x > size.x + 20 or sp.y < -20 or sp.y > size.y + 20:
+			continue
+		_draw_quest_marker_icon(sp)
+
+func _resolve_objective_position(objective: Dictionary) -> Vector3:
+	var obj_type: String = objective.get("type", "")
+	var target_id: String = objective.get("target_id", "")
+	if target_id == "":
+		return Vector3.ZERO
+	match obj_type:
+		"discover_location":
+			DataRegistry.ensure_loaded()
+			var loc = DataRegistry.get_location(target_id)
+			if loc:
+				return loc.world_position
+		"talk_to", "deliver":
+			var deliver_npc: String = objective.get("deliver_to_npc", "")
+			var npc_id: String = deliver_npc if obj_type == "deliver" and deliver_npc != "" else target_id
+			# Try live position first
+			var live_pos := _get_live_npc_position(npc_id)
+			if live_pos != Vector3.ZERO:
+				return live_pos
+			# Fall back to LocationDef
+			DataRegistry.ensure_loaded()
+			var loc = DataRegistry.get_location(npc_id)
+			if loc:
+				return loc.world_position
+		"defeat_trainer":
+			DataRegistry.ensure_loaded()
+			# Trainer location IDs are prefixed with "trainer_"
+			var loc = DataRegistry.get_location("trainer_" + target_id)
+			if loc:
+				return loc.world_position
+			loc = DataRegistry.get_location(target_id)
+			if loc:
+				return loc.world_position
+	return Vector3.ZERO
+
+func _draw_quest_marker_icon(center: Vector2) -> void:
+	var pulse: float = 0.7 + 0.3 * sin(Time.get_ticks_msec() * 0.003)
+	var gold := Color(UITokens.STAMP_GOLD.r, UITokens.STAMP_GOLD.g, UITokens.STAMP_GOLD.b, pulse)
+	var r: float = 10.0
+	# Draw a 4-pointed star
+	var points := PackedVector2Array()
+	for i in 8:
+		var angle = i * TAU / 8.0 - PI / 2.0
+		var dist = r if i % 2 == 0 else r * 0.35
+		points.append(center + Vector2(cos(angle), sin(angle)) * dist)
+	draw_colored_polygon(points, gold)
+	# White center dot
+	draw_circle(center, 2.0, Color(1, 1, 1, pulse))

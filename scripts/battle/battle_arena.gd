@@ -7,6 +7,21 @@ const BATTLE_ARENA_OFFSET = Vector3(8000, 0, 0)
 
 const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
+const ARENA_SCENES: Dictionary = {
+	"docks": "res://scenes/battle/arenas/arena_docks.tscn",
+	"garden": "res://scenes/battle/arenas/arena_garden.tscn",
+	"beach": "res://scenes/battle/arenas/arena_beach.tscn",
+	"ruins": "res://scenes/battle/arenas/arena_ruins.tscn",
+	"cavern": "res://scenes/battle/arenas/arena_cavern.tscn",
+	"farm": "res://scenes/battle/arenas/arena_farm.tscn",
+	"tournament": "res://scenes/battle/arenas/arena_tournament.tscn",
+}
+
+# Tournament camera — wider FOV, higher for stadium feel
+const CAM_TOURNAMENT_NEUTRAL = { "pos": Vector3(0, 7, 10), "rot": Vector3(-30, 0, 0), "fov": 60.0 }
+
+var _arena_theme: String = "docks"
+
 const WEATHER_LIGHT_COLORS = {
 	"spicy": Color(1.0, 0.5, 0.2),
 	"sweet": Color(1.0, 0.7, 0.9),
@@ -14,12 +29,26 @@ const WEATHER_LIGHT_COLORS = {
 	"herbal": Color(0.3, 0.8, 0.4),
 	"umami": Color(0.6, 0.5, 0.7),
 	"grain": Color(0.8, 0.7, 0.4),
+	"mineral": Color(0.7, 0.8, 0.9),
+	"earthy": Color(0.6, 0.5, 0.3),
+	"liquid": Color(0.3, 0.6, 0.9),
+	"aromatic": Color(0.8, 0.6, 0.8),
+	"toxic": Color(0.5, 0.7, 0.3),
+	"protein": Color(0.7, 0.4, 0.3),
+	"tropical": Color(0.5, 0.8, 0.4),
+	"dairy": Color(0.9, 0.85, 0.75),
+	"bitter": Color(0.4, 0.35, 0.3),
+	"spoiled": Color(0.6, 0.55, 0.45),
+	"fermented": Color(0.7, 0.65, 0.4),
+	"smoked": Color(0.5, 0.45, 0.4),
 }
 
 # Camera presets (relative to BATTLE_ARENA_OFFSET via local coords)
 const CAM_NEUTRAL = { "pos": Vector3(0, 5, 8), "rot": Vector3(-25, 0, 0), "fov": 55.0 }
 const CAM_PLAYER_ATTACK = { "pos": Vector3(-2, 3, 5), "rot": Vector3(-15, 15, 0), "fov": 50.0 }
 const CAM_ENEMY_ATTACK = { "pos": Vector3(2, 3, -1), "rot": Vector3(-15, -15, 0), "fov": 50.0 }
+const CAM_CRIT_ZOOM = { "pos": Vector3(0, 2.5, 2), "rot": Vector3(-10, 0, 0), "fov": 40.0 }
+const CAM_KO_WIDE = { "pos": Vector3(0, 8, 12), "rot": Vector3(-30, 0, 0), "fov": 65.0 }
 
 # Node references (set during build)
 var arena_camera: Camera3D
@@ -33,58 +62,40 @@ var weather_light: OmniLight3D
 var _player_creature_mesh: MeshInstance3D
 var _enemy_creature_mesh: MeshInstance3D
 
-func build_arena(battle_mode: int, enemy_data: Dictionary, opponent_name: String) -> void:
+# Camera tween (killed on new cut)
+var _camera_tween: Tween
+
+# Idle bob tweens
+var _player_bob_tween: Tween
+var _enemy_bob_tween: Tween
+
+# Status aura nodes
+var _player_status_aura: Node3D
+var _enemy_status_aura: Node3D
+
+func build_arena(battle_mode: int, enemy_data: Dictionary, opponent_name: String, arena_theme: String = "docks") -> void:
 	position = BATTLE_ARENA_OFFSET
+	_arena_theme = arena_theme
 
-	# Ground plane
-	var ground = MeshInstance3D.new()
-	ground.name = "GroundPlane"
-	var ground_mesh = BoxMesh.new()
-	ground_mesh.size = Vector3(20, 0.1, 12)
-	ground.mesh = ground_mesh
-	var ground_mat = StandardMaterial3D.new()
-	ground_mat.albedo_color = Color(0.45, 0.38, 0.28)
-	ground.set_surface_override_material(0, ground_mat)
-	ground.position = Vector3(0, -0.05, 0)
-	add_child(ground)
-
-	# Arena border ring
-	var border = MeshInstance3D.new()
-	border.name = "ArenaBorder"
-	var border_mesh = CylinderMesh.new()
-	border_mesh.top_radius = 9.5
-	border_mesh.bottom_radius = 9.5
-	border_mesh.height = 0.15
-	border.mesh = border_mesh
-	var border_mat = StandardMaterial3D.new()
-	border_mat.albedo_color = Color(0.6, 0.5, 0.35)
-	border.set_surface_override_material(0, border_mat)
-	border.position = Vector3(0, 0.02, 0)
-	add_child(border)
-
-	# Directional light
-	var dir_light = DirectionalLight3D.new()
-	dir_light.name = "ArenaLight"
-	dir_light.rotation = Vector3(deg_to_rad(-45), deg_to_rad(30), 0)
-	dir_light.light_energy = 1.2
-	dir_light.shadow_enabled = true
-	add_child(dir_light)
-
-	# Ambient fill
-	var fill = OmniLight3D.new()
-	fill.name = "AmbientFill"
-	fill.position = Vector3(0, 4, 0)
-	fill.light_energy = 0.4
-	fill.omni_range = 15.0
-	fill.light_color = Color(0.95, 0.9, 0.8)
-	add_child(fill)
+	# Load themed arena scene
+	var scene_path = ARENA_SCENES.get(arena_theme, ARENA_SCENES["docks"])
+	if ResourceLoader.exists(scene_path):
+		var arena_scene = load(scene_path) as PackedScene
+		if arena_scene:
+			var env_node = arena_scene.instantiate()
+			env_node.name = "Environment"
+			add_child(env_node)
+	else:
+		# Fallback: simple ground plane if scene not found
+		_build_fallback_ground()
 
 	# Camera
+	var cam_preset = CAM_TOURNAMENT_NEUTRAL if arena_theme == "tournament" else CAM_NEUTRAL
 	arena_camera = Camera3D.new()
 	arena_camera.name = "ArenaCamera"
-	arena_camera.position = CAM_NEUTRAL.pos
-	arena_camera.rotation = Vector3(deg_to_rad(CAM_NEUTRAL.rot.x), deg_to_rad(CAM_NEUTRAL.rot.y), 0)
-	arena_camera.fov = CAM_NEUTRAL.fov
+	arena_camera.position = cam_preset.pos
+	arena_camera.rotation = Vector3(deg_to_rad(cam_preset.rot.x), deg_to_rad(cam_preset.rot.y), 0)
+	arena_camera.fov = cam_preset.fov
 	add_child(arena_camera)
 
 	# Player side
@@ -124,6 +135,9 @@ func build_arena(battle_mode: int, enemy_data: Dictionary, opponent_name: String
 	if active_idx < PlayerData.party.size():
 		update_player_creature(PlayerData.party[active_idx])
 	update_enemy_creature(enemy_data)
+
+	# Start idle bob animation
+	start_idle_bobs()
 
 func _build_creature_side(side: Node3D, which: String) -> void:
 	# Creature mesh placeholder
@@ -259,9 +273,9 @@ func update_enemy_creature(enemy_data: Dictionary) -> void:
 	_enemy_creature_mesh.set_surface_override_material(0, result.material)
 	_enemy_creature_mesh.scale = result.scale
 
-# === CAMERA CUT SYSTEM (Pokemon Stadium hard cuts) ===
+# === CAMERA SYSTEM (smooth tweened transitions) ===
 
-func cut_camera(preset: String) -> void:
+func cut_camera(preset: String, duration: float = 0.35) -> void:
 	if arena_camera == null:
 		return
 	var cam_data: Dictionary
@@ -270,11 +284,55 @@ func cut_camera(preset: String) -> void:
 			cam_data = CAM_PLAYER_ATTACK
 		"enemy_attack":
 			cam_data = CAM_ENEMY_ATTACK
+		"crit_zoom":
+			cam_data = CAM_CRIT_ZOOM
+		"ko_wide":
+			cam_data = CAM_KO_WIDE
 		_:
-			cam_data = CAM_NEUTRAL
-	arena_camera.position = cam_data.pos
-	arena_camera.rotation = Vector3(deg_to_rad(cam_data.rot.x), deg_to_rad(cam_data.rot.y), deg_to_rad(cam_data.rot.z))
-	arena_camera.fov = cam_data.fov
+			cam_data = CAM_TOURNAMENT_NEUTRAL if _arena_theme == "tournament" else CAM_NEUTRAL
+
+	if duration <= 0.0:
+		# Instant cut (for snap-to positions)
+		arena_camera.position = cam_data.pos
+		arena_camera.rotation = Vector3(deg_to_rad(cam_data.rot.x), deg_to_rad(cam_data.rot.y), deg_to_rad(cam_data.rot.z))
+		arena_camera.fov = cam_data.fov
+		return
+
+	# Kill previous camera tween
+	if _camera_tween and _camera_tween.is_valid():
+		_camera_tween.kill()
+
+	var target_rot = Vector3(deg_to_rad(cam_data.rot.x), deg_to_rad(cam_data.rot.y), deg_to_rad(cam_data.rot.z))
+	_camera_tween = create_tween()
+	_camera_tween.set_parallel(true)
+	_camera_tween.tween_property(arena_camera, "position", cam_data.pos, duration).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+	_camera_tween.tween_property(arena_camera, "rotation", target_rot, duration).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+	_camera_tween.tween_property(arena_camera, "fov", cam_data.fov, duration).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+
+func crit_camera_punch(_side: String) -> void:
+	if arena_camera == null:
+		return
+	# Snap to crit zoom
+	cut_camera("crit_zoom", 0.0)
+	# Hold briefly, then tween back to neutral
+	var timer = get_tree().create_timer(0.15)
+	timer.timeout.connect(func():
+		if is_instance_valid(arena_camera):
+			cut_camera("neutral", 0.3)
+	)
+
+func ko_camera(_side: String) -> void:
+	if arena_camera == null:
+		return
+	cut_camera("ko_wide", 0.5)
+
+func hit_stop(duration: float = 0.06) -> void:
+	Engine.time_scale = 0.05
+	# SceneTreeTimer is unaffected by time_scale
+	var timer = get_tree().create_timer(duration, true, false, true)
+	timer.timeout.connect(func():
+		Engine.time_scale = 1.0
+	)
 
 # === CREATURE POSITION HELPER ===
 
@@ -420,3 +478,117 @@ func swap_creature_animation(side: String, new_creature_data: Dictionary) -> voi
 
 func _get_battle_manager() -> Node:
 	return get_node_or_null("/root/Main/GameWorld/BattleManager")
+
+# === KNOCKBACK ===
+
+func knockback_creature(side: String, intensity: float = 0.3) -> void:
+	var mesh_node: MeshInstance3D
+	if side == "player":
+		mesh_node = _player_creature_mesh
+	else:
+		mesh_node = _enemy_creature_mesh
+	if mesh_node == null:
+		return
+	var original_pos = mesh_node.position
+	var knock_dir = Vector3(0, 0, 1.0) if side == "player" else Vector3(0, 0, -1.0)
+	var tween = create_tween()
+	tween.tween_property(mesh_node, "position", original_pos + knock_dir * intensity, 0.08).set_ease(Tween.EASE_OUT)
+	tween.tween_property(mesh_node, "position", original_pos, 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
+
+# === IDLE BOB ===
+
+func start_idle_bobs() -> void:
+	if _player_creature_mesh:
+		_player_bob_tween = _start_idle_bob(_player_creature_mesh)
+	if _enemy_creature_mesh:
+		_enemy_bob_tween = _start_idle_bob(_enemy_creature_mesh)
+
+func _start_idle_bob(mesh: MeshInstance3D) -> Tween:
+	var base_y = mesh.position.y
+	var tween = create_tween()
+	tween.set_loops()
+	tween.tween_property(mesh, "position:y", base_y + 0.1, 1.0).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(mesh, "position:y", base_y, 1.0).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	return tween
+
+func stop_idle_bob(side: String) -> void:
+	if side == "player" and _player_bob_tween and _player_bob_tween.is_valid():
+		_player_bob_tween.kill()
+		_player_bob_tween = null
+		if _player_creature_mesh:
+			_player_creature_mesh.position.y = 1.0
+	elif side == "enemy" and _enemy_bob_tween and _enemy_bob_tween.is_valid():
+		_enemy_bob_tween.kill()
+		_enemy_bob_tween = null
+		if _enemy_creature_mesh:
+			_enemy_creature_mesh.position.y = 1.0
+
+# === STATUS AURAS ===
+
+func update_status_aura(side: String, status: String) -> void:
+	# Clear existing aura for this side
+	if side == "player":
+		if _player_status_aura and is_instance_valid(_player_status_aura):
+			_player_status_aura.queue_free()
+		_player_status_aura = null
+	else:
+		if _enemy_status_aura and is_instance_valid(_enemy_status_aura):
+			_enemy_status_aura.queue_free()
+		_enemy_status_aura = null
+
+	if status == "":
+		return
+
+	var BattleVFX = preload("res://scripts/battle/battle_vfx.gd")
+	var side_node = player_side if side == "player" else enemy_side
+	var aura = BattleVFX.spawn_status_aura(self, side_node, status)
+	if side == "player":
+		_player_status_aura = aura
+	else:
+		_enemy_status_aura = aura
+
+func clear_all_auras() -> void:
+	if _player_status_aura and is_instance_valid(_player_status_aura):
+		_player_status_aura.queue_free()
+	_player_status_aura = null
+	if _enemy_status_aura and is_instance_valid(_enemy_status_aura):
+		_enemy_status_aura.queue_free()
+	_enemy_status_aura = null
+
+func _build_fallback_ground() -> void:
+	# Simple ground + border for when arena scene is missing
+	var ground = MeshInstance3D.new()
+	ground.name = "GroundPlane"
+	var ground_mesh = BoxMesh.new()
+	ground_mesh.size = Vector3(20, 0.1, 12)
+	ground.mesh = ground_mesh
+	var ground_mat = StandardMaterial3D.new()
+	ground_mat.albedo_color = Color(0.45, 0.38, 0.28)
+	ground.set_surface_override_material(0, ground_mat)
+	ground.position = Vector3(0, -0.05, 0)
+	add_child(ground)
+	var border = MeshInstance3D.new()
+	border.name = "ArenaBorder"
+	var border_mesh = CylinderMesh.new()
+	border_mesh.top_radius = 9.5
+	border_mesh.bottom_radius = 9.5
+	border_mesh.height = 0.15
+	border.mesh = border_mesh
+	var border_mat = StandardMaterial3D.new()
+	border_mat.albedo_color = Color(0.6, 0.5, 0.35)
+	border.set_surface_override_material(0, border_mat)
+	border.position = Vector3(0, 0.02, 0)
+	add_child(border)
+	var dir_light = DirectionalLight3D.new()
+	dir_light.name = "ArenaLight"
+	dir_light.rotation = Vector3(deg_to_rad(-45), deg_to_rad(30), 0)
+	dir_light.light_energy = 1.2
+	dir_light.shadow_enabled = true
+	add_child(dir_light)
+	var fill = OmniLight3D.new()
+	fill.name = "AmbientFill"
+	fill.position = Vector3(0, 4, 0)
+	fill.light_energy = 0.4
+	fill.omni_range = 15.0
+	fill.light_color = Color(0.95, 0.9, 0.8)
+	add_child(fill)

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "poke_bowl"
+display_name = "Cook Poke Bowl"
+result_food_id = "poke_bowl"
+ingredients = {"fish": 2, "rice": 2, "seaweed": 1, "sesame_oil": 1}
+description = "Fresh Hawaiian poke bowl."
+station = "kitchen"

@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_35_beach"
+display_name = "Beach Expedition"
+description = "Captain Sal wants you to clear out some wild creatures that have been causing trouble along the beach. Time to put your battle skills to the test!"
+category = "main_story"
+quest_giver_npc_id = "npc_captain_sal"
+prereq_quest_ids = ["ms_34_spice"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "defeat_creature",
+"target_id": "",
+"target_count": 3,
+"description": "Defeat wild creatures (3)"
+}]
+reward_money = 350
+reward_items = {}
+reward_friendship = {}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = "ms_36_social"
+chapter = 3
+sort_order = 6
+offer_dialogue = "Listen, friend — there's been some rowdy creatures stirring up trouble along the shore. Scaring off the seabirds, knocking over my crab traps. Think you can handle a few of 'em? Nothing a capable adventurer like you can't manage."
+in_progress_dialogue = "Still a few critters causing havoc down by the tidepools. Give 'em what for!"
+completion_dialogue = "Ha! That's the spirit! The beach is peaceful again, thanks to you. Sal owes you one — and Sal always pays his debts. Eventually."

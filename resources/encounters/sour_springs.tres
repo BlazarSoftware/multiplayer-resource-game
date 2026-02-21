@@ -6,5 +6,5 @@
 script = ExtResource("1")
 table_id = "sour_springs"
 display_name = "Sour Springs"
-entries = [{"species_id": "lemon_imp", "weight": 35, "min_level": 3, "max_level": 6}, {"species_id": "pickle_toad", "weight": 25, "min_level": 4, "max_level": 7}, {"species_id": "taffy_serpent", "weight": 20, "min_level": 4, "max_level": 7}, {"species_id": "sourdough_sentinel", "weight": 15, "min_level": 5, "max_level": 8}, {"species_id": "basil_sprite", "weight": 5, "min_level": 3, "max_level": 5}]
+entries = [{"species_id": "lemon_imp", "weight": 28, "min_level": 3, "max_level": 6}, {"species_id": "pickle_toad", "weight": 20, "min_level": 4, "max_level": 7}, {"species_id": "taffy_serpent", "weight": 15, "min_level": 4, "max_level": 7}, {"species_id": "sourdough_sentinel", "weight": 12, "min_level": 5, "max_level": 8}, {"species_id": "basil_sprite", "weight": 5, "min_level": 3, "max_level": 5}, {"species_id": "pineapple_knight", "weight": 8, "min_level": 5, "max_level": 8}, {"species_id": "citrus_fiend", "weight": 5, "min_level": 6, "max_level": 9}, {"species_id": "cocoa_imp", "weight": 7, "min_level": 4, "max_level": 7}]
 season_bonus = {"autumn": "pickle_toad"}

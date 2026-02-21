@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "tropical_breeze"
+display_name = "Tropical Breeze"
+type = "herbal"
+category = "status"
+power = 0
+accuracy = 100
+pp = 10
+heal_percent = 25.0
+description = "Gentle breeze heals some HP."

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_steak_beast"
+display_name = "Cook Steak Beast"
+result_species_id = "steak_beast"
+ingredients = {"beef": 3, "chili_pepper": 2}
+description = "Forge a Steak Beast from prime cuts."
+station = "cauldron"
+unlockable = true

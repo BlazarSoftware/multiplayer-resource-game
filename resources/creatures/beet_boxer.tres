@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "beet_boxer"
+display_name = "Beet Boxer"
+types = PackedStringArray("earthy")
+base_hp = 55
+base_attack = 18
+base_defense = 10
+base_sp_attack = 8
+base_sp_defense = 8
+base_speed = 14
+moves = PackedStringArray("root_grip", "quick_bite", "sour_punch", "taste_and_dash")
+mesh_type = "sphere"
+mesh_color = Color(0.7, 0.15, 0.25, 1)
+mesh_scale = Vector3(0.65, 0.7, 0.65)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("radish")
+drop_min = 1
+drop_max = 2
+learnset = {3: "quick_bite", 6: "root_grip", 9: "sour_punch", 12: "taste_and_dash", 15: "harvest_move"}
+ability_ids = PackedStringArray("harvest_spirit", "iron_gut")
+ev_yield = {"attack": 1}
+base_xp_yield = 50

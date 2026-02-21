@@ -10,6 +10,18 @@ const TYPE_EFFECT_CONFIGS = {
 	"herbal": { "color": Color(0.2, 0.7, 0.3), "color2": Color(0.5, 0.9, 0.4), "direction": Vector3(0.3, 0.8, 0.3), "spread": 40.0, "count": 20, "lifetime": 0.6 },
 	"umami": { "color": Color(0.5, 0.3, 0.6), "color2": Color(0.4, 0.25, 0.35), "direction": Vector3(0, 0.5, 0), "spread": 20.0, "count": 15, "lifetime": 0.7 },
 	"grain": { "color": Color(0.8, 0.65, 0.2), "color2": Color(0.6, 0.45, 0.15), "direction": Vector3(0, 1.0, 0), "spread": 35.0, "count": 25, "lifetime": 0.5 },
+	"mineral": { "color": Color(0.5, 0.6, 0.7), "color2": Color(0.7, 0.8, 0.9), "direction": Vector3(0, 1.2, 0), "spread": 20.0, "count": 25, "lifetime": 0.6 },
+	"earthy": { "color": Color(0.55, 0.4, 0.25), "color2": Color(0.7, 0.55, 0.35), "direction": Vector3(0, 0.8, 0), "spread": 50.0, "count": 30, "lifetime": 0.5 },
+	"liquid": { "color": Color(0.3, 0.5, 0.8), "color2": Color(0.4, 0.7, 0.95), "direction": Vector3(0, -0.5, 0), "spread": 40.0, "count": 25, "lifetime": 0.6 },
+	"aromatic": { "color": Color(0.7, 0.4, 0.65), "color2": Color(0.9, 0.6, 0.85), "direction": Vector3(0.3, 1.0, 0.3), "spread": 60.0, "count": 20, "lifetime": 0.7 },
+	"toxic": { "color": Color(0.4, 0.6, 0.2), "color2": Color(0.6, 0.8, 0.3), "direction": Vector3(0, 0.6, 0), "spread": 35.0, "count": 20, "lifetime": 0.8 },
+	"protein": { "color": Color(0.7, 0.3, 0.25), "color2": Color(0.9, 0.4, 0.3), "direction": Vector3(0, 1.0, 0), "spread": 15.0, "count": 20, "lifetime": 0.5 },
+	"tropical": { "color": Color(0.4, 0.75, 0.35), "color2": Color(0.6, 0.9, 0.4), "direction": Vector3(0.5, 1.0, 0.5), "spread": 45.0, "count": 25, "lifetime": 0.6 },
+	"dairy": { "color": Color(0.9, 0.85, 0.75), "color2": Color(1.0, 0.95, 0.85), "direction": Vector3(0, 0.8, 0), "spread": 30.0, "count": 20, "lifetime": 0.5 },
+	"bitter": { "color": Color(0.3, 0.25, 0.2), "color2": Color(0.5, 0.4, 0.3), "direction": Vector3(0, -0.5, 0), "spread": 25.0, "count": 20, "lifetime": 0.7 },
+	"spoiled": { "color": Color(0.5, 0.45, 0.35), "color2": Color(0.6, 0.5, 0.4), "direction": Vector3(0, 0.3, 0), "spread": 50.0, "count": 25, "lifetime": 0.8 },
+	"fermented": { "color": Color(0.65, 0.55, 0.25), "color2": Color(0.8, 0.7, 0.35), "direction": Vector3(0, 0.6, 0), "spread": 40.0, "count": 20, "lifetime": 0.7 },
+	"smoked": { "color": Color(0.45, 0.4, 0.35), "color2": Color(0.6, 0.55, 0.5), "direction": Vector3(0, 1.5, 0), "spread": 55.0, "count": 30, "lifetime": 0.8 },
 }
 
 static func _spawn_particles(parent: Node3D, pos: Vector3, config: Dictionary) -> GPUParticles3D:

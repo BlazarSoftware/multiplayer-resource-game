@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "cocoa_imp"
+display_name = "Cocoa Imp"
+types = PackedStringArray("bitter", "sweet")
+base_hp = 40
+base_attack = 8
+base_defense = 8
+base_sp_attack = 16
+base_sp_defense = 10
+base_speed = 14
+moves = PackedStringArray("bitter_pill", "sugar_rush", "taste_and_dash", "mock_plating")
+mesh_type = "sphere"
+mesh_color = Color(0.4, 0.25, 0.15, 1)
+mesh_scale = Vector3(0.5, 0.6, 0.5)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("chocolate")
+drop_min = 1
+drop_max = 2
+learnset = {3: "bitter_pill", 6: "sugar_rush", 9: "taste_and_dash", 12: "mock_plating", 15: "dream_feast"}
+ability_ids = PackedStringArray("bitter_guard", "sweet_tooth")
+ev_yield = {"sp_attack": 1}
+base_xp_yield = 50

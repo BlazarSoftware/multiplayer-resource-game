@@ -227,6 +227,7 @@ func show_dialogue(npc_id: String, text: String, choices: Array, friendship_poin
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	NetworkManager.request_set_busy.rpc_id(1, true)
+	ScreenTransition.open(self, "slide_up")
 
 func show_choice_result(response: String, new_points: int, new_tier: String) -> void:
 	current_friendship = new_points
@@ -282,6 +283,13 @@ func show_gift_response(npc_id: String, message: String, points_change: int) -> 
 	_update_friendship_display(pts2, _get_friendship_tier(pts2))
 
 	if _gift_popup_mode:
+		# Scale pop on gift response
+		var main_panel = get_node_or_null("Panel")
+		if main_panel:
+			main_panel.pivot_offset = main_panel.size / 2.0
+			main_panel.scale = Vector2(0.9, 0.9)
+			var pop_tween := create_tween()
+			pop_tween.tween_property(main_panel, "scale", Vector2.ONE, 0.15).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 		_schedule_auto_close(3.5)
 	else:
 		_hide_gift_panel()
@@ -519,12 +527,12 @@ func _close() -> void:
 	if _gift_popup_mode:
 		_close_popup()
 		return
+	await ScreenTransition.close(self, "slide_up")
 	visible = false
 	gift_panel.visible = false
 	showing_gift_panel = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	NetworkManager.request_set_busy.rpc_id(1, false)
-	# Cancel any pending dialogue on server
 	var social_mgr = get_node_or_null("/root/Main/GameWorld/SocialManager")
 	if social_mgr:
 		social_mgr.cancel_dialogue.rpc_id(1)

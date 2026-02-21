@@ -3,7 +3,7 @@ extends Resource
 
 @export var species_id: String = ""
 @export var display_name: String = ""
-@export var types: PackedStringArray = [] # spicy, sweet, sour, herbal, umami, grain
+@export var types: PackedStringArray = [] # spicy, sweet, sour, herbal, umami, grain, mineral, earthy, liquid, aromatic, toxic, protein, tropical, dairy, bitter, spoiled, fermented, smoked
 @export var base_hp: int = 40
 @export var base_attack: int = 10
 @export var base_defense: int = 10

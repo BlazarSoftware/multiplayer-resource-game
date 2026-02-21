@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_36_social"
+display_name = "Evening at the Inn"
+description = "Mabel at the inn is hosting a little gathering tonight. Drop by and chat with a couple of the townsfolk — everyone's been wanting to get to know you better."
+category = "main_story"
+quest_giver_npc_id = "npc_innkeeper"
+prereq_quest_ids = ["ms_35_beach"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "talk_to",
+"target_id": "",
+"target_count": 2,
+"description": "Chat with townsfolk (2)"
+}]
+reward_money = 500
+reward_items = {}
+reward_friendship = {"npc_innkeeper": 10}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = "act3_complete"
+next_quest_id = "ms_40_journal"
+chapter = 3
+sort_order = 7
+offer_dialogue = "Oh, wonderful — you're here! I've set up a little get-together tonight. Nothing fancy, just warm cider and good company. Go mingle, dear! Talk to at least a couple of folks. Everyone's been dying to hear your stories."
+in_progress_dialogue = "Don't be a wallflower! There are plenty of friendly faces around. Just say hello to a few people — it'll make their night."
+completion_dialogue = "See? That wasn't so hard, was it? You're one of us now, truly. This town hasn't felt this alive in years. Here's to many more evenings like this one."

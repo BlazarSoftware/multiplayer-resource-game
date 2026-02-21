@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "kraken_broth"
+display_name = "Kraken Broth"
+types = PackedStringArray("liquid", "umami")
+base_hp = 95
+base_attack = 20
+base_defense = 20
+base_sp_attack = 22
+base_sp_defense = 18
+base_speed = 10
+moves = PackedStringArray("brine_wave", "umami_bomb", "brine_crash", "acid_rain")
+mesh_type = "cylinder"
+mesh_color = Color(0.2, 0.3, 0.45, 1)
+mesh_scale = Vector3(1.1, 1.3, 1.1)
+rarity = "legendary"
+drop_ingredient_ids = PackedStringArray("kelp")
+drop_min = 2
+drop_max = 4
+learnset = {3: "brine_splash", 6: "umami_bomb", 9: "brine_wave", 12: "brine_crash", 15: "acid_rain"}
+ability_ids = PackedStringArray("brine_body", "pressure_cook")
+ev_yield = {"hp": 3}
+base_xp_yield = 150

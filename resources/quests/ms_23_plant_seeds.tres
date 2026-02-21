@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_23_plant_seeds"
+display_name = "Green Thumb Basics"
+description = "Old Sage Murphy wants to teach you about farming. Grow and collect some wheat to prove you can work the land."
+category = "main_story"
+quest_giver_npc_id = "npc_murphy"
+prereq_quest_ids = ["ms_22_create_munchie"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "collect",
+"target_id": "wheat",
+"target_count": 3,
+"description": "Collect 3 Wheat"
+}]
+reward_money = 200
+reward_items = {}
+reward_friendship = {"npc_murphy": 5}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = "ms_24_cook_dish"
+chapter = 2
+sort_order = 4
+offer_dialogue = "Ah, a young sprout looking to learn the ways of the soil! I'm Murphy — been tending gardens in this cove longer than the cliffs have stood. Bring me three bundles of wheat and I'll know you've got the patience for farming."
+in_progress_dialogue = "The wheat won't hurry itself, and neither should you. Till the soil, plant the seeds, water them daily, and nature will do the rest. That's the deal we've always had with the earth."
+completion_dialogue = "Three fine bundles of wheat! You've got steady hands and a patient heart — that's more than most who try their luck in the fields. Keep at it, and the land will always provide for you."

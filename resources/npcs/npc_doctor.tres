@@ -1,0 +1,167 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_doctor"
+display_name = "Dr. Honey Sweetwater"
+visual_color = Color(0.95, 0.8, 0.4, 1)
+birthday = {
+"month": 2,
+"day": 14
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": 22, "y": 2, "z": 3 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": 20, "y": 2, "z": 6 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["honey", "herb_basil", "mint", "mushroom"],
+"liked": ["milk", "berry", "garlic"],
+"disliked": ["chili_powder", "vinegar", "pepper"],
+"hated": ["sugar", "butter"]
+}
+dialogues = {
+"neutral": [{
+"text": "Good morning! Have you been staying hydrated? The climate here is deceptive. People always underestimate how much water they need near the coast.",
+"choices": [{
+"label": "Thanks for looking out for me, Dr. Sweetwater!",
+"points": 3,
+"response": "Please, call me Honey. Everyone does. And yes, I worry about all of you. It's a compulsion."
+}, {
+"label": "I think I'm fine, thanks.",
+"points": 0,
+"response": "Famous last words in my profession. But I trust your judgment. Just keep a water bottle handy."
+}, {
+"label": "I don't need a lecture.",
+"points": -2,
+"response": "It's not a lecture, it's medical advice. There IS a difference. But I'll stop hovering."
+}]
+}, {
+"text": "I'm researching the medicinal properties of local herbs. Did you know basil can reduce inflammation by up to thirty percent? Fascinating compound structures.",
+"choices": [{
+"label": "That's incredible! What else have you discovered?",
+"points": 3,
+"response": "Oh, don't get me started! Well, actually, do. Mint has antibacterial properties that... am I boring you? I can never tell."
+}, {
+"label": "Sounds complicated.",
+"points": 0,
+"response": "It is! Beautifully so. Science is just organized curiosity, after all."
+}, {
+"label": "I'll stick to regular medicine.",
+"points": -2,
+"response": "This IS regular medicine. Plants came first. Everything else is just... industrialized plants."
+}]
+}, {
+"text": "A creature came into the clinic with a sprained tentacle today. I'm technically not a veterinarian, but I couldn't just turn it away!",
+"choices": [{
+"label": "That's so kind of you! Is the creature okay?",
+"points": 3,
+"response": "Resting comfortably with a tiny splint. It was rather adorable, actually. Don't tell anyone I said that."
+}, {
+"label": "Do creatures even have tentacle bones?",
+"points": 0,
+"response": "Excellent question! Technically, no. Cartilaginous structures, more like. But the splint principle still applies."
+}, {
+"label": "That's not really your job.",
+"points": -2,
+"response": "My job is to help anyone who needs it. Hippocratic oath doesn't specify species."
+}]
+}],
+"like": [{
+"text": "I packed an extra lunch today. Herb salad with honey dressing. Would you like to eat with me? The clinic garden is lovely at noon.",
+"choices": [{
+"label": "I'd love that! Lunch with you sounds perfect.",
+"points": 3,
+"response": "Wonderful! I'll set up the little table under the lemon tree. Fair warning, I talk about cells during meals."
+}, {
+"label": "Maybe a quick bite.",
+"points": 0,
+"response": "Quick is fine! The salad is pre-tossed. I'm efficient even in friendship."
+}]
+}, {
+"text": "I've been developing a new herbal remedy. It's my best work yet, but I need a brave volunteer to test it. It's perfectly safe! Probably.",
+"choices": [{
+"label": "I trust you completely. Sign me up!",
+"points": 3,
+"response": "Your confidence means so much! It's just a mint and honey tonic. Worst case, your breath will be amazing."
+}, {
+"label": "What do you mean, 'probably'?",
+"points": 0,
+"response": "Ha! I'm joking. I've tested it extensively on myself. It's delicious AND therapeutic."
+}]
+}],
+"love": [{
+"text": "I became a doctor because I wanted to fix things. But you... you've taught me that some of the best things in life don't need fixing. They just need appreciating. Like our friendship.",
+"choices": [{
+"label": "Honey, you fix more than bodies. You fix hearts too.",
+"points": 3,
+"response": "Oh... that's the most unscientific and absolutely perfect thing anyone has ever said to me. Thank you."
+}, {
+"label": "You've made my life healthier in every way.",
+"points": 2,
+"response": "And you've made mine richer. Not financially... emotionally. Which is better for blood pressure anyway."
+}]
+}],
+"dislike": [{
+"text": "The clinic is open for patients. If you're here socially... my schedule is quite full today.",
+"choices": [{
+"label": "I owe you an apology. I haven't treated you well.",
+"points": 3,
+"response": "...An apology is like good medicine. Bitter to give, but healing when sincere. I appreciate it."
+}, {
+"label": "I'll make an appointment then.",
+"points": 0,
+"response": "Tuesday at two is open. Though I suspect you don't really need a check-up."
+}]
+}],
+"hate": [{
+"text": "I take care of everyone in this town. I don't have the emotional bandwidth for people who drain it. Please respect my boundary.",
+"choices": [{
+"label": "You set boundaries because you care so much for others. I'm sorry I took that for granted.",
+"points": 5,
+"response": "...That's... a remarkably empathetic observation. Perhaps there's hope for treatment after all. Consider this a referral."
+}, {
+"label": "Boundaries, really?",
+"points": -1,
+"response": "Yes, really. Self-care isn't selfish. It's necessary. Something you might learn from."
+}]
+}],
+"birthday": [{
+"text": "It's my birthday! I gave myself the day off. First one in three years! I'm going to sit in the garden and read a medical journal for FUN. Wild, right?",
+"choices": [{
+"label": "Happy birthday, Honey! You absolutely deserve a day of rest!",
+"points": 3,
+"response": "Thank you! I already feel my cortisol levels dropping. That's the stress hormone. Birthday fun fact!"
+}, {
+"label": "I brought you something special for today!",
+"points": 2,
+"response": "A gift! The dopamine rush is already kicking in. ...Sorry, I can't turn off the science brain. But truly, thank you!"
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "mint",
+"quantity": 5,
+"message": "Fresh medicinal mint from my clinic garden. Brew it as tea. Doctor's orders!"
+}, {
+"threshold": 50,
+"item_id": "herb_basil",
+"quantity": 8,
+"message": "These are my research-grade basil specimens. The highest potency I've ever cultivated. Use them wisely."
+}, {
+"threshold": 80,
+"item_id": "honey",
+"quantity": 10,
+"message": "This is manuka-grade medicinal honey. Antibacterial, anti-inflammatory, and absolutely delicious. My most valuable supply. For you."
+}]
+creature_trades = []
+occupation = "Doctor"

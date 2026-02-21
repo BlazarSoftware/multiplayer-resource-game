@@ -148,6 +148,7 @@ func _on_destination_requested(creature_data: Dictionary, current_party: Array, 
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	NetworkManager.request_set_busy.rpc_id(1, true)
+	ScreenTransition.open(self, "slide_up")
 
 func _on_storage_pressed() -> void:
 	NetworkManager.request_creature_destination.rpc_id(1, "storage", -1)
@@ -162,6 +163,7 @@ func _on_cancel_pressed() -> void:
 	_close()
 
 func _close() -> void:
+	await ScreenTransition.close(self, "slide_up")
 	visible = false
 	pending_creature = {}
 	pending_party = []

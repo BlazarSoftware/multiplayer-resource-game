@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+food_id = "onion_soup"
+display_name = "Onion Soup"
+description = "French onion soup with melted cheese."
+icon_color = Color(0.7, 0.4, 0.15, 1)
+sell_price = 40
+buff_type = "creature_heal"
+buff_value = 45.0
+buff_duration_sec = 0.0

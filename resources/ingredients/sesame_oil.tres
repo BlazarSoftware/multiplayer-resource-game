@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "sesame_oil"
+display_name = "Sesame Oil"
+description = "Dark, toasted oil with a rich nutty aroma that finishes Asian dishes perfectly."
+category = "oil_sauce"
+icon_color = Color(0.6, 0.4, 0.15, 1)
+sell_price = 7
+season = ""
+grow_time = 60.0
+harvest_min = 1
+harvest_max = 2

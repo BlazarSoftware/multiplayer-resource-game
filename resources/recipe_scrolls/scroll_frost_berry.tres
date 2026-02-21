@@ -1,7 +1,6 @@
-[gd_resource type="Resource" script_class="RecipeScrollDef" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="RecipeScrollDef" load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/recipe_scroll_def.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/held_items/recipe_scroll.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -10,5 +9,4 @@ display_name = "Frost Berry Recipe"
 description = "A recipe that requires 5 fragments to complete. Reveals how to craft a Frost Berry."
 unlocks_recipe_id = "recipe_frost_berry"
 icon_color = Color(0.5, 0.7, 0.9, 1)
-icon_texture = ExtResource("2")
 fragment_count = 5

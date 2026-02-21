@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "paprika_dust"
+display_name = "Paprika Dust"
+type = "spicy"
+category = "special"
+power = 40
+accuracy = 100
+pp = 25
+status_effect = "burned"
+status_chance = 10
+description = "Sprinkles irritating dust."

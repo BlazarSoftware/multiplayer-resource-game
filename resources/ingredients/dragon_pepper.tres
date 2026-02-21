@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "dragon_pepper"
+display_name = "Dragon Pepper"
+description = "A fiery crimson pepper so hot it glows faintly in the dark."
+category = "rare"
+icon_color = Color(0.9, 0.15, 0.05, 1)
+sell_price = 30
+season = ""
+grow_time = 60.0
+harvest_min = 1
+harvest_max = 2

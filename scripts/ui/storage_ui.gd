@@ -29,8 +29,10 @@ func open() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	NetworkManager.request_set_busy.rpc_id(1, true)
 	_refresh()
+	ScreenTransition.open(self, "fade_scale")
 
 func _close() -> void:
+	await ScreenTransition.close(self, "fade_scale")
 	visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	NetworkManager.request_set_busy.rpc_id(1, false)

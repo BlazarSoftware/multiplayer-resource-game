@@ -50,14 +50,7 @@ var _summary_ready: bool = false
 var _is_animating_log: bool = false
 var _initial_setup: bool = false
 
-const TYPE_COLORS = {
-	"spicy": UITokens.TYPE_SPICY,
-	"sweet": UITokens.TYPE_SWEET,
-	"sour": UITokens.TYPE_SOUR,
-	"herbal": UITokens.TYPE_HERBAL,
-	"umami": UITokens.TYPE_UMAMI,
-	"grain": UITokens.TYPE_GRAIN,
-}
+const TYPE_COLORS = UITokens.TYPE_COLORS
 
 const WEATHER_NAMES = {
 	"spicy": "Sizzle Sun",
@@ -66,6 +59,18 @@ const WEATHER_NAMES = {
 	"herbal": "Herb Breeze",
 	"umami": "Umami Fog",
 	"grain": "Grain Dust",
+	"mineral": "Crystal Storm",
+	"earthy": "Mudslide",
+	"liquid": "Downpour",
+	"aromatic": "Fragrant Mist",
+	"toxic": "Miasma",
+	"protein": "Iron Wind",
+	"tropical": "Monsoon Heat",
+	"dairy": "Cream Fog",
+	"bitter": "Dark Drizzle",
+	"spoiled": "Rot Cloud",
+	"fermented": "Yeast Storm",
+	"smoked": "Smoke Screen",
 }
 
 const STATUS_MAX_TURNS = {
@@ -214,6 +219,17 @@ func _on_battle_ended(victory: bool) -> void:
 	# Wait a brief moment for reward RPCs to arrive, then show summary
 	await get_tree().create_timer(0.5).timeout
 	_show_summary_screen()
+
+func _play_levelup_flash() -> void:
+	var flash := ColorRect.new()
+	flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	flash.color = UITokens.FLASH_GOLD
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash)
+	AudioManager.play_sfx("ui_reward")
+	var tween := create_tween()
+	tween.tween_property(flash, "color:a", 0.0, 0.5).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(flash.queue_free)
 
 func _dismiss_summary() -> void:
 	# Fade to black, hide UI, then clear
@@ -1114,6 +1130,8 @@ func _on_xp_result(results: Dictionary) -> void:
 			battle_log.append_text("[color=#3E5C7A]+%d XP[/color]\n" % xp)
 		for lvl in r.get("level_ups", []):
 			battle_log.append_text("[color=#9C6A1A]Level up! Now Lv.%d![/color]\n" % lvl)
+			# Gold screen flash for level up
+			_play_levelup_flash()
 		for m in r.get("new_moves", []):
 			battle_mgr.summary_new_moves.append(m)
 			var move_def = DataRegistry.get_move(m.get("move_id", ""))

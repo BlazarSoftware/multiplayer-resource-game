@@ -1,0 +1,167 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_tailor"
+display_name = "Scarlet Winters"
+visual_color = Color(0.85, 0.15, 0.3, 1)
+birthday = {
+"month": 4,
+"day": 22
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": 15, "y": 2, "z": 5 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": 12, "y": 2, "z": 8 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["honey", "berry", "mint", "seaweed"],
+"liked": ["sugar", "herb_basil", "milk"],
+"disliked": ["stone", "wood", "garlic"],
+"hated": ["fish", "onion"]
+}
+dialogues = {
+"neutral": [{
+"text": "Oh! Don't look at me yet, I'm not properly accessorized! ...Just kidding. Mostly. Welcome to Threads! What do you think of this fabric?",
+"choices": [{
+"label": "It's stunning! The color is incredible.",
+"points": 3,
+"response": "RIGHT?! I spent three weeks sourcing this shade of cerulean. Three weeks! But perfection takes time."
+}, {
+"label": "It's nice, I guess.",
+"points": 0,
+"response": "...'Nice.' The most devastatingly mediocre word in the language. But I'll take it."
+}, {
+"label": "Looks like regular cloth to me.",
+"points": -2,
+"response": "Regular?! This is hand-dyed coastal silk! I... you know what? Pearls before swine."
+}]
+}, {
+"text": "I had the most DRAMATIC dream last night. I was sewing a gown made of actual starlight, and it kept unraveling!",
+"choices": [{
+"label": "Maybe it's inspiration for your next design!",
+"points": 3,
+"response": "Oh my gosh, you're RIGHT. A constellation collection! Scarlet, you genius! ...I mean, thank YOU for the idea."
+}, {
+"label": "Dreams are just random brain stuff.",
+"points": 0,
+"response": "You sound like my mother. She wanted me to be an accountant. Can you IMAGINE?"
+}, {
+"label": "That's pretty weird, Scarlet.",
+"points": -2,
+"response": "Weird is just another word for VISIONARY that boring people use."
+}]
+}, {
+"text": "Nobody in this town appreciates fashion. They all wear the same brown tunics! It's a tragedy, honestly.",
+"choices": [{
+"label": "I think you're slowly changing that! People notice your work.",
+"points": 3,
+"response": "Do they?! ...I mean, obviously they do. But it's nice to hear someone say it."
+}, {
+"label": "Not everyone is into fashion.",
+"points": 0,
+"response": "And not everyone has taste. That doesn't mean I stop trying to give it to them!"
+}, {
+"label": "Maybe there are bigger problems than fashion.",
+"points": -2,
+"response": "Fashion IS the problem! When you look good, you feel good, you DO good! It's basic science!"
+}]
+}],
+"like": [{
+"text": "I've been sketching a design inspired by you. Don't worry, it's flattering! ...Mostly. Okay, it's VERY flattering.",
+"choices": [{
+"label": "I'm flattered, Scarlet! I can't wait to see it.",
+"points": 3,
+"response": "Eee! Nobody ever says that! Usually they run when I pull out the measuring tape."
+}, {
+"label": "As long as it's not too over the top.",
+"points": 0,
+"response": "Me? Over the top? ...Fair point. I'll dial it back to a solid nine out of ten."
+}]
+}, {
+"text": "Can I tell you a secret? Sometimes I stay up all night sewing because... the shop feels less lonely at night. With fabric everywhere, it's like having friends.",
+"choices": [{
+"label": "You always have a friend in me, Scarlet.",
+"points": 3,
+"response": "...You mean that? I... wow, I'm not going to cry. This mascara is NOT waterproof. Thank you."
+}, {
+"label": "You should get more sleep.",
+"points": 0,
+"response": "Ha! Sleep is for people without deadlines and dreams. But... thank you for caring."
+}]
+}],
+"love": [{
+"text": "I need to tell you something. All the drama, the big personality... it's armor. You're the first person who made me feel like I don't need it. So... thank you. For seeing the real me.",
+"choices": [{
+"label": "The real you is even more amazing than the performance.",
+"points": 3,
+"response": "...Okay, now I AM crying. And this mascara was expensive! But it's worth it. You're worth it."
+}, {
+"label": "You don't ever have to pretend around me.",
+"points": 2,
+"response": "I know. And that's the most beautiful thing anyone's ever given me. Better than any fabric in the world."
+}]
+}],
+"dislike": [{
+"text": "Oh. You. I'm very busy with a commission. Very important client. Not you.",
+"choices": [{
+"label": "I know I've been insensitive. I'm sorry, Scarlet.",
+"points": 3,
+"response": "...Apologies are like accessories. They only work if they're genuine. But... I'm listening."
+}, {
+"label": "Alright, I'll come back later.",
+"points": 0,
+"response": "Do or don't. Either way, I have hemming to do."
+}]
+}],
+"hate": [{
+"text": "I'm going to be perfectly blunt, which is unlike me because I prefer DRAMATIC. You've hurt me. There. I said it.",
+"choices": [{
+"label": "You're right, and I'm deeply sorry. Let me prove I can do better.",
+"points": 5,
+"response": "...That's the most honest thing you've ever said to me. I'm... cautiously optimistic. Don't waste it."
+}, {
+"label": "You're being dramatic as usual.",
+"points": -1,
+"response": "And you're being cruel as usual. See? We both have patterns. Mine is at least fashionable."
+}]
+}],
+"birthday": [{
+"text": "It's MY day! I made myself a fabulous outfit, obviously. But birthdays are better with company. Even I'll admit that.",
+"choices": [{
+"label": "Happy birthday, Scarlet! You look absolutely radiant!",
+"points": 3,
+"response": "I KNOW! But hearing it from you makes it real. Come, I saved you a front row seat at my birthday fashion show!"
+}, {
+"label": "I got you something I think you'll love!",
+"points": 2,
+"response": "A GIFT?! My favorite two words! Gimme gimme gimme! ...I mean, how thoughtful. Let me see!"
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "berry",
+"quantity": 5,
+"message": "These berries match my latest dye palette. I thought you'd appreciate the aesthetic. And the taste!"
+}, {
+"threshold": 50,
+"item_id": "seaweed",
+"quantity": 5,
+"message": "This special kelp makes the most gorgeous green dye. It's my secret weapon. Now it's yours too!"
+}, {
+"threshold": 80,
+"item_id": "honey",
+"quantity": 8,
+"message": "This amber honey reminds me of liquid gold thread. It's the sweetest thing I own. Besides our friendship, obviously."
+}]
+creature_trades = []
+occupation = "Tailor"

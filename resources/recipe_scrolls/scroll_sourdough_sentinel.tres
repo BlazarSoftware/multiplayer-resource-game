@@ -1,7 +1,6 @@
-[gd_resource type="Resource" script_class="RecipeScrollDef" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="RecipeScrollDef" load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/recipe_scroll_def.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/ui/textures/icons/held_items/recipe_scroll.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -10,5 +9,4 @@ display_name = "Sourdough Sentinel Recipe"
 description = "A recipe scroll that reveals how to craft a Sourdough Sentinel."
 unlocks_recipe_id = "recipe_sourdough_sentinel"
 icon_color = Color(0.8, 0.7, 0.4, 1)
-icon_texture = ExtResource("2")
 fragment_count = 0

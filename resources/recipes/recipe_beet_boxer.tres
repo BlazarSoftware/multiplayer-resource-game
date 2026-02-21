@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_beet_boxer"
+display_name = "Cook Beet Boxer"
+result_species_id = "beet_boxer"
+ingredients = {"beet": 3, "vinegar": 1}
+description = "Train a Beet Boxer."
+station = "cauldron"
+unlockable = true

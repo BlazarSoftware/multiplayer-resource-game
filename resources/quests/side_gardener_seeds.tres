@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "side_gardener_seeds"
+display_name = "Seed Collection"
+description = "Iris the gardener is planning a big planting season and needs wheat to replenish her seed stock."
+category = "side"
+quest_giver_npc_id = "npc_gardener"
+prereq_quest_ids = ["ms_25_meet_shopkeepers"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "collect",
+"target_id": "wheat",
+"target_count": 8,
+"description": "Collect Wheat (8)"
+}]
+reward_money = 200
+reward_items = {}
+reward_friendship = {"npc_gardener": 10}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = ""
+chapter = 0
+sort_order = 0
+offer_dialogue = "Oh hello! I'm preparing for the big planting push, but my wheat reserves are running low. Could you bring me some? I want to make sure every plot in the community garden has something growing!"
+in_progress_dialogue = "Still gathering wheat? Check the fields east of town — they grow beautifully there this time of year."
+completion_dialogue = "Wonderful! With this much wheat, the garden will be overflowing by next season. Thank you so much — you've got a real green thumb!"

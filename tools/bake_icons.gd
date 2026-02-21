@@ -128,7 +128,7 @@ func _run() -> void:
 			skip_count += 1
 			continue
 
-		var icon_image := _bake_single_icon(glb_path, toon_shader, outline_shader, entry)
+		var icon_image := await _bake_single_icon(glb_path, toon_shader, outline_shader, entry)
 		if icon_image:
 			icon_image.save_png(output_path)
 			success_count += 1

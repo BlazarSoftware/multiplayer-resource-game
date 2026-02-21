@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HeldItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/held_item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_id = "herbal_wreath"
+display_name = "Herbal Wreath"
+description = "A fragrant wreath. Boosts herbal moves by 20%."
+effect_type = "type_boost"
+effect_params = {"type": "herbal", "multiplier": 1.2}
+consumable = false
+icon_color = Color(0.3, 0.8, 0.3, 1)

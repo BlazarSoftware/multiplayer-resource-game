@@ -1,6 +1,7 @@
 extends Area3D
 
 var nearby_peers: Dictionary = {} # peer_id -> true
+var _anim_state: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("bank_npc")
@@ -17,23 +18,25 @@ func _create_visual() -> void:
 	col.shape = shape
 	add_child(col)
 
-	# NPC mesh (gold capsule for banker)
-	var mesh_instance = MeshInstance3D.new()
-	var capsule = CapsuleMesh.new()
-	capsule.radius = 0.3
-	capsule.height = 1.5
-	mesh_instance.mesh = capsule
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.85, 0.7, 0.2) # gold
-	mesh_instance.set_surface_override_material(0, mat)
-	mesh_instance.position.y = 0.75
-	add_child(mesh_instance)
+	# Animated mannequin model (client only — server skips visuals)
+	if not multiplayer.is_server():
+		var config := {
+			"idle": NpcAnimator.BANK_ANIMS.get("idle", "Idle"),
+			"actions": NpcAnimator.BANK_ANIMS.get("actions", ["Yes"]),
+			"color": Color(0.85, 0.7, 0.2),
+		}
+		_anim_state = NpcAnimator.create_character(self, config)
 
 	# Label
 	var label = Label3D.new()
 	UITheme.style_label3d(label, "Bank", "npc_name")
 	label.position.y = 2.0
 	add_child(label)
+
+func _process(delta: float) -> void:
+	if multiplayer.is_server():
+		return
+	NpcAnimator.update(_anim_state, delta, self)
 
 func _on_body_entered(body: Node3D) -> void:
 	if not multiplayer.is_server():
@@ -75,6 +78,7 @@ func request_open_bank() -> void:
 
 @rpc("authority", "reliable")
 func _show_bank_prompt() -> void:
+	NpcAnimator.play_reaction(_anim_state, "Yes")
 	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
 	if hud and hud.has_method("show_trainer_prompt"):
 		hud.show_trainer_prompt("Bank [Deposit & Withdraw]")

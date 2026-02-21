@@ -14,6 +14,8 @@ const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 var buff_label: Label = null
 var trainer_prompt_label: Label = null
 var _trainer_prompt_timer: float = 0.0
+var now_playing_label: Label = null
+var _now_playing_tween: Tween = null
 
 func _ready() -> void:
 	UITheme.init()
@@ -57,13 +59,49 @@ func _ready() -> void:
 			top_bar.add_child(coin_icon)
 			top_bar.move_child(coin_icon, idx)
 
+	# "Now Playing" music label (right side of top bar)
+	var top_bar = money_label.get_parent()
+	if top_bar:
+		var np_spacer := Control.new()
+		np_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		np_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		top_bar.add_child(np_spacer)
+
+		var np_icon := Label.new()
+		np_icon.text = "♫"
+		UITheme.style_caption(np_icon)
+		np_icon.add_theme_color_override("font_color", UITokens.INK_LIGHT)
+		np_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		top_bar.add_child(np_icon)
+
+		now_playing_label = Label.new()
+		now_playing_label.text = ""
+		now_playing_label.clip_text = true
+		now_playing_label.custom_minimum_size.x = 150
+		UITheme.style_caption(now_playing_label)
+		now_playing_label.add_theme_color_override("font_color", UITokens.INK_LIGHT)
+		now_playing_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		top_bar.add_child(now_playing_label)
+
+	AudioManager.now_playing_changed.connect(_on_now_playing_changed)
+
 	UITheme.style_small(grass_hint_label)
 	var legend = get_node_or_null("WildZoneLegend")
 	if legend and legend is Label:
 		UITheme.style_small(legend)
 
 	grass_indicator.color = UITokens.SCRIM
-	battle_transition.color = UITokens.INK_DARK
+
+	# Apply diamond wipe shader to battle transition
+	var transition_shader = load("res://shaders/battle_transition.gdshader") as Shader
+	if transition_shader:
+		var shader_mat = ShaderMaterial.new()
+		shader_mat.shader = transition_shader
+		shader_mat.set_shader_parameter("cover_color", Color(UITokens.INK_DARK.r, UITokens.INK_DARK.g, UITokens.INK_DARK.b, 1.0))
+		shader_mat.set_shader_parameter("edge_color", UITokens.TRANSITION_EDGE)
+		shader_mat.set_shader_parameter("progress", 0.0)
+		battle_transition.material = shader_mat
+	battle_transition.color = Color.WHITE  # Shader controls actual color
 
 	# Buff indicator (below top bar, left side)
 	buff_label = Label.new()
@@ -132,34 +170,58 @@ func _process(delta: float) -> void:
 			location_label.text = "Overworld"
 
 func show_pickup_notification(item_name: String, amount: int) -> void:
+	AudioManager.play_sfx("item_pickup")
 	var pickup_label = Label.new()
 	if amount > 1:
 		pickup_label.text = "Picked up %s x%d" % [item_name, amount]
 	else:
 		pickup_label.text = "Picked up %s" % item_name
 	UITheme.style_toast(pickup_label)
-	pickup_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	pickup_label.anchor_left = 0.3
-	pickup_label.anchor_right = 0.7
+	pickup_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	pickup_label.anchor_left = 0.0
+	pickup_label.anchor_right = 0.4
 	pickup_label.anchor_top = 0.7
 	pickup_label.anchor_bottom = 0.75
+	pickup_label.offset_left = -100.0
+	pickup_label.modulate.a = 0.0
 	add_child(pickup_label)
 	var tween = create_tween()
-	tween.tween_property(pickup_label, "modulate:a", 0.0, 2.0).set_delay(0.5)
+	# Slide in from left + fade in
+	tween.tween_property(pickup_label, "offset_left", 12.0, 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.parallel().tween_property(pickup_label, "modulate:a", 1.0, 0.2).set_ease(Tween.EASE_OUT)
+	# Hold
+	tween.tween_interval(1.5)
+	# Slide out right + fade out
+	tween.tween_property(pickup_label, "offset_left", 200.0, 0.3).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	tween.parallel().tween_property(pickup_label, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(pickup_label.queue_free)
 
 func show_discovery_toast(display_name: String) -> void:
+	AudioManager.play_sfx("quest_progress")
 	var toast = Label.new()
 	toast.text = "Discovered: %s" % display_name
 	UITheme.style_toast(toast)
+	toast.add_theme_color_override("font_color", UITokens.ACCENT_HONEY)
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.anchor_left = 0.25
 	toast.anchor_right = 0.75
 	toast.anchor_top = 0.65
 	toast.anchor_bottom = 0.7
+	toast.modulate.a = 0.0
+	toast.scale = Vector2(0.8, 0.8)
+	toast.pivot_offset = toast.size / 2.0
 	add_child(toast)
 	var tween = create_tween()
-	tween.tween_property(toast, "modulate:a", 0.0, 2.0).set_delay(1.0)
+	# Scale pop + fade in
+	tween.tween_property(toast, "scale", Vector2.ONE, 0.25).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.parallel().tween_property(toast, "modulate:a", 1.0, 0.2).set_ease(Tween.EASE_OUT)
+	# Brief golden shimmer
+	tween.tween_property(toast, "modulate", UITokens.SHIMMER_GOLD, 0.15)
+	tween.tween_property(toast, "modulate", Color.WHITE, 0.15)
+	# Hold
+	tween.tween_interval(1.5)
+	# Fade out
+	tween.tween_property(toast, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(toast.queue_free)
 
 func show_trainer_prompt(trainer_name: String) -> void:
@@ -188,9 +250,18 @@ func show_toast(message: String) -> void:
 	toast.anchor_right = 0.8
 	toast.anchor_top = 0.75
 	toast.anchor_bottom = 0.8
+	toast.modulate.a = 0.0
+	toast.pivot_offset = toast.size / 2.0
+	toast.scale = Vector2(0.9, 0.9)
 	add_child(toast)
 	var tween = create_tween()
-	tween.tween_property(toast, "modulate:a", 0.0, 2.0).set_delay(1.0)
+	# Pop in
+	tween.tween_property(toast, "modulate:a", 1.0, 0.2).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(toast, "scale", Vector2.ONE, 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	# Hold
+	tween.tween_interval(1.5)
+	# Fade out
+	tween.tween_property(toast, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(toast.queue_free)
 
 func show_new_fish_toast(fish_name: String) -> void:
@@ -219,17 +290,47 @@ func show_grass_indicator(visible_state: bool) -> void:
 	grass_indicator.visible = visible_state
 	grass_hint_label.visible = visible_state
 
-func play_battle_transition() -> void:
+func play_screen_wipe() -> void:
 	battle_transition.visible = true
-	battle_transition.color.a = 0.0
-	var tween = create_tween()
-	tween.tween_property(battle_transition, "color:a", 1.0, 0.3)
-	await tween.finished
+	var shader_mat = battle_transition.material as ShaderMaterial
+	if shader_mat:
+		shader_mat.set_shader_parameter("progress", 0.0)
+		var tween = create_tween()
+		tween.tween_method(func(val: float): shader_mat.set_shader_parameter("progress", val), 0.0, 1.0, 0.4).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+		await tween.finished
+	else:
+		battle_transition.color.a = 0.0
+		var tween = create_tween()
+		tween.tween_property(battle_transition, "color:a", 1.0, 0.3)
+		await tween.finished
 
-func clear_battle_transition() -> void:
+func clear_screen_wipe() -> void:
 	if not battle_transition.visible:
 		return
-	var tween = create_tween()
-	tween.tween_property(battle_transition, "color:a", 0.0, 0.3)
-	await tween.finished
+	var shader_mat = battle_transition.material as ShaderMaterial
+	if shader_mat:
+		var tween = create_tween()
+		tween.tween_method(func(val: float): shader_mat.set_shader_parameter("progress", val), 1.0, 0.0, 0.4).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+		await tween.finished
+	else:
+		var tween = create_tween()
+		tween.tween_property(battle_transition, "color:a", 0.0, 0.3)
+		await tween.finished
 	battle_transition.visible = false
+
+# Legacy aliases for existing callers
+func play_battle_transition() -> void:
+	await play_screen_wipe()
+
+func clear_battle_transition() -> void:
+	await clear_screen_wipe()
+
+func _on_now_playing_changed(track_name: String) -> void:
+	if not now_playing_label:
+		return
+	now_playing_label.text = track_name
+	now_playing_label.modulate.a = 0.0
+	if _now_playing_tween and _now_playing_tween.is_valid():
+		_now_playing_tween.kill()
+	_now_playing_tween = create_tween()
+	_now_playing_tween.tween_property(now_playing_label, "modulate:a", 1.0, 0.5)

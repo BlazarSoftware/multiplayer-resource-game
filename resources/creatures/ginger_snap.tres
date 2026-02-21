@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "ginger_snap"
+display_name = "Ginger Snap"
+types = PackedStringArray("spicy")
+base_hp = 50
+base_attack = 14
+base_defense = 10
+base_sp_attack = 12
+base_sp_defense = 8
+base_speed = 16
+moves = PackedStringArray("pepper_blast", "quick_bite", "flash_sear", "taste_and_dash")
+mesh_type = "capsule"
+mesh_color = Color(0.85, 0.7, 0.35, 1)
+mesh_scale = Vector3(0.5, 0.7, 0.5)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("ginger")
+drop_min = 1
+drop_max = 2
+learnset = {3: "quick_bite", 6: "pepper_blast", 9: "flash_sear", 12: "taste_and_dash", 15: "kitchen_fire"}
+ability_ids = PackedStringArray("spice_aura", "quick_cook")
+ev_yield = {"speed": 1}
+base_xp_yield = 50

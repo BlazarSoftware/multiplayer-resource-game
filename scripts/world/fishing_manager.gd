@@ -265,6 +265,7 @@ func _fishing_cast_client() -> void:
 	print("[Fishing Client] FishingUI=", fishing_ui)
 	if fishing_ui:
 		fishing_ui.show_casting()
+		AudioManager.play_sfx("fish_cast")
 	else:
 		print("[Fishing Client] FAILED: FishingUI not found at /root/Main/GameWorld/UI/FishingUI")
 
@@ -275,6 +276,7 @@ func _fishing_hook_alert_client() -> void:
 	var fishing_ui = get_node_or_null("/root/Main/GameWorld/UI/FishingUI")
 	if fishing_ui:
 		fishing_ui.show_hook_alert()
+		AudioManager.play_sfx("fish_splash")
 
 
 @rpc("authority", "reliable")
@@ -284,6 +286,7 @@ func _fishing_bite_client(seed_val: int, difficulty: int, movement_type: String,
 	var fishing_ui = get_node_or_null("/root/Main/GameWorld/UI/FishingUI")
 	if fishing_ui:
 		fishing_ui.start_minigame(seed_val, difficulty, movement_type, time_limit, bar_size, fish_display_name)
+		AudioManager.play_sfx("fish_reel")
 
 
 @rpc("authority", "reliable")
@@ -294,6 +297,8 @@ func _fishing_complete_client(success: bool, fish_id: String,
 	var fishing_ui = get_node_or_null("/root/Main/GameWorld/UI/FishingUI")
 	if fishing_ui:
 		fishing_ui.show_result(success, fish_id, fish_display_name, sell_value, difficulty, is_perfect, is_new_species)
+		if success:
+			AudioManager.play_sfx("fish_catch")
 
 
 @rpc("authority", "reliable")

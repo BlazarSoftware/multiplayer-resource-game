@@ -101,6 +101,7 @@ var group_party_members: Array = [] # [{player_id, player_name, online}]
 var player_id: String = "" # UUID from server
 var player_name: String = "Player"
 var player_color: Color = Color(0.2, 0.5, 0.9)
+var appearance: Dictionary = {} # Character customization (synced from server)
 
 func _ready() -> void:
 	# Only give starter creature for offline/singleplayer testing
@@ -189,6 +190,8 @@ func load_from_server(data: Dictionary) -> void:
 	var cd = data.get("player_color", {})
 	if cd is Dictionary and not cd.is_empty():
 		player_color = Color(cd.get("r", 0.2), cd.get("g", 0.5), cd.get("b", 0.9))
+	# Load character appearance
+	appearance = data.get("appearance", {}).duplicate()
 	# Load equipped tools
 	var et = data.get("equipped_tools", {})
 	if et is Dictionary and not et.is_empty():

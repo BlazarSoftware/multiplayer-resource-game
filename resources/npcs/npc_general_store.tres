@@ -1,0 +1,167 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_general_store"
+display_name = "Hazel Mapleton"
+visual_color = Color(0.5, 0.38, 0.25, 1)
+birthday = {
+"month": 8,
+"day": 7
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": 8, "y": 1, "z": 5 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": 10, "y": 1, "z": 8 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["rice", "flour", "salt", "egg"],
+"liked": ["potato", "onion", "wheat"],
+"disliked": ["honey", "mint", "berry"],
+"hated": ["seaweed"]
+}
+dialogues = {
+"neutral": [{
+"text": "Welcome to Mapleton's General Store. Everything you need, nothing you don't. What are you looking for?",
+"choices": [{
+"label": "I love how organized everything is in here!",
+"points": 3,
+"response": "Alphabetical by category, cross-referenced by season. Took me twelve years to perfect. Nice of you to notice."
+}, {
+"label": "Just browsing today.",
+"points": 0,
+"response": "Browsers welcome. Shoplifters less so. Not that you'd... anyway. Browse away."
+}, {
+"label": "Your prices seem a bit steep.",
+"points": -2,
+"response": "My prices reflect quality, sourcing costs, and the fact that I don't sleep so this store stays open. You're welcome."
+}]
+}, {
+"text": "I've been doing inventory all morning. Every grain of rice accounted for. Some people find that tedious. I find it satisfying.",
+"choices": [{
+"label": "There's something comforting about knowing exactly what you have.",
+"points": 3,
+"response": "Exactly! Someone gets it. Knowledge is power, and inventory is knowledge. Write that down."
+}, {
+"label": "You really count every grain?",
+"points": 0,
+"response": "Figuratively. I weigh them. Much more efficient. But yes, I know exactly what's on these shelves."
+}, {
+"label": "Sounds incredibly boring.",
+"points": -2,
+"response": "Boring is building a business that's never been in the red for twenty years. I'll take boring."
+}]
+}, {
+"text": "Someone tried to return a half-eaten potato this morning. Said it 'wasn't what they expected.' What did they EXPECT from a potato?",
+"choices": [{
+"label": "Ha! What did you say to them?",
+"points": 3,
+"response": "I said, 'Sir, the potato performed exactly as advertised.' Then I showed him the no-returns sign. Twice."
+}, {
+"label": "Customers can be difficult.",
+"points": 0,
+"response": "Difficult doesn't begin to cover it. But a sale's a sale. Even half a potato is still revenue."
+}, {
+"label": "Maybe your potatoes aren't very good.",
+"points": -2,
+"response": "My potatoes are sourced from Iris's garden. If you have a complaint, take it up with the soil."
+}]
+}],
+"like": [{
+"text": "I set aside some supplies for you. Best stock, before anyone else gets to it. Don't tell the other customers. It's bad for business.",
+"choices": [{
+"label": "Hazel! That's so generous. Thank you!",
+"points": 3,
+"response": "It's not generous, it's strategic. Happy customers come back. ...But yes. You're welcome."
+}, {
+"label": "You have favorites?",
+"points": 0,
+"response": "I have valued clients. There's a difference. A subtle, legally distinct difference."
+}]
+}, {
+"text": "I've been meaning to say... you're good for this town's economy. People shop more when they're happy, and you make people happy. So, indirectly, you're good for my business.",
+"choices": [{
+"label": "Is that your way of saying you like me, Hazel?",
+"points": 3,
+"response": "...I like what you do for the quarterly revenue. And also... fine. Yes. I like you. Don't make it weird."
+}, {
+"label": "Glad I can help the local economy!",
+"points": 0,
+"response": "Your contribution is noted. Literally. I have a ledger entry for it."
+}]
+}],
+"love": [{
+"text": "I've run this store alone for twenty years. Never needed anyone. But... I saved this for you. It's the key to the back room where I keep the REALLY good stock. Only one other person has ever had this. My mother.",
+"choices": [{
+"label": "Hazel... I don't know what to say. This means everything.",
+"points": 3,
+"response": "Don't say anything. Just... use it wisely. And maybe visit more. The store gets quiet after closing time."
+}, {
+"label": "I promise I'll take good care of it.",
+"points": 2,
+"response": "I know you will. That's why you have it. ...Now stop looking at me like that. I have a reputation to maintain."
+}]
+}],
+"dislike": [{
+"text": "Store hours are posted on the door. Please make your purchase and move along.",
+"choices": [{
+"label": "Hazel, I think I've been thoughtless. I'm sorry.",
+"points": 3,
+"response": "...Apologies don't pay the bills. But... I'll put it in the 'pending' column. We'll see if it balances."
+}, {
+"label": "Right. Just need a few things.",
+"points": 0,
+"response": "Aisle three for basics. Register's on the left. Exact change appreciated."
+}]
+}],
+"hate": [{
+"text": "I reserve the right to refuse service. And I'm exercising that right. The door is behind you.",
+"choices": [{
+"label": "You're the most dependable person in town and I've been taking that for granted. I'm truly sorry.",
+"points": 5,
+"response": "...'Dependable.' Hmph. At least you understand what I bring to this community. Fine. You're on a probationary shopping pass."
+}, {
+"label": "There are other stores.",
+"points": -1,
+"response": "Not in this town there aren't. But go ahead, try the traveling merchant. See how that works out."
+}]
+}],
+"birthday": [{
+"text": "It's my birthday. I'm open for business as usual. ...What? You think a birthday means the economy stops? That said, Mabel sent over a cake. You can have a slice. If you want.",
+"choices": [{
+"label": "Happy birthday, Hazel! Take a break and enjoy your cake!",
+"points": 3,
+"response": "A break? I... hmm. Maybe just twenty minutes. You'll stay and have cake with me? The store can survive twenty minutes. Probably."
+}, {
+"label": "I brought you a gift!",
+"points": 2,
+"response": "A gift? That wasn't necessary. ...But I won't refuse it. That would be bad economics."
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "rice",
+"quantity": 10,
+"message": "Surplus stock, premium grade. Consider it a loyalty reward. Don't tell the other customers."
+}, {
+"threshold": 50,
+"item_id": "flour",
+"quantity": 8,
+"message": "My finest imported flour. I was saving it for a special occasion. Turns out, that's you."
+}, {
+"threshold": 80,
+"item_id": "egg",
+"quantity": 10,
+"message": "These are from the farm I grew up on. I only get a dozen a year. I'm giving you ten. Do the math on what that means."
+}]
+creature_trades = []
+occupation = "Shopkeeper"

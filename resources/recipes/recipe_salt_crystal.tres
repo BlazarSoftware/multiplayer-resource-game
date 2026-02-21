@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_salt_crystal"
+display_name = "Cook Salt Crystal"
+result_species_id = "salt_crystal"
+ingredients = {"moon_salt": 2, "crystal_sugar": 2}
+description = "Crystallize a Salt Crystal."
+station = "cauldron"
+unlockable = true

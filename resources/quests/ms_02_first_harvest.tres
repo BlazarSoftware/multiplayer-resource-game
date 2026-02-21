@@ -6,9 +6,9 @@
 script = ExtResource("1")
 quest_id = "ms_02_first_harvest"
 display_name = "Fresh Bread"
-description = "Baker Brioche needs wheat for a special batch of bread. Harvest 3 wheat from the farm and deliver them."
+description = "Hubert Crumb needs wheat for a special batch of bread. Harvest 3 wheat from the farm and deliver them."
 category = "main_story"
-quest_giver_npc_id = "npc_baker"
+quest_giver_npc_id = "npc_hubert"
 prereq_quest_ids = ["ms_01_meet_baker"]
 prereq_friendship = {}
 prereq_locations = []
@@ -19,13 +19,13 @@ objectives = [{
 "type": "deliver",
 "target_id": "wheat",
 "target_count": 3,
-"description": "Deliver 3 Wheat to Baker Brioche",
-"deliver_to_npc": "npc_baker",
+"description": "Deliver 3 Wheat to Hubert Crumb",
+"deliver_to_npc": "npc_hubert",
 "consumes_items": true
 }]
 reward_money = 100
 reward_items = {"herb_basil": 5}
-reward_friendship = {"npc_baker": 10}
+reward_friendship = {"npc_hubert": 10}
 reward_recipe_scroll_id = ""
 reward_unlock_flag = ""
 next_quest_id = "ms_03_first_battle"

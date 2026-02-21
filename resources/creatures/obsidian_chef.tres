@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "obsidian_chef"
+display_name = "Obsidian Chef"
+types = PackedStringArray("mineral", "spicy")
+base_hp = 75
+base_attack = 18
+base_defense = 20
+base_sp_attack = 16
+base_sp_defense = 14
+base_speed = 10
+moves = PackedStringArray("flame_sear", "salt_lock", "sharpen_knife", "kitchen_fire")
+mesh_type = "box"
+mesh_color = Color(0.15, 0.12, 0.18, 1)
+mesh_scale = Vector3(0.9, 1.0, 0.9)
+rarity = "rare"
+drop_ingredient_ids = PackedStringArray("dragon_pepper")
+drop_min = 1
+drop_max = 2
+learnset = {3: "salt_lock", 6: "flame_sear", 9: "sharpen_knife", 12: "kitchen_fire", 15: "inferno_fang"}
+ability_ids = PackedStringArray("flame_body", "pressure_cook")
+ev_yield = {"attack": 1, "defense": 1}
+base_xp_yield = 90

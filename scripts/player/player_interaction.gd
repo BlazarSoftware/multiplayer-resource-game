@@ -126,7 +126,8 @@ func _try_interact() -> void:
 		print("[Fishing Debug] INTERCEPTED by: excursion_portal")
 		var excursion_mgr = get_node_or_null("/root/Main/GameWorld/ExcursionManager")
 		if excursion_mgr:
-			excursion_mgr.request_enter_excursion.rpc_id(1)
+			var zone_type: String = portal.get_meta("zone_type", "default")
+			excursion_mgr.request_enter_excursion.rpc_id(1, zone_type)
 		return
 	# Check for storage station proximity
 	var storage = _find_nearest_area("storage_station", pos, 3.0)

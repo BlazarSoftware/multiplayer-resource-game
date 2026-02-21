@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_13_wild_munchie"
+display_name = "A Wild Munchie Appears!"
+description = "Something rustled in the tall grass near your cottage! Time to face your first wild munchie."
+category = "main_story"
+quest_giver_npc_id = ""
+prereq_quest_ids = ["ms_12_cottage"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "defeat_creature",
+"target_id": "",
+"target_count": 1,
+"description": "Defeat a wild munchie in battle"
+}]
+reward_money = 150
+reward_items = {"berry": 5}
+reward_friendship = {}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = "ms_14_meet_hubert"
+chapter = 1
+sort_order = 4
+offer_dialogue = "Wait — did you hear that? Something's moving in the tall grass! Don't worry, wild munchies are more startled than scary. Just stand your ground and show it what you're made of!"
+in_progress_dialogue = "Haven't run into a wild munchie yet? Try walking through the tall grass around your cottage. They're curious little things — one is bound to pop out!"
+completion_dialogue = "You did it! Your very first munchie battle! That wasn't so bad, was it? Here — take these berries. You've earned a snack after all that excitement."

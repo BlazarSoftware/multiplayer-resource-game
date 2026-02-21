@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "wasabi_viper"
+display_name = "Wasabi Viper"
+types = PackedStringArray("toxic", "spicy")
+base_hp = 50
+base_attack = 16
+base_defense = 8
+base_sp_attack = 18
+base_sp_defense = 8
+base_speed = 16
+moves = PackedStringArray("acid_splash", "pepper_blast", "flash_sear", "pollen_cloud")
+mesh_type = "capsule"
+mesh_color = Color(0.55, 0.8, 0.3, 1)
+mesh_scale = Vector3(0.4, 0.9, 0.4)
+rarity = "uncommon"
+drop_ingredient_ids = PackedStringArray("ginger")
+drop_min = 1
+drop_max = 2
+learnset = {3: "acid_splash", 6: "pepper_blast", 9: "flash_sear", 12: "pollen_cloud", 15: "acid_rain"}
+ability_ids = PackedStringArray("spice_aura", "sour_stomach")
+ev_yield = {"sp_attack": 1, "speed": 1}
+base_xp_yield = 70

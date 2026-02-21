@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "crab"
+display_name = "Crab"
+description = "A hard-shelled crustacean prized for its sweet, delicate meat."
+category = "seafood"
+icon_color = Color(0.85, 0.4, 0.3, 1)
+sell_price = 12
+season = ""
+grow_time = 60.0
+harvest_min = 1
+harvest_max = 2

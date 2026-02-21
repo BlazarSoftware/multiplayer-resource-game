@@ -1,0 +1,95 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/synty/farm/models/SM_Prop_Fence_Fancy_01.glb" id="1"]
+[ext_resource type="PackedScene" path="res://assets/synty/farm/models/SM_Prop_Fence_Fancy_02.glb" id="2"]
+[ext_resource type="PackedScene" path="res://assets/synty/farm/models/SM_Prop_Hay_Bale_01.glb" id="3"]
+[ext_resource type="PackedScene" path="res://assets/synty/farm/models/SM_Prop_Barrel_01.glb" id="4"]
+[ext_resource type="PackedScene" path="res://assets/synty/farm/models/SM_Prop_Barrel_02.glb" id="5"]
+[ext_resource type="PackedScene" path="res://assets/synty/farm/models/SM_Prop_Wheelbarrow_01.glb" id="6"]
+[ext_resource type="PackedScene" path="res://assets/synty/farm/models/SM_Prop_Scarecrow_01.glb" id="7"]
+[ext_resource type="PackedScene" path="res://assets/synty/farm/models/SM_Prop_Watering_Can_01.glb" id="8"]
+
+[sub_resource type="BoxMesh" id="SubResource_ground"]
+size = Vector3(20, 0.1, 14)
+
+[sub_resource type="StandardMaterial3D" id="SubResource_dirt_mat"]
+albedo_color = Color(0.55, 0.42, 0.28, 1)
+
+[sub_resource type="StandardMaterial3D" id="SubResource_grass_edge"]
+albedo_color = Color(0.4, 0.55, 0.25, 1)
+
+[node name="Environment" type="Node3D"]
+
+[node name="DirtGround" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+mesh = SubResource("SubResource_ground")
+surface_material_override/0 = SubResource("SubResource_dirt_mat")
+
+[node name="ArenaLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.75, -0.433, 0.5, 0, 0.756, 0.655, -0.661, -0.491, 0.567, 0, 10, 0)
+light_color = Color(1, 0.9, 0.65, 1)
+light_energy = 1.3
+shadow_enabled = true
+
+[node name="WarmFill" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+light_color = Color(1, 0.9, 0.7, 1)
+light_energy = 0.45
+omni_range = 18.0
+
+[node name="FenceLeft1" parent="." instance=ExtResource("1")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -9, 0, -3)
+
+[node name="FenceLeft2" parent="." instance=ExtResource("2")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -9, 0, 0)
+
+[node name="FenceLeft3" parent="." instance=ExtResource("1")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -9, 0, 3)
+
+[node name="FenceRight1" parent="." instance=ExtResource("1")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 9, 0, -3)
+
+[node name="FenceRight2" parent="." instance=ExtResource("2")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 9, 0, 0)
+
+[node name="FenceRight3" parent="." instance=ExtResource("1")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 9, 0, 3)
+
+[node name="FenceBack1" parent="." instance=ExtResource("1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -6)
+
+[node name="FenceBack2" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -6)
+
+[node name="FenceBack3" parent="." instance=ExtResource("1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6)
+
+[node name="FenceBack4" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -6)
+
+[node name="FenceBack5" parent="." instance=ExtResource("1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -6)
+
+[node name="HayBale1" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -5)
+
+[node name="HayBale2" parent="." instance=ExtResource("3")]
+transform = Transform3D(0.866, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866, 8, 0, 5)
+
+[node name="HayBale3" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 5)
+
+[node name="Barrel1" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -5)
+
+[node name="Barrel2" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 0, -5.5)
+
+[node name="Wheelbarrow" parent="." instance=ExtResource("6")]
+transform = Transform3D(0.866, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866, -5, 0, 5.5)
+
+[node name="Scarecrow" parent="." instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5.5)
+
+[node name="WateringCan" parent="." instance=ExtResource("8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 5)

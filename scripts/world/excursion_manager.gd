@@ -6,7 +6,7 @@ extends Node
 signal excursion_member_changed(instance_id: String, peer_id: int, joined: bool)
 
 const EXCURSION_BASE_OFFSET = Vector3(5000, 0, 0)
-const EXCURSION_SPACING: float = 200.0
+const EXCURSION_SPACING: float = 250.0
 const MAX_EXCURSION_INSTANCES: int = 10
 const INSTANCE_TIMEOUT_SEC: float = 900.0 # 15 minutes
 const EXIT_COOLDOWN_MS: int = 2000
@@ -240,13 +240,13 @@ func get_level_boost_for_peer(peer_id: int) -> int:
 # === Entry Flow ===
 
 @rpc("any_peer", "reliable")
-func request_enter_excursion() -> void:
+func request_enter_excursion(zone_type: String = "default") -> void:
 	if not multiplayer.is_server():
 		return
-	_validate_and_enter(multiplayer.get_remote_sender_id())
+	_validate_and_enter(multiplayer.get_remote_sender_id(), zone_type)
 
 
-func _validate_and_enter(sender_peer: int) -> void:
+func _validate_and_enter(sender_peer: int, zone_type: String = "default") -> void:
 	var nm := NetworkManager
 
 	var player_id: String = nm.get_player_id_for_peer(sender_peer)
@@ -287,7 +287,7 @@ func _validate_and_enter(sender_peer: int) -> void:
 			_excursion_action_result.rpc_id(sender_peer, "enter", false, "You are busy.")
 			return
 		# All solo checks passed — create solo instance
-		_create_excursion_instance(-1, {}, [player_id])
+		_create_excursion_instance(-1, {}, [player_id], zone_type)
 		return
 
 	var party_id: int = friend_mgr.player_party_map[player_id]
@@ -326,10 +326,10 @@ func _validate_and_enter(sender_peer: int) -> void:
 			return
 
 	# All checks passed — create instance
-	_create_excursion_instance(party_id, party, members)
+	_create_excursion_instance(party_id, party, members, zone_type)
 
 
-func _create_excursion_instance(party_id: int, party: Dictionary, members: Array) -> void:
+func _create_excursion_instance(party_id: int, party: Dictionary, members: Array, zone_type: String = "default") -> void:
 	var instance_id: String = _generate_uuid()
 	var seed_val: int = randi()
 	var season: String = _get_current_season()
@@ -351,6 +351,7 @@ func _create_excursion_instance(party_id: int, party: Dictionary, members: Array
 		"allowed_player_ids": allowed_ids,
 		"offset": {"x": offset.x, "y": offset.y, "z": offset.z},
 		"offset_index": offset_index,
+		"zone_type": zone_type,
 		"loot_log": {},
 		"sent_warnings": {},
 	}
@@ -358,7 +359,7 @@ func _create_excursion_instance(party_id: int, party: Dictionary, members: Array
 	excursion_instances[instance_id] = inst
 
 	# Generate server-side collision/encounter tree
-	var server_node := ExcursionGenerator.generate_server(seed_val, season, offset)
+	var server_node := ExcursionGenerator.generate_server(seed_val, season, offset, zone_type)
 	get_parent().add_child(server_node)
 	_instance_nodes[instance_id] = server_node
 
@@ -415,18 +416,48 @@ func _create_excursion_instance(party_id: int, party: Dictionary, members: Array
 		d_node.name = "ExcursionDigSpot_%d" % dig_points.find(dp)
 		server_node.add_child(d_node)
 
+	# Spawn poacher trainers — zone-specific species
+	var poacher_data := ExcursionGenerator.get_poacher_spawn_points(seed_val, season, Vector3.ZERO, zone_type)
+	var poacher_trainer_ids: Array = []
+	var trainer_script = load("res://scripts/world/trainer_npc.gd")
+	for pd in poacher_data:
+		# Register dynamic TrainerDef BEFORE add_child (which triggers _ready -> DataRegistry.get_trainer)
+		var tdef := TrainerDef.new()
+		tdef.trainer_id = pd["trainer_id"]
+		tdef.display_name = pd["display_name"]
+		tdef.dialogue_before = pd["dialogue_before"]
+		tdef.dialogue_after = pd["dialogue_after"]
+		tdef.party = pd["party"]
+		tdef.ai_difficulty = pd["ai_difficulty"]
+		tdef.reward_money = pd["reward_money"]
+		tdef.reward_ingredients = pd["reward_ingredients"]
+		tdef.rematch_cooldown_sec = 0 # No rematch cooldown for excursion poachers
+		DataRegistry.register_dynamic_trainer(tdef)
+
+		var poacher_area := Area3D.new()
+		poacher_area.set_script(trainer_script)
+		poacher_area.trainer_id = pd["trainer_id"]
+		poacher_area.is_gatekeeper = false
+		poacher_area.set_meta("is_excursion_poacher", true)
+		poacher_area.position = offset + pd["position"]
+		poacher_area.name = "Poacher_%d" % poacher_data.find(pd)
+		server_node.add_child(poacher_area)
+		poacher_trainer_ids.append(pd["trainer_id"])
+
+	inst["poacher_trainer_ids"] = poacher_trainer_ids
+
 	# Teleport all online party members
 	var spawn_point: Vector3 = offset + ExcursionGenerator.get_spawn_point(Vector3.ZERO)
 	for member_id in members:
 		var member_peer: int = NetworkManager.get_peer_for_player_id(member_id)
 		if member_peer > 0:
-			_enter_member(member_peer, instance_id, spawn_point, seed_val, season, offset)
+			_enter_member(member_peer, instance_id, spawn_point, seed_val, season, offset, zone_type)
 
-	print("[Excursion] Created instance %s (seed=%d, season=%s, party=%d, %d members)" % [
-		instance_id, seed_val, season, party_id, inst["members"].size()])
+	print("[Excursion] Created instance %s (seed=%d, season=%s, zone=%s, party=%d, %d members, %d poachers)" % [
+		instance_id, seed_val, season, zone_type, party_id, inst["members"].size(), poacher_trainer_ids.size()])
 
 
-func _enter_member(peer_id: int, instance_id: String, spawn_point: Vector3, seed_val: int, season: String, offset: Vector3) -> void:
+func _enter_member(peer_id: int, instance_id: String, spawn_point: Vector3, seed_val: int, season: String, offset: Vector3, zone_type: String = "default") -> void:
 	var inst: Dictionary = excursion_instances.get(instance_id, {})
 	if inst.is_empty():
 		return
@@ -451,7 +482,7 @@ func _enter_member(peer_id: int, instance_id: String, spawn_point: Vector3, seed
 		rest_mgr.player_location[peer_id] = {"zone": "excursion", "owner": instance_id}
 
 	# Notify client
-	_enter_excursion_client.rpc_id(peer_id, instance_id, seed_val, season, offset.x, offset.y, offset.z)
+	_enter_excursion_client.rpc_id(peer_id, instance_id, seed_val, season, offset.x, offset.y, offset.z, zone_type)
 
 	# Sync world items for this instance
 	var item_mgr := get_node_or_null("../WorldItemManager")
@@ -600,7 +631,8 @@ func request_excursion_late_join() -> void:
 	# Enter
 	var offset := Vector3(inst["offset"]["x"], inst["offset"]["y"], inst["offset"]["z"])
 	var spawn_point: Vector3 = offset + ExcursionGenerator.get_spawn_point(Vector3.ZERO)
-	_enter_member(sender_peer, target_instance_id, spawn_point, inst["seed"], inst["season"], offset)
+	var inst_zone_type: String = inst.get("zone_type", "default")
+	_enter_member(sender_peer, target_instance_id, spawn_point, inst["seed"], inst["season"], offset, inst_zone_type)
 	_excursion_action_result.rpc_id(sender_peer, "late_join", true, "Joined the excursion!")
 	print("[Excursion] Late-joiner peer %d entered instance %s" % [sender_peer, target_instance_id])
 
@@ -651,6 +683,11 @@ func _cleanup_instance(instance_id: String) -> void:
 	var remaining_members: Array = inst["members"].duplicate()
 	for peer_id in remaining_members:
 		_exit_member(peer_id)
+
+	# Unregister dynamic poacher TrainerDefs
+	var poacher_ids: Array = inst.get("poacher_trainer_ids", [])
+	for tid in poacher_ids:
+		DataRegistry.unregister_dynamic_trainer(tid)
 
 	# Remove server collision tree
 	if instance_id in _instance_nodes:
@@ -810,12 +847,16 @@ func _log_loot(instance_id: String, peer_id: int, item_id: String, amount: int) 
 # === Client RPCs ===
 
 @rpc("authority", "reliable")
-func _enter_excursion_client(instance_id: String, seed_val: int, season: String, offset_x: float, offset_y: float, offset_z: float) -> void:
+func _enter_excursion_client(instance_id: String, seed_val: int, season: String, offset_x: float, offset_y: float, offset_z: float, zone_type: String = "default") -> void:
 	if multiplayer.is_server():
 		return
+	# Diamond wipe in
+	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
+	if hud and hud.has_method("play_screen_wipe"):
+		await hud.play_screen_wipe()
 	var offset := Vector3(offset_x, offset_y, offset_z)
-	# Generate client-side visuals
-	var visuals := ExcursionGenerator.generate_client(seed_val, season, offset)
+	# Generate client-side visuals — zone-themed
+	var visuals := ExcursionGenerator.generate_client(seed_val, season, offset, zone_type)
 	var game_world := get_node_or_null("/root/Main/GameWorld")
 	if game_world:
 		game_world.add_child(visuals)
@@ -858,16 +899,52 @@ func _enter_excursion_client(instance_id: String, seed_val: int, season: String,
 		d_node.name = "ExcursionDigSpot_%d" % i
 		visuals.add_child(d_node)
 
+	# Spawn poacher trainers (client-side, deterministic from seed) — zone-specific species
+	var poacher_data := ExcursionGenerator.get_poacher_spawn_points(seed_val, season, Vector3.ZERO, zone_type)
+	var client_poacher_ids: Array = []
+	var trainer_script = load("res://scripts/world/trainer_npc.gd")
+	for pd in poacher_data:
+		# Register dynamic TrainerDef on client too (for display_name/dialogue lookup)
+		var tdef := TrainerDef.new()
+		tdef.trainer_id = pd["trainer_id"]
+		tdef.display_name = pd["display_name"]
+		tdef.dialogue_before = pd["dialogue_before"]
+		tdef.dialogue_after = pd["dialogue_after"]
+		tdef.party = pd["party"]
+		tdef.ai_difficulty = pd["ai_difficulty"]
+		tdef.reward_money = pd["reward_money"]
+		tdef.reward_ingredients = pd["reward_ingredients"]
+		tdef.rematch_cooldown_sec = 0
+		DataRegistry.register_dynamic_trainer(tdef)
+
+		var poacher_area := Area3D.new()
+		poacher_area.set_script(trainer_script)
+		poacher_area.trainer_id = pd["trainer_id"]
+		poacher_area.is_gatekeeper = false
+		poacher_area.set_meta("is_excursion_poacher", true)
+		poacher_area.position = offset + pd["position"]
+		poacher_area.name = "Poacher_%d" % poacher_data.find(pd)
+		visuals.add_child(poacher_area)
+		client_poacher_ids.append(pd["trainer_id"])
+
 	# Store reference for cleanup
 	set_meta("_client_visuals", visuals)
 	set_meta("_in_excursion", true)
 	set_meta("_excursion_id", instance_id)
-	# Show excursion HUD
+	set_meta("_client_poacher_ids", client_poacher_ids)
+	set_meta("_zone_type", zone_type)
+	# Show excursion HUD with zone name
 	var excursion_hud := get_node_or_null("/root/Main/GameWorld/UI/ExcursionHUD")
 	if excursion_hud:
-		excursion_hud.show_excursion()
+		excursion_hud.show_excursion(zone_type)
 	# Update PlayerData location
 	PlayerData.current_zone = "excursion"
+	# Excursion music + ambience
+	AudioManager.play_music("excursion")
+	AudioManager.play_ambience(0, "excursion")
+	# Diamond wipe out
+	if hud and hud.has_method("clear_screen_wipe"):
+		await hud.clear_screen_wipe()
 	print("[Excursion Client] Entered excursion %s" % instance_id)
 
 
@@ -875,19 +952,38 @@ func _enter_excursion_client(instance_id: String, seed_val: int, season: String,
 func _exit_excursion_client() -> void:
 	if multiplayer.is_server():
 		return
+	# Diamond wipe in
+	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
+	if hud and hud.has_method("play_screen_wipe"):
+		await hud.play_screen_wipe()
 	# Remove client visuals
 	var visuals = get_meta("_client_visuals") if has_meta("_client_visuals") else null
 	if visuals != null and is_instance_valid(visuals):
 		visuals.queue_free()
+	# Unregister client-side dynamic poacher TrainerDefs
+	var client_poacher_ids = get_meta("_client_poacher_ids") if has_meta("_client_poacher_ids") else []
+	for tid in client_poacher_ids:
+		DataRegistry.unregister_dynamic_trainer(tid)
+
 	remove_meta("_client_visuals")
 	remove_meta("_in_excursion")
 	remove_meta("_excursion_id")
+	if has_meta("_client_poacher_ids"):
+		remove_meta("_client_poacher_ids")
+	if has_meta("_zone_type"):
+		remove_meta("_zone_type")
 	# Hide excursion HUD
 	var excursion_hud := get_node_or_null("/root/Main/GameWorld/UI/ExcursionHUD")
 	if excursion_hud:
 		excursion_hud.hide_excursion()
 	# Update PlayerData location
 	PlayerData.current_zone = "overworld"
+	# Restore overworld music + ambience
+	AudioManager.play_music("overworld")
+	AudioManager.play_ambience(0, "overworld")
+	# Diamond wipe out
+	if hud and hud.has_method("clear_screen_wipe"):
+		await hud.clear_screen_wipe()
 	print("[Excursion Client] Exited excursion")
 
 

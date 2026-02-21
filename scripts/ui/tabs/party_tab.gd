@@ -1,10 +1,19 @@
 extends Control
 
-# Creature party tab content for PauseMenu. Ported from party_ui.gd.
+# Creature party tab content for PauseMenu. Full-width cards with vertical
+# scrolling. Each card has 4 swipeable panels: Overview, Stats, Moves, Details.
 const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
-var creature_list: VBoxContainer
+const PANEL_COUNT := 4
+const SWIPE_THRESHOLD := 40.0
+
 var scroll_container: ScrollContainer
+var card_vbox: VBoxContainer
+
+# Per-card panel tracking: card instance -> data
+var _card_panel_indices: Dictionary = {}  # PanelContainer -> int (active panel)
+var _card_panels: Dictionary = {}         # PanelContainer -> Array[Control]
+var _card_dots: Dictionary = {}           # PanelContainer -> Array[Button]
 
 func _ready() -> void:
 	UITheme.init()
@@ -15,11 +24,14 @@ func _build_ui() -> void:
 	scroll_container = ScrollContainer.new()
 	scroll_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	scroll_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	add_child(scroll_container)
 
-	creature_list = VBoxContainer.new()
-	creature_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll_container.add_child(creature_list)
+	card_vbox = VBoxContainer.new()
+	card_vbox.add_theme_constant_override("separation", 12)
+	card_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll_container.add_child(card_vbox)
 
 func activate() -> void:
 	_refresh()
@@ -28,165 +40,492 @@ func deactivate() -> void:
 	pass
 
 func _refresh() -> void:
-	for child in creature_list.get_children():
+	_card_panel_indices.clear()
+	_card_panels.clear()
+	_card_dots.clear()
+	for child in card_vbox.get_children():
 		child.queue_free()
+	DataRegistry.ensure_loaded()
 	for i in range(PlayerData.party.size()):
 		var creature = PlayerData.party[i]
-		var panel := PanelContainer.new()
-		UITheme.style_card(panel)
-		creature_list.add_child(panel)
-		var hbox := HBoxContainer.new()
-		panel.add_child(hbox)
-		DataRegistry.ensure_loaded()
-		var species = DataRegistry.get_species(creature.get("species_id", ""))
-		var color_rect := ColorRect.new()
-		color_rect.custom_minimum_size = Vector2(30, 30)
-		color_rect.color = species.mesh_color if species else Color.GRAY
-		hbox.add_child(color_rect)
-		var vbox := VBoxContainer.new()
-		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		hbox.add_child(vbox)
-		var name_label := Label.new()
-		name_label.text = "%s  Lv.%d" % [creature.get("nickname", "???"), creature.get("level", 1)]
-		UITheme.style_body(name_label)
-		vbox.add_child(name_label)
-		var hp_label := Label.new()
-		hp_label.text = "HP: %d/%d" % [creature.get("hp", 0), creature.get("max_hp", 1)]
-		UITheme.style_small(hp_label)
-		vbox.add_child(hp_label)
-		# XP bar
-		var xp_hbox := HBoxContainer.new()
-		vbox.add_child(xp_hbox)
-		var xp_label := Label.new()
-		xp_label.text = "XP: "
-		UITheme.style_small(xp_label)
-		xp_hbox.add_child(xp_label)
-		var xp_bar := ProgressBar.new()
-		xp_bar.custom_minimum_size = Vector2(100, 12)
-		xp_bar.show_percentage = false
-		xp_bar.max_value = creature.get("xp_to_next", 100)
-		xp_bar.value = creature.get("xp", 0)
-		xp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		xp_hbox.add_child(xp_bar)
-		var xp_num := Label.new()
-		xp_num.text = "%d/%d" % [creature.get("xp", 0), creature.get("xp_to_next", 100)]
-		UITheme.style_small(xp_num)
-		xp_hbox.add_child(xp_num)
-		# Stats
-		var stats_label := Label.new()
-		stats_label.text = "ATK:%d DEF:%d SPATK:%d SPDEF:%d SPD:%d" % [
-			creature.get("attack", 0), creature.get("defense", 0),
-			creature.get("sp_attack", 0), creature.get("sp_defense", 0),
-			creature.get("speed", 0)]
-		UITheme.style_small(stats_label)
-		vbox.add_child(stats_label)
-		# Types
-		var types_label := Label.new()
-		var types = creature.get("types", [])
-		types_label.text = "Types: %s" % ", ".join(PackedStringArray(types))
-		UITheme.style_small(types_label)
-		vbox.add_child(types_label)
-		# Ability
-		var ability_id = creature.get("ability_id", "")
-		if ability_id != "":
-			var ability = DataRegistry.get_ability(ability_id)
-			var ability_label := Label.new()
-			ability_label.text = "Ability: %s" % (ability.display_name if ability else ability_id)
-			UITheme.style_small(ability_label)
-			vbox.add_child(ability_label)
-		# Held item
-		var held_item_id = creature.get("held_item_id", "")
-		var item_hbox := HBoxContainer.new()
-		vbox.add_child(item_hbox)
-		var item_label := Label.new()
-		if held_item_id != "":
-			var item = DataRegistry.get_held_item(held_item_id)
-			item_label.text = "Held: %s" % (item.display_name if item else held_item_id)
-		else:
-			item_label.text = "Held: (none)"
-		item_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		item_hbox.add_child(item_label)
-		UITheme.style_small(item_label)
-		if held_item_id != "":
-			var unequip_btn := Button.new()
-			unequip_btn.text = "Unequip"
-			UITheme.style_button(unequip_btn, "secondary")
-			var cidx = i
-			unequip_btn.pressed.connect(func(): _unequip_item(cidx))
-			item_hbox.add_child(unequip_btn)
-		else:
-			var equip_btn := Button.new()
-			equip_btn.text = "Equip"
-			UITheme.style_button(equip_btn, "primary")
-			var cidx = i
-			equip_btn.pressed.connect(func(): _show_equip_options(cidx))
-			item_hbox.add_child(equip_btn)
-		# Moves
-		var moves_text = "Moves: "
-		var creature_moves = creature.get("moves", [])
-		for m in creature_moves:
-			var move = DataRegistry.get_move(m)
-			if move:
-				moves_text += move.display_name + ", "
-		var moves_label := Label.new()
-		moves_label.text = moves_text.rstrip(", ")
-		UITheme.style_small(moves_label)
-		vbox.add_child(moves_label)
-		# IVs
-		var ivs = creature.get("ivs", {})
-		if ivs.size() > 0:
-			var iv_label := Label.new()
-			iv_label.text = "IVs: HP:%d ATK:%d DEF:%d SPA:%d SPD:%d SPE:%d" % [
-				int(ivs.get("hp", 0)), int(ivs.get("attack", 0)), int(ivs.get("defense", 0)),
-				int(ivs.get("sp_attack", 0)), int(ivs.get("sp_defense", 0)), int(ivs.get("speed", 0))]
-			UITheme.style_small(iv_label)
-			iv_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
-			iv_label.add_theme_color_override("font_color", UITokens.TEXT_INFO)
-			vbox.add_child(iv_label)
-		# EVs
-		var evs = creature.get("evs", {})
-		if evs.size() > 0:
-			var ev_text = "EVs: "
-			for stat in evs:
-				if int(evs[stat]) > 0:
-					ev_text += "%s:%d " % [stat, int(evs[stat])]
-			if ev_text != "EVs: ":
-				var ev_label := Label.new()
-				ev_label.text = ev_text
-				UITheme.style_small(ev_label)
-				ev_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
-				vbox.add_child(ev_label)
-		# Bond
-		var bond_pts = int(creature.get("bond_points", 0))
-		var bond_lvl = int(creature.get("bond_level", 0))
-		var bond_label := Label.new()
-		var personality_text = ""
-		var affinities = creature.get("battle_affinities", {})
-		if affinities.size() > 0:
-			var highest_stat = ""
-			var highest_val = -1.0
-			for aff_stat in affinities:
-				if float(affinities[aff_stat]) > highest_val:
-					highest_val = float(affinities[aff_stat])
-					highest_stat = aff_stat
-			if highest_stat != "":
-				var aff_names = {"attack": "Physical Attacker", "sp_attack": "Special Attacker",
-					"defense": "Defender", "sp_defense": "Special Defender",
-					"speed": "Speedster", "hp": "Endurance"}
-				personality_text = " - %s" % aff_names.get(highest_stat, highest_stat.capitalize())
-		bond_label.text = "Bond: Level %d (%d pts)%s" % [bond_lvl, bond_pts, personality_text]
-		UITheme.style_small(bond_label)
-		bond_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
-		bond_label.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
-		vbox.add_child(bond_label)
-		# Relearn Move button
-		var relearn_btn := Button.new()
-		relearn_btn.text = "Relearn Move"
-		relearn_btn.custom_minimum_size.y = 28
-		UITheme.style_button(relearn_btn, "secondary")
-		var cidx_relearn = i
-		relearn_btn.pressed.connect(func(): _show_relearn_overlay(cidx_relearn))
-		vbox.add_child(relearn_btn)
+		var card := _build_creature_card(creature, i)
+		card_vbox.add_child(card)
+
+func _build_creature_card(creature: Dictionary, idx: int) -> PanelContainer:
+	var card := PanelContainer.new()
+	card.custom_minimum_size.y = UITheme.scaled(180)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = UITokens.PAPER_CARD
+	style.border_color = UITokens.ACCENT_CHESTNUT
+	style.set_corner_radius_all(UITokens.CORNER_RADIUS)
+	style.set_border_width_all(2)
+	style.content_margin_left = 12
+	style.content_margin_top = 8
+	style.content_margin_right = 12
+	style.content_margin_bottom = 8
+	card.add_theme_stylebox_override("panel", style)
+
+	var card_root := VBoxContainer.new()
+	card_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	card.add_child(card_root)
+
+	# Panel host — all 4 panels stacked, only one visible
+	var panel_host := Control.new()
+	panel_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel_host.clip_contents = true
+	card_root.add_child(panel_host)
+
+	var species = DataRegistry.get_species(creature.get("species_id", ""))
+	var panels: Array = []
+
+	var p0 := _build_overview_panel(creature, species)
+	var p1 := _build_stats_panel(creature, species)
+	var p2 := _build_moves_panel(creature)
+	var p3 := _build_details_panel(creature, idx)
+
+	for p in [p0, p1, p2, p3]:
+		p.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		p.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		panel_host.add_child(p)
+		panels.append(p)
+
+	# Only first panel visible
+	p0.visible = true
+	p1.visible = false
+	p2.visible = false
+	p3.visible = false
+
+	# Swipe gesture on panel_host
+	var swipe_start := Vector2.ZERO
+	var swiping := false
+	var captured_card := card
+	panel_host.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton:
+			if event.button_index == MOUSE_BUTTON_LEFT:
+				if event.pressed:
+					swipe_start = event.position
+					swiping = true
+				else:
+					swiping = false
+		elif event is InputEventMouseMotion and swiping:
+			var diff: Vector2 = event.position - swipe_start
+			if absf(diff.x) > SWIPE_THRESHOLD and absf(diff.x) > absf(diff.y) * 1.5:
+				panel_host.accept_event()
+				swiping = false
+				if diff.x < 0:
+					_on_panel_nav(captured_card, 1)
+				else:
+					_on_panel_nav(captured_card, -1)
+	)
+	panel_host.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	# Nav bar
+	var nav_bar := _build_nav_bar(card, panels)
+	card_root.add_child(nav_bar)
+
+	_card_panel_indices[card] = 0
+	_card_panels[card] = panels
+	return card
+
+# === PANEL BUILDERS ===
+
+func _build_overview_panel(creature: Dictionary, species) -> HBoxContainer:
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 12)
+
+	# Left column: color swatch + nickname + level + types
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 4)
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(left)
+
+	var header := HBoxContainer.new()
+	left.add_child(header)
+	var color_rect := ColorRect.new()
+	color_rect.custom_minimum_size = Vector2(UITheme.scaled(28), UITheme.scaled(28))
+	color_rect.color = species.mesh_color if species else Color.GRAY
+	header.add_child(color_rect)
+	var name_label := Label.new()
+	name_label.text = "%s  Lv.%d" % [creature.get("nickname", "???"), creature.get("level", 1)]
+	UITheme.style_subheading(name_label)
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(name_label)
+
+	var types = creature.get("types", [])
+	if types.size() > 0:
+		var type_label := Label.new()
+		var type_parts: Array = []
+		for t in types:
+			type_parts.append(str(t).capitalize())
+		type_label.text = " / ".join(type_parts)
+		UITheme.style_caption(type_label)
+		left.add_child(type_label)
+
+	# Center: HP bar
+	var center := VBoxContainer.new()
+	center.add_theme_constant_override("separation", 4)
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(center)
+
+	var hp_lbl := Label.new()
+	hp_lbl.text = "HP"
+	UITheme.style_small(hp_lbl)
+	center.add_child(hp_lbl)
+	var hp_bar := ProgressBar.new()
+	hp_bar.custom_minimum_size = Vector2(UITheme.scaled(200), 16)
+	hp_bar.show_percentage = false
+	hp_bar.max_value = creature.get("max_hp", 1)
+	hp_bar.value = creature.get("hp", 0)
+	hp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center.add_child(hp_bar)
+	var hp_num := Label.new()
+	hp_num.text = "%d / %d" % [creature.get("hp", 0), creature.get("max_hp", 1)]
+	UITheme.style_small(hp_num)
+	center.add_child(hp_num)
+
+	# Right: XP bar
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 4)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(right)
+
+	var xp_lbl := Label.new()
+	xp_lbl.text = "XP"
+	UITheme.style_small(xp_lbl)
+	right.add_child(xp_lbl)
+	var xp_bar := ProgressBar.new()
+	xp_bar.custom_minimum_size = Vector2(UITheme.scaled(200), 14)
+	xp_bar.show_percentage = false
+	xp_bar.max_value = creature.get("xp_to_next", 100)
+	xp_bar.value = creature.get("xp", 0)
+	xp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_child(xp_bar)
+	var xp_num := Label.new()
+	xp_num.text = "%d / %d" % [creature.get("xp", 0), creature.get("xp_to_next", 100)]
+	UITheme.style_small(xp_num)
+	right.add_child(xp_num)
+
+	return hbox
+
+func _build_stats_panel(creature: Dictionary, species) -> HBoxContainer:
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 16)
+
+	# Left: stats grid (3 columns)
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 4)
+	hbox.add_child(left)
+
+	var stats_title := Label.new()
+	stats_title.text = "Stats"
+	UITheme.style_subheading(stats_title)
+	left.add_child(stats_title)
+
+	var stats_grid := GridContainer.new()
+	stats_grid.columns = 3
+	stats_grid.add_theme_constant_override("h_separation", 16)
+	stats_grid.add_theme_constant_override("v_separation", 4)
+	left.add_child(stats_grid)
+	var stat_pairs: Array = [
+		["ATK", creature.get("attack", 0)],
+		["DEF", creature.get("defense", 0)],
+		["SP.ATK", creature.get("sp_attack", 0)],
+		["SP.DEF", creature.get("sp_defense", 0)],
+		["SPD", creature.get("speed", 0)],
+	]
+	for pair in stat_pairs:
+		var stat_lbl := Label.new()
+		stat_lbl.text = "%s: %d" % [pair[0], pair[1]]
+		UITheme.style_small(stat_lbl)
+		stats_grid.add_child(stat_lbl)
+	# Pad to fill 3 columns
+	var remainder := stat_pairs.size() % 3
+	if remainder != 0:
+		for _i in range(3 - remainder):
+			stats_grid.add_child(Control.new())
+
+	# Right: ability
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 4)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(right)
+
+	var ability_id = creature.get("ability_id", "")
+	if ability_id != "":
+		var ability = DataRegistry.get_ability(ability_id)
+		var ab_name: String = ability.display_name if ability else ability_id
+		var ab_label := Label.new()
+		ab_label.text = "Ability: %s" % ab_name
+		UITheme.style_small(ab_label)
+		right.add_child(ab_label)
+		if ability and ability.description != "":
+			var ab_desc := Label.new()
+			ab_desc.text = ability.description
+			UITheme.style_caption(ab_desc)
+			ab_desc.add_theme_color_override("font_color", UITokens.INK_SECONDARY)
+			ab_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			right.add_child(ab_desc)
+
+	return hbox
+
+func _build_moves_panel(creature: Dictionary) -> HBoxContainer:
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+
+	var creature_moves = creature.get("moves", [])
+	if creature_moves.size() == 0:
+		var empty_lbl := Label.new()
+		empty_lbl.text = "No moves learned"
+		UITheme.style_caption(empty_lbl)
+		empty_lbl.add_theme_color_override("font_color", UITokens.INK_DISABLED)
+		hbox.add_child(empty_lbl)
+		return hbox
+
+	# 2x2 grid of move cards
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 8)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(grid)
+
+	for m in creature_moves:
+		var move = DataRegistry.get_move(m)
+		if move == null:
+			continue
+		var move_panel := PanelContainer.new()
+		move_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var ms := StyleBoxFlat.new()
+		ms.bg_color = Color(UITokens.PAPER_EDGE.r, UITokens.PAPER_EDGE.g, UITokens.PAPER_EDGE.b, 0.5)
+		ms.set_corner_radius_all(4)
+		ms.content_margin_left = 6
+		ms.content_margin_top = 4
+		ms.content_margin_right = 6
+		ms.content_margin_bottom = 4
+		move_panel.add_theme_stylebox_override("panel", ms)
+
+		var mvbox := VBoxContainer.new()
+		mvbox.add_theme_constant_override("separation", 2)
+		move_panel.add_child(mvbox)
+
+		var name_lbl := Label.new()
+		name_lbl.text = move.display_name
+		UITheme.style_small(name_lbl)
+		mvbox.add_child(name_lbl)
+
+		var detail_lbl := Label.new()
+		var power_text = "Pwr:%d" % move.power if move.power > 0 else "Status"
+		detail_lbl.text = "%s | %s | %s" % [move.type.capitalize(), move.category.capitalize(), power_text]
+		UITheme.style_caption(detail_lbl)
+		detail_lbl.add_theme_color_override("font_color", UITokens.INK_SECONDARY)
+		mvbox.add_child(detail_lbl)
+
+		grid.add_child(move_panel)
+
+	return hbox
+
+func _build_details_panel(creature: Dictionary, idx: int) -> HBoxContainer:
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 16)
+
+	# Left: held item
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 4)
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(left)
+
+	var details_title := Label.new()
+	details_title.text = "Details"
+	UITheme.style_subheading(details_title)
+	left.add_child(details_title)
+
+	var held_item_id = creature.get("held_item_id", "")
+	var item_hbox := HBoxContainer.new()
+	left.add_child(item_hbox)
+	var item_label := Label.new()
+	if held_item_id != "":
+		var item = DataRegistry.get_held_item(held_item_id)
+		item_label.text = "Held: %s" % (item.display_name if item else held_item_id)
+	else:
+		item_label.text = "Held: (none)"
+	item_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UITheme.style_small(item_label)
+	item_hbox.add_child(item_label)
+	if held_item_id != "":
+		var unequip_btn := Button.new()
+		unequip_btn.text = "Unequip"
+		UITheme.style_button(unequip_btn, "secondary")
+		var cidx = idx
+		unequip_btn.pressed.connect(func(): _unequip_item(cidx))
+		item_hbox.add_child(unequip_btn)
+	else:
+		var equip_btn := Button.new()
+		equip_btn.text = "Equip"
+		UITheme.style_button(equip_btn, "primary")
+		var cidx = idx
+		equip_btn.pressed.connect(func(): _show_equip_options(cidx))
+		item_hbox.add_child(equip_btn)
+
+	# Center: IVs + EVs
+	var center := VBoxContainer.new()
+	center.add_theme_constant_override("separation", 4)
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(center)
+
+	var ivs = creature.get("ivs", {})
+	if ivs.size() > 0:
+		var iv_label := Label.new()
+		iv_label.text = "IVs: HP:%d ATK:%d DEF:%d\nSPA:%d SPD:%d SPE:%d" % [
+			int(ivs.get("hp", 0)), int(ivs.get("attack", 0)), int(ivs.get("defense", 0)),
+			int(ivs.get("sp_attack", 0)), int(ivs.get("sp_defense", 0)), int(ivs.get("speed", 0))]
+		UITheme.style_small(iv_label)
+		iv_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+		iv_label.add_theme_color_override("font_color", UITokens.TEXT_INFO)
+		center.add_child(iv_label)
+
+	var evs = creature.get("evs", {})
+	if evs.size() > 0:
+		var ev_text = "EVs: "
+		for stat in evs:
+			if int(evs[stat]) > 0:
+				ev_text += "%s:%d " % [stat, int(evs[stat])]
+		if ev_text != "EVs: ":
+			var ev_label := Label.new()
+			ev_label.text = ev_text
+			UITheme.style_small(ev_label)
+			ev_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+			center.add_child(ev_label)
+
+	# Right: bond + relearn
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 4)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(right)
+
+	var bond_pts = int(creature.get("bond_points", 0))
+	var bond_lvl = int(creature.get("bond_level", 0))
+	var personality_text = ""
+	var affinities = creature.get("battle_affinities", {})
+	if affinities.size() > 0:
+		var highest_stat = ""
+		var highest_val = -1.0
+		for aff_stat in affinities:
+			if float(affinities[aff_stat]) > highest_val:
+				highest_val = float(affinities[aff_stat])
+				highest_stat = aff_stat
+		if highest_stat != "":
+			var aff_names = {"attack": "Physical Attacker", "sp_attack": "Special Attacker",
+				"defense": "Defender", "sp_defense": "Special Defender",
+				"speed": "Speedster", "hp": "Endurance"}
+			personality_text = "\n%s" % aff_names.get(highest_stat, highest_stat.capitalize())
+	var bond_label := Label.new()
+	bond_label.text = "Bond: Lv %d (%d pts)%s" % [bond_lvl, bond_pts, personality_text]
+	UITheme.style_small(bond_label)
+	bond_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+	bond_label.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
+	right.add_child(bond_label)
+
+	var relearn_btn := Button.new()
+	relearn_btn.text = "Relearn Move"
+	relearn_btn.custom_minimum_size.y = 28
+	UITheme.style_button(relearn_btn, "secondary")
+	var cidx_relearn = idx
+	relearn_btn.pressed.connect(func(): _show_relearn_overlay(cidx_relearn))
+	right.add_child(relearn_btn)
+
+	return hbox
+
+# === NAV BAR ===
+
+func _build_nav_bar(card: PanelContainer, panels: Array) -> HBoxContainer:
+	var nav := HBoxContainer.new()
+	nav.alignment = BoxContainer.ALIGNMENT_CENTER
+	nav.add_theme_constant_override("separation", 4)
+	nav.custom_minimum_size.y = UITheme.scaled(28)
+
+	# Left arrow
+	var left_btn := Button.new()
+	left_btn.text = "<"
+	left_btn.custom_minimum_size = Vector2(UITheme.scaled(28), UITheme.scaled(24))
+	UITheme.style_button(left_btn, "secondary")
+	left_btn.pressed.connect(_on_panel_nav.bind(card, -1))
+	nav.add_child(left_btn)
+
+	# Dots
+	var dots: Array = []
+	for i in PANEL_COUNT:
+		var dot := Button.new()
+		dot.custom_minimum_size = Vector2(UITheme.scaled(12), UITheme.scaled(12))
+		dot.flat = true
+		dot.mouse_filter = Control.MOUSE_FILTER_STOP
+		_style_dot(dot, i == 0)
+		dot.pressed.connect(_on_panel_jump.bind(card, i))
+		nav.add_child(dot)
+		dots.append(dot)
+	_card_dots[card] = dots
+
+	# Right arrow
+	var right_btn := Button.new()
+	right_btn.text = ">"
+	right_btn.custom_minimum_size = Vector2(UITheme.scaled(28), UITheme.scaled(24))
+	UITheme.style_button(right_btn, "secondary")
+	right_btn.pressed.connect(_on_panel_nav.bind(card, 1))
+	nav.add_child(right_btn)
+
+	return nav
+
+# === PANEL SWITCHING ===
+
+func _on_panel_nav(card: PanelContainer, direction: int) -> void:
+	var current: int = _card_panel_indices.get(card, 0)
+	_switch_panel(card, current + direction)
+
+func _on_panel_jump(card: PanelContainer, index: int) -> void:
+	_switch_panel(card, index)
+
+func _switch_panel(card: PanelContainer, new_index: int) -> void:
+	new_index = clampi(new_index, 0, PANEL_COUNT - 1)
+	var old_index: int = _card_panel_indices.get(card, 0)
+	if new_index == old_index:
+		return
+
+	var panels: Array = _card_panels.get(card, [])
+	if panels.size() != PANEL_COUNT:
+		return
+
+	panels[old_index].visible = false
+	panels[new_index].visible = true
+	_card_panel_indices[card] = new_index
+
+	# Update dots
+	var dots: Array = _card_dots.get(card, [])
+	for i in dots.size():
+		_style_dot(dots[i], i == new_index)
+
+func _style_dot(dot: Button, is_active: bool) -> void:
+	var sb := StyleBoxFlat.new()
+	sb.set_corner_radius_all(6)
+	sb.content_margin_left = 0
+	sb.content_margin_top = 0
+	sb.content_margin_right = 0
+	sb.content_margin_bottom = 0
+	if is_active:
+		sb.bg_color = UITokens.ACCENT_CHESTNUT
+	else:
+		sb.bg_color = UITokens.PAPER_EDGE
+		sb.border_color = UITokens.ACCENT_CHESTNUT
+		sb.set_border_width_all(1)
+	dot.add_theme_stylebox_override("normal", sb)
+	dot.add_theme_stylebox_override("hover", sb)
+	dot.add_theme_stylebox_override("pressed", sb)
+	dot.add_theme_stylebox_override("focus", sb)
+
+# === EQUIP / RELEARN (unchanged) ===
 
 func _unequip_item(creature_idx: int) -> void:
 	NetworkManager.request_unequip_held_item.rpc_id(1, creature_idx)

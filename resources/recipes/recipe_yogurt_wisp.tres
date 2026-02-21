@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_yogurt_wisp"
+display_name = "Cook Yogurt Wisp"
+result_species_id = "yogurt_wisp"
+ingredients = {"yogurt": 3, "honey": 1}
+description = "Culture a Yogurt Wisp."
+station = "cauldron"
+unlockable = true

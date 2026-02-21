@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "potato_brute"
+display_name = "Potato Brute"
+types = PackedStringArray("earthy", "grain")
+base_hp = 65
+base_attack = 16
+base_defense = 18
+base_sp_attack = 6
+base_sp_defense = 10
+base_speed = 6
+moves = PackedStringArray("root_grip", "grain_bash", "bread_wall", "slow_cook")
+mesh_type = "sphere"
+mesh_color = Color(0.75, 0.6, 0.4, 1)
+mesh_scale = Vector3(0.8, 0.7, 0.8)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("potato")
+drop_min = 1
+drop_max = 2
+learnset = {3: "root_grip", 6: "grain_bash", 9: "bread_wall", 12: "slow_cook", 15: "harvest_move"}
+ability_ids = PackedStringArray("harvest_spirit", "grain_shield")
+ev_yield = {"defense": 1}
+base_xp_yield = 50

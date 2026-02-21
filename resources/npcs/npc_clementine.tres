@@ -1,0 +1,167 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_clementine"
+display_name = "Clementine Smith"
+visual_color = Color(1.0, 0.55, 0.2, 1)
+birthday = {
+"month": 7,
+"day": 19
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": 3, "y": 1, "z": 7 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": -5, "y": 0, "z": -2 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["chili_powder", "pepper", "garlic", "tomato"],
+"liked": ["onion", "soy_sauce", "egg"],
+"disliked": ["sugar", "honey", "mint"],
+"hated": ["butter"]
+}
+dialogues = {
+"neutral": [{
+"text": "Hey! Guess what? I just invented a new recipe! Spicy garlic fire noodles with a chili powder crust! ...Okay, I haven't actually MADE it yet. But in my head? Perfection.",
+"choices": [{
+"label": "That sounds incredible! You should make it!",
+"points": 3,
+"response": "You think so?! Okay, you're my taste tester! Meet me at the kitchen tomorrow. Bring milk. Just in case."
+}, {
+"label": "That sounds... really spicy.",
+"points": 0,
+"response": "Spicy is a LIFESTYLE, not a flavor! But yeah, maybe I'll add a mild version. For the weak. Not you, obviously."
+}, {
+"label": "You should learn the basics first.",
+"points": -2,
+"response": "Basics are BORING! You don't become a legendary chef by making plain rice! ...Although my plain rice IS terrible."
+}]
+}, {
+"text": "I challenged Hubert Crumb to a cook-off and he said, 'Maybe when you can crack an egg without getting shell in it.' RUDE. But fair.",
+"choices": [{
+"label": "You'll get there! Practice makes perfect!",
+"points": 3,
+"response": "Exactly! I've cracked forty-seven eggs this week! Only got shell in... most of them. Progress!"
+}, {
+"label": "Hubert has been at it for decades. Give yourself time.",
+"points": 0,
+"response": "TIME?! I'm young and full of FIRE! Literally, I set a towel on fire yesterday. But metaphorically too!"
+}, {
+"label": "Maybe cooking isn't your thing.",
+"points": -2,
+"response": "NOT MY THING?! I'll remember this when I'm a world-famous chef and you're begging for a reservation!"
+}]
+}, {
+"text": "I snuck into the restaurant kitchen at midnight to practice. Burned the garlic, set off the smoke alarm, and woke up half the town. Worth it? Absolutely.",
+"choices": [{
+"label": "Ha! I admire your dedication!",
+"points": 3,
+"response": "THANK you! Someone who gets it! Hubert just sighed and handed me a mop. But he also smiled. I saw it!"
+}, {
+"label": "You should probably practice during normal hours.",
+"points": 0,
+"response": "Normal hours are for normal chefs. I'm going to be EXTRAORDINARY. ...But yeah, the smoke alarm was a lot."
+}, {
+"label": "That's really irresponsible.",
+"points": -2,
+"response": "Irresponsible? I call it PASSIONATE. ...Okay, I also cleaned everything up. And apologized. Twice."
+}]
+}],
+"like": [{
+"text": "I made you something! It's my signature dish: Clementine's Comeback Curry! Only three people have tried it. Two cried. From joy! ...Probably!",
+"choices": [{
+"label": "I'll try it right now! I'm ready!",
+"points": 3,
+"response": "YES! Brave AND supportive! Here, I brought water and bread, just in case. I believe in preparation now."
+}, {
+"label": "How spicy are we talking?",
+"points": 0,
+"response": "On a scale of one to 'regret,' it's about a seven. But you're tough! I believe in you more than I believe in myself!"
+}]
+}, {
+"text": "Can I tell you something? Everyone laughs at my cooking dreams. But you never did. That means more to me than you know.",
+"choices": [{
+"label": "Your passion is inspiring, Clem. I'll always be in your corner.",
+"points": 3,
+"response": "I... wow. Okay. I'm not crying, it's the onions. I've been chopping onions. For emotional AND culinary reasons."
+}, {
+"label": "Keep at it. You're getting better every day.",
+"points": 0,
+"response": "You really think so? Yesterday I only burned ONE thing! That's a personal record!"
+}]
+}],
+"love": [{
+"text": "Okay so... I got accepted into Hubert Crumb's apprenticeship program! He said, and I quote, 'You're a disaster, but you're MY disaster now.' And it's partly because of you! You kept believing in me when I couldn't.",
+"choices": [{
+"label": "CLEM! That's amazing! I'm so proud of you!",
+"points": 3,
+"response": "I'M SO HAPPY I COULD EXPLODE! Like a spice bomb, but with feelings! You're invited to my graduation dinner. Front row seat!"
+}, {
+"label": "You earned this all on your own.",
+"points": 2,
+"response": "Maybe the skill, but the courage? That was you. Every time I wanted to quit, I remembered you believed in me."
+}]
+}],
+"dislike": [{
+"text": "Oh. Hey. I'm experimenting with some new recipes. Alone. Because apparently that's how I do things now.",
+"choices": [{
+"label": "I've been a bad friend and I'm sorry, Clem.",
+"points": 3,
+"response": "...You know what, apologies are like salt. A little goes a long way. I accept. Cautiously."
+}, {
+"label": "Smells good in here.",
+"points": 0,
+"response": "Thanks. It's spite curry. Fueled by determination and mild resentment."
+}]
+}],
+"hate": [{
+"text": "I used to think you were cool. Now I think you're like overcooked pasta. Limp and disappointing. ...Sorry, that was harsh. But also accurate.",
+"choices": [{
+"label": "That was a great insult, honestly. And deserved. I want to be better.",
+"points": 5,
+"response": "...Did you just compliment my roast? That's so confusing. And weirdly sweet. Fine, one more chance. But you're on thin ice. Like a crepe."
+}, {
+"label": "Whatever, Clem.",
+"points": -1,
+"response": "Yeah. Whatever. My curry doesn't need your approval anyway."
+}]
+}],
+"birthday": [{
+"text": "IT'S MY BIRTHDAY! I'm making my own cake! It's going to be spicy chocolate with chili frosting! Everyone said that's weird but I don't CARE because it's MY day!",
+"choices": [{
+"label": "Happy birthday, Clem! Spicy chocolate cake sounds AMAZING!",
+"points": 3,
+"response": "SEE?! You GET me! Come on, help me with the frosting. Fair warning, last time I made frosting it became soup."
+}, {
+"label": "I brought you a birthday gift!",
+"points": 2,
+"response": "A PRESENT?! Is it spices? I hope it's spices! Even if it's not, I love it! Birthday hugs!"
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "chili_powder",
+"quantity": 5,
+"message": "My special chili blend! I dried and ground these myself. Only set one batch on fire this time!"
+}, {
+"threshold": 50,
+"item_id": "garlic",
+"quantity": 8,
+"message": "Garlic is the foundation of ALL good food. This is my secret stash. Now it's our secret stash!"
+}, {
+"threshold": 80,
+"item_id": "pepper",
+"quantity": 10,
+"message": "These are rare ghost peppers I grew in a hidden spot behind the kitchen. My most prized possession. Because you believed in me."
+}]
+creature_trades = []
+occupation = "Apprentice Chef"

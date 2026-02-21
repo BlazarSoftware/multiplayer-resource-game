@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "butter_sprite"
+display_name = "Butter Sprite"
+types = PackedStringArray("dairy", "sweet")
+base_hp = 40
+base_attack = 8
+base_defense = 8
+base_sp_attack = 14
+base_sp_defense = 10
+base_speed = 16
+moves = PackedStringArray("sugar_rush", "slippery_oil", "taste_and_dash", "sugar_hail")
+mesh_type = "sphere"
+mesh_color = Color(0.98, 0.92, 0.55, 1)
+mesh_scale = Vector3(0.5, 0.5, 0.5)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("butter")
+drop_min = 1
+drop_max = 2
+learnset = {3: "sugar_rush", 6: "slippery_oil", 9: "taste_and_dash", 12: "sugar_hail", 15: "caramel_crash"}
+ability_ids = PackedStringArray("sweet_tooth", "quick_cook")
+ev_yield = {"speed": 1}
+base_xp_yield = 50

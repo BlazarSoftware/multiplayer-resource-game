@@ -513,6 +513,108 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.65, 2)
 mesh = SubResource("grass_blade_mesh")
 material_override = SubResource("grass_purple_mat")
 
+; === NEW ENCOUNTER ZONES (Cast Iron Cove demo) ===
+
+; Fermented Hollow (-25, 0, -20) — Toxic/Umami/Earthy
+[node name="FermentedHollow" type="Area3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, -20)
+script = ExtResource("7")
+encounter_table_id = "fermented_hollow"
+grass_color = Color(0.4, 0.35, 0.2, 0.7)
+
+[node name="GrassShape" type="CollisionShape3D" parent="Zones/WildZone/FermentedHollow"]
+shape = SubResource("grass_area_shape")
+
+[node name="Grass1" type="MeshInstance3D" parent="Zones/WildZone/FermentedHollow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.6, -1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_gold_mat")
+
+[node name="Grass2" type="MeshInstance3D" parent="Zones/WildZone/FermentedHollow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.7, 1.5)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_gold_mat")
+
+[node name="Grass3" type="MeshInstance3D" parent="Zones/WildZone/FermentedHollow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.5, -2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_gold_mat")
+
+; Blackened Crest (25, 3, -20) — Spicy/Protein/Mineral
+[node name="BlackenedCrest" type="Area3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 3, -20)
+script = ExtResource("7")
+encounter_table_id = "blackened_crest"
+grass_color = Color(0.5, 0.2, 0.15, 0.7)
+
+[node name="GrassShape" type="CollisionShape3D" parent="Zones/WildZone/BlackenedCrest"]
+shape = SubResource("grass_area_shape")
+
+[node name="Grass1" type="MeshInstance3D" parent="Zones/WildZone/BlackenedCrest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.6, -1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_red_mat")
+
+[node name="Grass2" type="MeshInstance3D" parent="Zones/WildZone/BlackenedCrest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.7, 1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_red_mat")
+
+[node name="Grass3" type="MeshInstance3D" parent="Zones/WildZone/BlackenedCrest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_red_mat")
+
+; Battered Bay (-20, 0, -30) — Liquid/Sweet/Aromatic
+[node name="BatteredBay" type="Area3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -30)
+script = ExtResource("7")
+encounter_table_id = "battered_bay"
+grass_color = Color(0.3, 0.5, 0.7, 0.7)
+
+[node name="GrassShape" type="CollisionShape3D" parent="Zones/WildZone/BatteredBay"]
+shape = SubResource("grass_area_shape")
+
+[node name="Grass1" type="MeshInstance3D" parent="Zones/WildZone/BatteredBay"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.6, 1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_blue_mat")
+
+[node name="Grass2" type="MeshInstance3D" parent="Zones/WildZone/BatteredBay"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.7, -1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_blue_mat")
+
+[node name="Grass3" type="MeshInstance3D" parent="Zones/WildZone/BatteredBay"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_blue_mat")
+
+; Salted Shipwreck (20, 0, -30) — Liquid/Mineral/Toxic
+[node name="SaltedShipwreck" type="Area3D" parent="Zones/WildZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, -30)
+script = ExtResource("7")
+encounter_table_id = "salted_shipwreck"
+grass_color = Color(0.5, 0.55, 0.45, 0.7)
+
+[node name="GrassShape" type="CollisionShape3D" parent="Zones/WildZone/SaltedShipwreck"]
+shape = SubResource("grass_area_shape")
+
+[node name="Grass1" type="MeshInstance3D" parent="Zones/WildZone/SaltedShipwreck"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.6, -2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_green_mat")
+
+[node name="Grass2" type="MeshInstance3D" parent="Zones/WildZone/SaltedShipwreck"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.7, 1)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_green_mat")
+
+[node name="Grass3" type="MeshInstance3D" parent="Zones/WildZone/SaltedShipwreck"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 2)
+mesh = SubResource("grass_blade_mesh")
+material_override = SubResource("grass_green_mat")
+
 ; === CAULDRON (0, 0, -55) — deepest point ===
 [node name="Cauldron" type="StaticBody3D" parent="Zones/WildZone"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, -55)
@@ -649,35 +751,99 @@ shop_id = "rare_goods"
 ; === SOCIAL NPCs ===
 [node name="SocialNPCs" type="Node3D" parent="Zones"]
 
-; Baker Brioche — near spawn/restaurant
-[node name="BakerBrioche" type="Area3D" parent="Zones/SocialNPCs"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 5)
-script = ExtResource("18")
-npc_id = "npc_baker"
+; --- Remapped Original 5 ---
 
-; Sage the Herbalist — Herb Garden zone
-[node name="SageHerbalist" type="Area3D" parent="Zones/SocialNPCs"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, -12)
+; Hubert Crumb (Baker) — Town Square, Hubert's Bakery
+[node name="HubertCrumb" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1, 8)
 script = ExtResource("18")
-npc_id = "npc_herbalist"
+npc_id = "npc_hubert"
 
-; Old Salt — Frost Pantry zone
-[node name="OldSalt" type="Area3D" parent="Zones/SocialNPCs"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, -33)
+; Old Sage Murphy (Herbalist) — Harbor Heights, Murphy's Garden
+[node name="OldSageMurphy" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 7, 35)
 script = ExtResource("18")
-npc_id = "npc_fisherman"
+npc_id = "npc_murphy"
 
-; Ember the Smith — near workbench
-[node name="EmberSmith" type="Area3D" parent="Zones/SocialNPCs"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 5)
+; Captain Sal Haddock (Fisherman) — Wharf Walk, Fishing Dock
+[node name="CaptainSalHaddock" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -3)
 script = ExtResource("18")
-npc_id = "npc_blacksmith"
+npc_id = "npc_captain_sal"
 
-; Professor Umami — hub center
-[node name="ProfessorUmami" type="Area3D" parent="Zones/SocialNPCs"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 2)
+; Pepper Santos (Spice Artisan) — Town Square, Spice Emporium
+[node name="PepperSantos" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 1, 6)
 script = ExtResource("18")
-npc_id = "npc_librarian"
+npc_id = "npc_pepper"
+
+; Professor Quill (Scholar) — Market Row, Book Nook
+[node name="ProfessorQuill" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 2, 8)
+script = ExtResource("18")
+npc_id = "npc_quill"
+
+; --- 10 New NPCs ---
+
+; Mayor Rosemary Hartwell — Town Square, Town Hall
+[node name="MayorRosemary" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1, 10)
+script = ExtResource("18")
+npc_id = "npc_mayor"
+
+; Innkeeper Mabel — Wharf Walk, Tide's End Inn
+[node name="InnkeeperMabel" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -5)
+script = ExtResource("18")
+npc_id = "npc_innkeeper"
+
+; Clay Brennan (Potter) — Town Square, Cracked Pot
+[node name="ClayBrennan" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1, 8)
+script = ExtResource("18")
+npc_id = "npc_potter"
+
+; Scarlet Winters (Tailor) — Market Row, Threads & Needles
+[node name="ScarletWinters" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 2, 5)
+script = ExtResource("18")
+npc_id = "npc_tailor"
+
+; Iris Greenthumb (Gardener) — Market Row, Bloom & Grow
+[node name="IrisGreenthumb" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 2, 10)
+script = ExtResource("18")
+npc_id = "npc_gardener"
+
+; Dr. Honey Sweetwater — Market Row, Clinic
+[node name="DrHoney" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 2, 3)
+script = ExtResource("18")
+npc_id = "npc_doctor"
+
+; Hazel Mapleton (General Store) — Town Square
+[node name="HazelMapleton" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 5)
+script = ExtResource("18")
+npc_id = "npc_general_store"
+
+; Clementine Smith (Apprentice Chef) — wanders Town Square
+[node name="ClementineSmith" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, 4)
+script = ExtResource("18")
+npc_id = "npc_clementine"
+
+; River Song (Fisher/Artist) — Wharf Walk, beach
+[node name="RiverSong" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, -8)
+script = ExtResource("18")
+npc_id = "npc_river"
+
+; Alex Hartwell (Mayor's Kid) — Town Square
+[node name="AlexHartwell" type="Area3D" parent="Zones/SocialNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 6)
+script = ExtResource("18")
+npc_id = "npc_alex"
 
 ; === RESTAURANT ROW (south of spawn, z=12) ===
 [node name="RestaurantRow" type="Node3D" parent="Zones"]

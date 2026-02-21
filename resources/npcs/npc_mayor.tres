@@ -1,0 +1,167 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_mayor"
+display_name = "Mayor Rosemary Hartwell"
+visual_color = Color(0.55, 0.27, 0.07, 1)
+birthday = {
+"month": 6,
+"day": 14
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": 5, "y": 1, "z": 10 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": 0, "y": 1, "z": 8 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["honey", "herb_basil", "mint", "flour"],
+"liked": ["butter", "sugar", "rice"],
+"disliked": ["chili_powder", "vinegar", "garlic"],
+"hated": ["stone", "wood"]
+}
+dialogues = {
+"neutral": [{
+"text": "Another beautiful morning in town. I do love watching the harbor from up here. The fishing boats look like little toys.",
+"choices": [{
+"label": "It really is gorgeous. You must love being Mayor here.",
+"points": 3,
+"response": "I do, truly. Every sunrise reminds me why I ran for office in the first place."
+}, {
+"label": "Do you ever get tired of the responsibility?",
+"points": 0,
+"response": "Some days weigh heavier than others. But this town is worth every sleepless night."
+}, {
+"label": "Seems boring, honestly.",
+"points": -2,
+"response": "Boring? I suppose peace can look that way to restless eyes."
+}]
+}, {
+"text": "I've been drafting a proposal for a new community garden. Fresh herbs for everyone! What do you think?",
+"choices": [{
+"label": "That's a wonderful idea! I'd love to help.",
+"points": 3,
+"response": "Really? I could use someone with your energy. Let's talk details soon!"
+}, {
+"label": "Where would you put it?",
+"points": 0,
+"response": "I was thinking near the town square fountain. Good sunlight, easy access for everyone."
+}, {
+"label": "Sounds like a lot of work for nothing.",
+"points": -2,
+"response": "Nothing? A community that grows together stays together, dear."
+}]
+}, {
+"text": "My granddaughter Alex has been causing trouble again. Snuck out past curfew to explore the old mines.",
+"choices": [{
+"label": "She's got a brave spirit! Reminds me of someone.",
+"points": 3,
+"response": "Ha! Don't you dare tell her I was the same way at her age."
+}, {
+"label": "Kids will be kids.",
+"points": 0,
+"response": "That's what everyone says. Doesn't stop my heart from racing every time."
+}, {
+"label": "Sounds like she needs more discipline.",
+"points": -2,
+"response": "I appreciate your concern, but I'll handle my family my way, thank you."
+}]
+}],
+"like": [{
+"text": "I was just brewing some chamomile tea. Would you like a cup? I always make too much for one person.",
+"choices": [{
+"label": "I'd love that. Thank you, Rosemary.",
+"points": 3,
+"response": "Here you are. You know, it's nice having someone to share a quiet moment with."
+}, {
+"label": "Maybe just a quick one.",
+"points": 0,
+"response": "Of course, no pressure. Sugar's on the table if you need it."
+}]
+}, {
+"text": "You've done a lot for this town since you arrived. The council noticed, and so have I.",
+"choices": [{
+"label": "That means the world coming from you.",
+"points": 3,
+"response": "You've earned every bit of it. This town is lucky to have you."
+}, {
+"label": "I'm just doing my part.",
+"points": 0,
+"response": "Modest too. A rare quality these days."
+}]
+}],
+"love": [{
+"text": "You know, I've served as Mayor for twenty years. But the friendships I've made... those are my real legacy. Especially ours.",
+"choices": [{
+"label": "You've been like family to me, Rosemary.",
+"points": 3,
+"response": "Oh, don't make an old woman cry before her morning meeting! ...Thank you, dear."
+}, {
+"label": "This town wouldn't be the same without you.",
+"points": 2,
+"response": "Nor without you. We make quite the team, don't we?"
+}]
+}],
+"dislike": [{
+"text": "I have a lot of paperwork to attend to. Is there something you need?",
+"choices": [{
+"label": "I just wanted to say I'm sorry for being difficult.",
+"points": 3,
+"response": "...Apologies are a good start. Actions are what truly matter, though."
+}, {
+"label": "Never mind, forget it.",
+"points": 0,
+"response": "Very well. You know where to find me if you change your mind."
+}]
+}],
+"hate": [{
+"text": "I don't have time for people who disrespect this community. State your business or leave.",
+"choices": [{
+"label": "I've been wrong. I want to earn back your trust.",
+"points": 5,
+"response": "...Trust is rebuilt one brick at a time. But I'm willing to watch you try."
+}, {
+"label": "Fine, I'll go.",
+"points": -1,
+"response": "Perhaps that's for the best. For now."
+}]
+}],
+"birthday": [{
+"text": "Another year older! My bones know it, even if my spirit doesn't. The council threw me a little party this morning.",
+"choices": [{
+"label": "Happy birthday, Mayor! You don't look a day over fabulous.",
+"points": 3,
+"response": "Oh, you charmer! Ha! Come, have some cake. Hubert outdid himself this year."
+}, {
+"label": "I brought you something special!",
+"points": 2,
+"response": "You remembered! That's the best gift of all, honestly."
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "herb_basil",
+"quantity": 5,
+"message": "From my personal herb garden. A little token of appreciation for a good citizen."
+}, {
+"threshold": 50,
+"item_id": "honey",
+"quantity": 5,
+"message": "This is from the town's private apiary. Only my closest friends get a jar."
+}, {
+"threshold": 80,
+"item_id": "mint",
+"quantity": 10,
+"message": "My grandmother's mint patch is legendary. I'm entrusting some of her seeds to you. Carry on the tradition."
+}]
+creature_trades = []
+occupation = "Mayor"

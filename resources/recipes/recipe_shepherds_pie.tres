@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "shepherds_pie"
+display_name = "Cook Shepherd's Pie"
+result_food_id = "shepherds_pie"
+ingredients = {"beef": 2, "potato": 2, "carrot": 1, "onion": 1}
+description = "Comforting shepherd's pie."
+station = "kitchen"

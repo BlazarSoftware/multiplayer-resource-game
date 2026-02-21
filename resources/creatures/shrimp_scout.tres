@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "shrimp_scout"
+display_name = "Shrimp Scout"
+types = PackedStringArray("liquid")
+base_hp = 35
+base_attack = 12
+base_defense = 8
+base_sp_attack = 10
+base_sp_defense = 8
+base_speed = 18
+moves = PackedStringArray("quick_bite", "brine_splash", "taste_and_dash", "disarm")
+mesh_type = "capsule"
+mesh_color = Color(0.95, 0.6, 0.5, 1)
+mesh_scale = Vector3(0.4, 0.6, 0.4)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("shrimp")
+drop_min = 1
+drop_max = 2
+learnset = {3: "quick_bite", 6: "brine_splash", 9: "taste_and_dash", 12: "disarm", 15: "flash_marinade"}
+ability_ids = PackedStringArray("quick_cook", "brine_body")
+ev_yield = {"speed": 1}
+base_xp_yield = 45

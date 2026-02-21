@@ -19,7 +19,7 @@ const TOOL_ACTION_DURATIONS = {
 	&"fish_idle": 30.0,
 }
 
-@onready var character_model: Node3D = $CharacterModel
+var character_model: Node3D = null # Built dynamically by CharacterAssembler
 @onready var nameplate: Label3D = $Nameplate
 @onready var busy_indicator: Label3D = $BusyIndicator
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
@@ -47,6 +47,7 @@ var pitch_limit: float = deg_to_rad(70)
 # Visual properties (synced via StateSync on spawn)
 var player_color: Color = Color(0.2, 0.5, 0.9)
 var player_name_display: String = "Player"
+var appearance_data: Dictionary = {} # Synced via StateSync (spawn-only)
 var mesh_rotation_y: float = 0.0
 var is_busy: bool = false:
 	set(value):
@@ -69,6 +70,10 @@ var _anim_tree_ready: bool = false
 var _was_airborne: bool = false
 var _landing_timer: float = 0.0
 const LANDING_ANIM_DURATION := 0.3
+
+# Footstep audio
+var _footstep_timer: float = 0.0
+var _prev_anim_action: StringName = &""
 
 
 func _update_busy_transparency() -> void:
@@ -122,34 +127,27 @@ func _ready() -> void:
 	var local_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else -1
 	peer_id = _resolve_peer_id(local_id)
 	print("[PlayerController] _ready() START node=", name, " peer_id=", peer_id, " local_id=", local_id, " is_server=", multiplayer.is_server())
-	print("[PlayerController]   character_model=", character_model, " camera=", camera, " anim_tree=", anim_tree)
-	print("[PlayerController]   collision_shape=", collision_shape, " nameplate=", nameplate, " busy_indicator=", busy_indicator)
 
 	if local_id > 0 and peer_id == local_id:
-		# This is our player — set up camera and PhantomCamera
 		print("[PlayerController]   LOCAL PLAYER — setting up camera + PhantomCamera")
 		_setup_phantom_camera()
-		print("[PlayerController]   pcam after setup: ", pcam, " _pcam_host: ", _pcam_host)
 		_activate_local_camera()
-		print("[PlayerController]   camera.current=", camera.current)
 		_capture_mouse()
-		print("[PlayerController]   mouse captured, mouse_mode=", Input.mouse_mode)
 	else:
-		# Not our player - disable camera
 		print("[PlayerController]   REMOTE PLAYER — disabling camera + input")
 		camera.current = false
-		# Disable processing input for non-local players
 		set_process_input(false)
+
+	# Assemble character model (clients only — server has no visuals)
+	if not multiplayer.is_server():
+		_assemble_character()
 
 	# Disable AnimationTree on server (no visuals needed)
 	if multiplayer.is_server():
-		print("[PlayerController]   SERVER — disabling AnimationTree")
 		if anim_tree:
 			anim_tree.active = false
 	else:
-		print("[PlayerController]   CLIENT — building AnimationTree")
 		_build_animation_tree()
-		print("[PlayerController]   _anim_tree_ready=", _anim_tree_ready)
 
 	_apply_visuals()
 	print("[PlayerController] _ready() COMPLETE")
@@ -247,9 +245,31 @@ func _resolve_peer_id(local_id: int) -> int:
 	return 1
 
 
+func _assemble_character() -> void:
+	if appearance_data.is_empty():
+		# No custom appearance — use fallback mannequin
+		var fallback_scene: PackedScene = load("res://assets/models/mannequin_f.glb")
+		if fallback_scene:
+			character_model = fallback_scene.instantiate()
+			character_model.name = "CharacterModel"
+			add_child(character_model)
+		else:
+			push_error("[PlayerController] Cannot load fallback mannequin!")
+			character_model = Node3D.new()
+			character_model.name = "CharacterModel"
+			add_child(character_model)
+	else:
+		character_model = CharacterAssembler.assemble(self, appearance_data)
+
+	# Re-point AnimationTree root to the new model
+	if anim_tree and character_model:
+		anim_tree.root_node = anim_tree.get_path_to(character_model)
+
+
 func _apply_visuals() -> void:
-	# Apply player color to character model mesh instances
-	if character_model:
+	# Apply player color tint only to fallback mannequin (no custom appearance).
+	# Modular characters use the Synty atlas texture and don't need color tinting.
+	if character_model and appearance_data.is_empty():
 		var meshes = _find_mesh_instances(character_model)
 		for mi: MeshInstance3D in meshes:
 			if mi.get_surface_override_material_count() > 0:
@@ -259,7 +279,6 @@ func _apply_visuals() -> void:
 						base_mat = mi.mesh.surface_get_material(surface_idx) if mi.mesh else null
 					if base_mat is StandardMaterial3D:
 						var mat = base_mat.duplicate() as StandardMaterial3D
-						# Tint the mesh with the player color
 						mat.albedo_color = player_color
 						mi.set_surface_override_material(surface_idx, mat)
 			elif mi.material_override:
@@ -294,6 +313,27 @@ func _process(delta: float) -> void:
 
 	if peer_id != multiplayer.get_unique_id():
 		return
+
+	# Footstep audio (local player only)
+	if movement_state in [MoveState.RUN, MoveState.SPRINT, MoveState.WALK, MoveState.CROUCH_WALK]:
+		var step_interval := 0.45 if movement_state == MoveState.SPRINT else 0.55
+		if movement_state == MoveState.CROUCH_WALK:
+			step_interval = 0.7
+		_footstep_timer -= delta
+		if _footstep_timer <= 0.0:
+			AudioManager.play_sfx_varied("footstep_grass")
+			_footstep_timer = step_interval
+	else:
+		_footstep_timer = 0.0
+
+	# Tool use SFX (fire once when action starts)
+	if anim_action != &"" and anim_action != _prev_anim_action:
+		match String(anim_action):
+			"hoe": AudioManager.play_sfx("tool_hoe")
+			"axe": AudioManager.play_sfx("tool_axe")
+			"water": AudioManager.play_sfx("tool_water")
+			"harvest": AudioManager.play_sfx("tool_harvest")
+	_prev_anim_action = anim_action
 
 	# Gather input (LOCAL player only)
 	input_direction = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
@@ -655,3 +695,18 @@ func clear_persistent_anim() -> void:
 func reactivate_camera() -> void:
 	if camera:
 		camera.current = true
+
+
+## Rebuild character model from updated appearance data (called after appearance change RPC).
+func update_appearance(new_appearance: Dictionary) -> void:
+	appearance_data = new_appearance
+	if multiplayer.is_server():
+		return
+	# Deactivate AnimationTree while rebuilding
+	if anim_tree:
+		anim_tree.active = false
+		_anim_tree_ready = false
+	# Reassemble
+	_assemble_character()
+	_build_animation_tree()
+	_apply_visuals()

@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_10_arrival"
+display_name = "Welcome to Cast Iron Cove"
+description = "The mayor herself has come to greet you at the docks. Go say hello!"
+category = "main_story"
+quest_giver_npc_id = "npc_mayor"
+prereq_quest_ids = []
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "talk_to",
+"target_id": "npc_mayor",
+"target_count": 1,
+"description": "Introduce yourself to Mayor Rosemary"
+}]
+reward_money = 100
+reward_items = {}
+reward_friendship = {"npc_mayor": 5}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = "ms_11_restaurant"
+chapter = 1
+sort_order = 1
+offer_dialogue = "You must be the new arrival! Mayor Rosemary Hartwell, at your service. Welcome to Cast Iron Cove! We've been expecting you — this little town has a way of calling folks who belong here."
+in_progress_dialogue = "Over here, dear! Don't be shy — I promise I don't bite. Well, unless someone brings me fresh-baked cookies."
+completion_dialogue = "There we are! It's so lovely to meet you in person. I just know you're going to fit right in. Now, let me show you around — there's a certain restaurant you simply must see."

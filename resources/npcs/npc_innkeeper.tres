@@ -1,0 +1,167 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_innkeeper"
+display_name = "Innkeeper Mabel Tidecrest"
+visual_color = Color(0.85, 0.55, 0.4, 1)
+birthday = {
+"month": 11,
+"day": 2
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": -10, "y": 0, "z": -5 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": -8, "y": 0, "z": -3 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["sugar", "honey", "butter", "milk"],
+"liked": ["flour", "egg", "berry"],
+"disliked": ["stone", "vinegar", "soy_sauce"],
+"hated": ["chili_powder"]
+}
+dialogues = {
+"neutral": [{
+"text": "Welcome to the Tide's End Inn! Best beds on the coast, and the gossip's free. Did you hear about the lights people saw near the old lighthouse?",
+"choices": [{
+"label": "Tell me everything! I love a good mystery.",
+"points": 3,
+"response": "Oh, you're my kind of person! Pull up a chair. So, three nights ago..."
+}, {
+"label": "I just need a room, thanks.",
+"points": 0,
+"response": "All business, eh? Second floor, last door on the right. Towels are in the cabinet."
+}, {
+"label": "I don't really care about gossip.",
+"points": -2,
+"response": "Hmph! Well, you're missing out. Information is the real currency around here."
+}]
+}, {
+"text": "I've been trying to perfect my hot cocoa recipe. The secret is a pinch of salt in the chocolate. Don't tell anyone!",
+"choices": [{
+"label": "Your secret is safe with me! Can I try some?",
+"points": 3,
+"response": "Of course, dear! Here, blow on it first. I make it scalding hot."
+}, {
+"label": "That's... an interesting technique.",
+"points": 0,
+"response": "Don't knock it till you try it! Salt brings out the sweetness."
+}, {
+"label": "That sounds disgusting.",
+"points": -2,
+"response": "Well! I never! That recipe has been in my family for four generations!"
+}]
+}, {
+"text": "Business has been picking up since you newcomers arrived. More stories to collect! I keep a journal of every interesting thing that happens in town.",
+"choices": [{
+"label": "That's actually really cool. You're like the town historian!",
+"points": 3,
+"response": "Historian! Ha! I like that better than 'nosy innkeeper.' I'm writing that down."
+}, {
+"label": "How many journals do you have?",
+"points": 0,
+"response": "Forty-seven and counting! The shelf in the back room is about to collapse."
+}, {
+"label": "Sounds like you have too much free time.",
+"points": -2,
+"response": "Free time? I run an inn, cook three meals a day, AND keep this town's memory alive. Hmph!"
+}]
+}],
+"like": [{
+"text": "I saved you the corner booth! Best view of the harbor, and nobody will bother you. Well, except me.",
+"choices": [{
+"label": "That's so thoughtful, Mabel. You're the best.",
+"points": 3,
+"response": "Oh, go on! I just like having good company. Now, have you eaten? You look thin."
+}, {
+"label": "Thanks, I could use a quiet spot.",
+"points": 0,
+"response": "Quiet? In my inn? Ha! But I'll try to keep the volume down. For you."
+}]
+}, {
+"text": "I heard the most wonderful thing about you the other day. Someone said you were the kindest person in town. I agreed, of course.",
+"choices": [{
+"label": "Aw, Mabel! That made my whole day.",
+"points": 3,
+"response": "Good! Because I meant it. Now sit down and let me tell you what ELSE I heard..."
+}, {
+"label": "Who said that?",
+"points": 0,
+"response": "A good gossip never reveals her sources! But trust me, it was someone important."
+}]
+}],
+"love": [{
+"text": "You know what? I'm putting your name on the permanent guest list. Free room whenever you want. You're family now.",
+"choices": [{
+"label": "Mabel, that's incredibly generous. You're family to me too.",
+"points": 3,
+"response": "Oh, stop it, you'll make me cry into the soup! ...Come here, give old Mabel a hug."
+}, {
+"label": "I don't know what to say!",
+"points": 2,
+"response": "Don't say anything. Just keep visiting. This inn gets lonely without friends."
+}]
+}],
+"dislike": [{
+"text": "Oh, it's you. I suppose you want something. The regular rooms are that way.",
+"choices": [{
+"label": "Mabel, I'm sorry if I hurt your feelings.",
+"points": 3,
+"response": "...Well. At least you have the decency to apologize. We'll see about the rest."
+}, {
+"label": "Just passing through.",
+"points": 0,
+"response": "Mm-hmm. Door's that way when you're done passing."
+}]
+}],
+"hate": [{
+"text": "The Tide's End Inn reserves the right to refuse service. And right now, I'm exercising that right.",
+"choices": [{
+"label": "Please, Mabel. I want to make things right between us.",
+"points": 5,
+"response": "...You've got a lot of making up to do. But... I've never turned away someone who was genuinely sorry."
+}, {
+"label": "Your loss.",
+"points": -1,
+"response": "My loss? Honey, I've got forty-seven journals of proof that I'm just fine without you."
+}]
+}],
+"birthday": [{
+"text": "It's my birthday! I closed the inn for the afternoon. Even innkeepers deserve a day off! I'm making my mother's famous honey cake.",
+"choices": [{
+"label": "Happy birthday, Mabel! Can I help with the cake?",
+"points": 3,
+"response": "Oh, bless you! Grab an apron. And don't you dare lick the spoon... until I do first!"
+}, {
+"label": "I brought you a little something!",
+"points": 2,
+"response": "A gift?! You shouldn't have! ...But I'm SO glad you did. Let me see!"
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "milk",
+"quantity": 5,
+"message": "Fresh from the dairy! I always keep extra for special guests. That's you, dear."
+}, {
+"threshold": 50,
+"item_id": "butter",
+"quantity": 5,
+"message": "My best churned butter. I only share this with people I truly like."
+}, {
+"threshold": 80,
+"item_id": "honey",
+"quantity": 8,
+"message": "This wildflower honey is from the cliffs behind the inn. My most treasured ingredient. It's yours now."
+}]
+creature_trades = []
+occupation = "Innkeeper"

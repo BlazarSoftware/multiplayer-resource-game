@@ -3,11 +3,11 @@ extends Area3D
 @export var trainer_id: String = ""
 @export var is_gatekeeper: bool = false
 
-var mesh_instance: MeshInstance3D = null
 var label_3d: Label3D = null
 var gate_mesh: MeshInstance3D = null
 var gate_label: Label3D = null
 var nearby_peers: Dictionary = {} # peer_id -> true
+var _anim_state: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("trainer_npc")
@@ -29,26 +29,35 @@ func _create_visual() -> void:
 	col.shape = shape
 	add_child(col)
 
-	# NPC mesh
-	mesh_instance = MeshInstance3D.new()
-	var capsule = CapsuleMesh.new()
-	capsule.radius = 0.3
-	capsule.height = 1.5
-	mesh_instance.mesh = capsule
-	var mat = StandardMaterial3D.new()
-	if trainer:
-		match trainer.ai_difficulty:
-			"easy":
-				mat.albedo_color = Color(0.3, 0.7, 0.3) # Green
-			"medium":
-				mat.albedo_color = Color(0.7, 0.7, 0.2) # Yellow
-			"hard":
-				mat.albedo_color = Color(0.8, 0.2, 0.2) # Red
-			_:
-				mat.albedo_color = Color(0.5, 0.5, 0.5)
-	mesh_instance.set_surface_override_material(0, mat)
-	mesh_instance.position.y = 0.75
-	add_child(mesh_instance)
+	# Animated mannequin model (client only — server skips visuals)
+	if not multiplayer.is_server():
+		var difficulty: String = trainer.ai_difficulty if trainer else "easy"
+		var trainer_color := Color(0.5, 0.5, 0.5)
+		if trainer:
+			match difficulty:
+				"easy":
+					trainer_color = Color(0.3, 0.7, 0.3)
+				"medium":
+					trainer_color = Color(0.7, 0.7, 0.2)
+				"hard":
+					trainer_color = Color(0.8, 0.2, 0.2)
+		# Darken poacher trainers for menacing look
+		if has_meta("is_excursion_poacher"):
+			trainer_color = trainer_color.darkened(0.3)
+
+		var anim_config: Dictionary = NpcAnimator.TRAINER_ANIMS.get(difficulty, NpcAnimator.DEFAULT_ANIMS)
+		var config := {
+			"idle": anim_config.get("idle", "Idle"),
+			"actions": anim_config.get("actions", ["Yes"]),
+			"color": trainer_color,
+		}
+		var trainer_appearance := {}
+		if trainer and trainer.appearance:
+			trainer_appearance = trainer.appearance.to_dict()
+		if not trainer_appearance.is_empty():
+			_anim_state = NpcAnimator.create_character_from_appearance(self, config, trainer_appearance)
+		else:
+			_anim_state = NpcAnimator.create_character(self, config)
 
 	# Label
 	label_3d = Label3D.new()
@@ -77,6 +86,11 @@ func _create_gate() -> void:
 	UITheme.style_label3d(gate_label, "", "danger")
 	gate_label.position = Vector3(0, 3.2, -2.5)
 	add_child(gate_label)
+
+func _process(delta: float) -> void:
+	if multiplayer.is_server():
+		return
+	NpcAnimator.update(_anim_state, delta, self)
 
 func _on_body_entered(body: Node3D) -> void:
 	if not multiplayer.is_server():
@@ -185,6 +199,7 @@ func update_gate_for_peer(peer_id: int) -> void:
 
 @rpc("authority", "reliable")
 func _show_trainer_prompt(trainer_name: String) -> void:
+	NpcAnimator.play_reaction(_anim_state, "Sword_Idle")
 	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
 	if hud and hud.has_method("show_trainer_prompt"):
 		hud.show_trainer_prompt(trainer_name)

@@ -94,7 +94,7 @@ func _handle_key_event(params: Dictionary) -> Dictionary:
 	event.pressed = params.get("pressed", true)
 	event.echo = false
 
-	Input.parse_input_event(event)
+	_push_event(event)
 	return {"status": "ok", "event_type": "key", "keycode": event.keycode, "pressed": event.pressed}
 
 
@@ -114,7 +114,7 @@ func _handle_mouse_button(params: Dictionary) -> Dictionary:
 		event.position = Vector2(pos.get("x", 0.0), pos.get("y", 0.0))
 		event.global_position = event.position
 
-	Input.parse_input_event(event)
+	_push_event(event)
 	return {"status": "ok", "event_type": "mouse_button", "button": button_name, "pressed": event.pressed}
 
 
@@ -130,5 +130,16 @@ func _handle_mouse_motion(params: Dictionary) -> Dictionary:
 	if rel is Dictionary:
 		event.relative = Vector2(rel.get("x", 0.0), rel.get("y", 0.0))
 
-	Input.parse_input_event(event)
+	_push_event(event)
 	return {"status": "ok", "event_type": "mouse_motion"}
+
+
+## Route input through the viewport so GUI controls (Button, LineEdit, etc.)
+## receive the events.  Input.parse_input_event() only updates the Input
+## singleton's action state and doesn't propagate to _gui_input / _input.
+func _push_event(event: InputEvent) -> void:
+	var vp := get_viewport()
+	if vp:
+		vp.push_input(event)
+	else:
+		Input.parse_input_event(event)

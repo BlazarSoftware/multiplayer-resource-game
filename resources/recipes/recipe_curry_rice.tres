@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "curry_rice"
+display_name = "Cook Curry Rice"
+result_food_id = "curry_rice"
+ingredients = {"rice": 2, "potato": 1, "carrot": 1, "cumin": 1}
+description = "Japanese-style curry rice."
+station = "kitchen"

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "lobster_lord"
+display_name = "Lobster Lord"
+types = PackedStringArray("liquid", "mineral")
+base_hp = 80
+base_attack = 22
+base_defense = 20
+base_sp_attack = 12
+base_sp_defense = 14
+base_speed = 10
+moves = PackedStringArray("brine_wave", "brine_crash", "salt_lock", "sharpen_knife")
+mesh_type = "box"
+mesh_color = Color(0.85, 0.2, 0.15, 1)
+mesh_scale = Vector3(1.0, 0.8, 1.1)
+rarity = "rare"
+drop_ingredient_ids = PackedStringArray("crab", "salt")
+drop_min = 2
+drop_max = 3
+evolves_from = "crab_knight"
+learnset = {3: "brine_splash", 6: "salt_lock", 9: "brine_crash", 12: "brine_wave", 15: "sharpen_knife"}
+ability_ids = PackedStringArray("brine_body", "pressure_cook")
+ev_yield = {"attack": 2}
+base_xp_yield = 95

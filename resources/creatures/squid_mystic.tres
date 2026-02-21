@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "squid_mystic"
+display_name = "Squid Mystic"
+types = PackedStringArray("liquid")
+base_hp = 45
+base_attack = 6
+base_defense = 8
+base_sp_attack = 18
+base_sp_defense = 12
+base_speed = 14
+moves = PackedStringArray("brine_splash", "umami_fog", "acid_splash", "taste_test")
+mesh_type = "capsule"
+mesh_color = Color(0.6, 0.4, 0.7, 1)
+mesh_scale = Vector3(0.6, 0.9, 0.6)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("squid")
+drop_min = 1
+drop_max = 2
+learnset = {3: "brine_splash", 6: "umami_fog", 9: "acid_splash", 12: "taste_test", 15: "acid_rain"}
+ability_ids = PackedStringArray("brine_body", "quick_cook")
+ev_yield = {"sp_attack": 1}
+base_xp_yield = 50

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "squash"
+display_name = "Squash"
+description = "A sturdy gourd with sweet, creamy flesh ideal for roasting and soups."
+category = "vegetable"
+icon_color = Color(0.85, 0.6, 0.2, 1)
+sell_price = 6
+season = "autumn"
+grow_time = 90.0
+harvest_min = 1
+harvest_max = 2

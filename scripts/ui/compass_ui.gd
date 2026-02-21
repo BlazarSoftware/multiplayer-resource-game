@@ -133,8 +133,13 @@ func _draw_compass(camera_yaw: float) -> void:
 	for loc in _locations_cache:
 		if loc.location_id in PlayerData.discovered_locations:
 			continue
-		var dx = loc.world_position.x - player_pos.x
-		var dz = loc.world_position.z - player_pos.z
+		var world_pos: Vector3 = loc.world_position
+		if loc.category == "social_npc":
+			var live_pos := _get_live_npc_position(loc.location_id)
+			if live_pos != Vector3.ZERO:
+				world_pos = live_pos
+		var dx = world_pos.x - player_pos.x
+		var dz = world_pos.z - player_pos.z
 		var loc_yaw = atan2(dx, dz)
 		var rel = _normalize_angle(loc_yaw - camera_yaw)
 		var px = center_x + rel * pixels_per_radian
@@ -146,13 +151,21 @@ func _draw_compass(camera_yaw: float) -> void:
 		marker.size = Vector2(6, 4)
 		strip.add_child(marker)
 
+	# Draw quest objective marker on compass
+	_draw_quest_compass_marker(player_pos, camera_yaw, center_x)
+
 	# Draw target marker
 	if PlayerData.compass_target_id != "":
 		DataRegistry.ensure_loaded()
 		var loc = DataRegistry.get_location(PlayerData.compass_target_id)
 		if loc:
-			var dx = loc.world_position.x - player_pos.x
-			var dz = loc.world_position.z - player_pos.z
+			var target_pos: Vector3 = loc.world_position
+			if loc.category == "social_npc":
+				var live_pos := _get_live_npc_position(loc.location_id)
+				if live_pos != Vector3.ZERO:
+					target_pos = live_pos
+			var dx = target_pos.x - player_pos.x
+			var dz = target_pos.z - player_pos.z
 			var target_yaw = atan2(dx, dz)
 			var rel_angle = _normalize_angle(target_yaw - camera_yaw)
 			# Clamp to strip edges
@@ -206,3 +219,70 @@ func _on_location_changed(zone: String, _owner_name: String) -> void:
 
 func _on_target_changed(_target_id: String) -> void:
 	pass # Compass updates in _process anyway
+
+func _get_live_npc_position(location_id: String) -> Vector3:
+	var npcs = get_tree().get_nodes_in_group("social_npc")
+	for npc in npcs:
+		if "npc_id" in npc and npc.npc_id == location_id:
+			return npc.global_position
+	return Vector3.ZERO
+
+func _draw_quest_compass_marker(player_pos: Vector3, camera_yaw: float, center_x: float) -> void:
+	var pause_menu = get_node_or_null("/root/Main/GameWorld/UI/PauseMenu")
+	if pause_menu == null or not pause_menu.has_method("get_tracked_quest_info"):
+		return
+	var info: Dictionary = pause_menu.get_tracked_quest_info()
+	if info.is_empty():
+		return
+	var objectives: Array = info.get("objectives", [])
+	var state: Dictionary = info.get("state", {})
+	var obj_states: Array = state.get("objectives", [])
+	for i in objectives.size():
+		if i < obj_states.size() and int(obj_states[i].get("progress", 0)) >= int(objectives[i].get("target_count", 1)):
+			continue
+		var world_pos := _resolve_objective_position(objectives[i])
+		if world_pos == Vector3.ZERO:
+			continue
+		var dx = world_pos.x - player_pos.x
+		var dz = world_pos.z - player_pos.z
+		var obj_yaw = atan2(dx, dz)
+		var rel = _normalize_angle(obj_yaw - camera_yaw)
+		var px = clampf(center_x + rel * pixels_per_radian, 4, strip_width - 4)
+		var pulse: float = 0.7 + 0.3 * sin(Time.get_ticks_msec() * 0.003)
+		var marker = ColorRect.new()
+		marker.color = Color(UITokens.STAMP_GOLD.r, UITokens.STAMP_GOLD.g, UITokens.STAMP_GOLD.b, pulse)
+		marker.position = Vector2(px - 5, 2)
+		marker.size = Vector2(10, 5)
+		strip.add_child(marker)
+		break # Only show marker for first incomplete objective
+
+func _resolve_objective_position(objective: Dictionary) -> Vector3:
+	var obj_type: String = objective.get("type", "")
+	var target_id: String = objective.get("target_id", "")
+	if target_id == "":
+		return Vector3.ZERO
+	match obj_type:
+		"discover_location":
+			DataRegistry.ensure_loaded()
+			var loc = DataRegistry.get_location(target_id)
+			if loc:
+				return loc.world_position
+		"talk_to", "deliver":
+			var deliver_npc: String = objective.get("deliver_to_npc", "")
+			var npc_id: String = deliver_npc if obj_type == "deliver" and deliver_npc != "" else target_id
+			var live_pos := _get_live_npc_position(npc_id)
+			if live_pos != Vector3.ZERO:
+				return live_pos
+			DataRegistry.ensure_loaded()
+			var loc = DataRegistry.get_location(npc_id)
+			if loc:
+				return loc.world_position
+		"defeat_trainer":
+			DataRegistry.ensure_loaded()
+			var loc = DataRegistry.get_location("trainer_" + target_id)
+			if loc:
+				return loc.world_position
+			loc = DataRegistry.get_location(target_id)
+			if loc:
+				return loc.world_position
+	return Vector3.ZERO

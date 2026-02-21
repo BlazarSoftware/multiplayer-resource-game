@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "ceviche"
+display_name = "Cook Ceviche"
+result_food_id = "ceviche"
+ingredients = {"fish": 2, "lemon": 2, "onion": 1}
+description = "Zesty citrus ceviche."
+station = "kitchen"

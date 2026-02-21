@@ -39,7 +39,7 @@ func start_encounter(peer_id: int, table_id: String) -> void:
 	}
 	print("Encounter for peer ", peer_id, ": ", species.display_name, " Lv.", level)
 	if battle_mgr:
-		battle_mgr.server_start_battle(peer_id, enemy_data)
+		battle_mgr.server_start_battle(peer_id, enemy_data, table_id)
 	encounter_started.emit(peer_id, enemy_data)
 
 func get_encounter_rate_multiplier(peer_id: int) -> float:

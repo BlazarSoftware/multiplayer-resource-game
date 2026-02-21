@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="LocationDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/location_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+location_id = "lighthouse"
+display_name = "The Lighthouse"
+world_position = Vector3(-20, 0, -10)
+discovery_radius = 8.0
+icon_type = "zone"
+category = "zone"
+icon_color = Color(1, 0.95, 0.6, 1)

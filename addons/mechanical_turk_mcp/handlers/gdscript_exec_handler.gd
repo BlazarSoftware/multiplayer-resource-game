@@ -4,20 +4,26 @@ extends Node
 
 signal exec_ready(result: Dictionary)
 
+var _pending := false  # Guard against double-emit
+
 
 func handle_execute(params) -> Dictionary:
-	_execute_deferred(params)
+	# Must use call_deferred so the execution happens AFTER the bridge
+	# server's await on exec_ready is registered.  Without this, the signal
+	# fires synchronously before the await, causing an infinite hang.
+	_pending = true
+	call_deferred("_execute_deferred", params)
 	return {"_deferred": exec_ready}
 
 
 func _execute_deferred(params) -> void:
 	if not params is Dictionary:
-		exec_ready.emit({"error": "Invalid params"})
+		_emit_result({"error": "Invalid params"})
 		return
 
 	var code: String = params.get("code", "")
 	if code.is_empty():
-		exec_ready.emit({"error": "No code provided"})
+		_emit_result({"error": "No code provided"})
 		return
 
 	var timeout_ms: int = clampi(int(params.get("timeout", 5000)), 100, 30000)
@@ -30,7 +36,7 @@ func _execute_deferred(params) -> void:
 	script.source_code = script_source
 	var err := script.reload()
 	if err != OK:
-		exec_ready.emit({"error": "Failed to compile GDScript: %s (error %d)" % [error_string(err), err], "source": script_source})
+		_emit_result({"error": "Failed to compile GDScript: %s (error %d)" % [error_string(err), err], "source": script_source})
 		return
 
 	# Create a temporary node to execute the script
@@ -38,11 +44,12 @@ func _execute_deferred(params) -> void:
 	exec_node.set_script(script)
 	get_tree().root.add_child(exec_node)
 
-	# Set up a timeout timer
-	var timed_out := false
-	var timer := get_tree().create_timer(timeout_ms / 1000.0)
-	timer.timeout.connect(func() -> void:
-		timed_out = true
+	# Safety timeout — if _mcp_execute() crashes (runtime error), this ensures
+	# exec_ready still fires so the bridge doesn't hang forever.
+	var safety_timer := get_tree().create_timer(timeout_ms / 1000.0)
+	safety_timer.timeout.connect(func() -> void:
+		if _pending:
+			_emit_result({"error": "Execution timed out or crashed (no result after %dms)" % timeout_ms, "timed_out": true})
 	)
 
 	# Execute the function
@@ -51,7 +58,6 @@ func _execute_deferred(params) -> void:
 
 	if exec_node.has_method("_mcp_execute"):
 		result = exec_node._mcp_execute()
-		# If result is a signal or coroutine, we need to handle it
 	else:
 		exec_error = "Compiled script missing _mcp_execute method"
 
@@ -59,17 +65,26 @@ func _execute_deferred(params) -> void:
 	exec_node.queue_free()
 
 	if not exec_error.is_empty():
-		exec_ready.emit({"error": exec_error})
+		_emit_result({"error": exec_error})
 		return
 
 	# Convert result to JSON-safe format
 	var safe_result = _make_json_safe(result)
 
-	exec_ready.emit({
+	_emit_result({
 		"status": "ok",
 		"return_value": safe_result,
-		"timed_out": timed_out,
+		"timed_out": false,
 	})
+
+
+## Emit result exactly once per request (guards against double-emit from
+## both the normal path and the safety timeout).
+func _emit_result(result: Dictionary) -> void:
+	if not _pending:
+		return
+	_pending = false
+	exec_ready.emit(result)
 
 
 func _build_script(user_code: String) -> String:

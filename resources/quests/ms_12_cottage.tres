@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_12_cottage"
+display_name = "Home Sweet Home"
+description = "You've been given a cottage on the edge of town. Go find it and make yourself at home!"
+category = "main_story"
+quest_giver_npc_id = ""
+prereq_quest_ids = ["ms_11_restaurant"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "discover_location",
+"target_id": "cordelias_cottage",
+"target_count": 1,
+"description": "Find your cottage"
+}]
+reward_money = 100
+reward_items = {}
+reward_friendship = {}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = "has_home"
+next_quest_id = "ms_13_wild_munchie"
+chapter = 1
+sort_order = 3
+offer_dialogue = "The old Cordelia cottage has been sitting empty for ages, just waiting for someone with a spark of ambition. It's yours now — go take a look!"
+in_progress_dialogue = "Your cottage is just past the wildflower meadow, near the edge of the forest. You can't miss the little blue door!"
+completion_dialogue = "There it is — your very own place in Cast Iron Cove! It might need a little love, but every great story starts somewhere small. Rest up — tomorrow the real adventure begins."

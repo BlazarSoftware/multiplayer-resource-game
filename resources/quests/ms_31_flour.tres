@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_31_flour"
+display_name = "Hubert's Flour Emergency"
+description = "Hubert Crumb is in a panic — he's completely out of flour and has a big order due today. Help him out!"
+category = "main_story"
+quest_giver_npc_id = "npc_hubert"
+prereq_quest_ids = ["ms_30_morning"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "deliver",
+"target_id": "flour",
+"target_count": 5,
+"description": "Deliver 5 Flour to Hubert",
+"deliver_to_npc": "npc_hubert",
+"consumes_items": true
+}]
+reward_money = 300
+reward_items = {}
+reward_friendship = {"npc_hubert": 15}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = "ms_32_lost_lure"
+chapter = 3
+sort_order = 2
+offer_dialogue = "Oh, thank goodness you're here! I've got three dozen rolls to bake by noon and not a speck of flour left in the pantry. Can you bring me some? I'll make it worth your while — and maybe save you a warm loaf!"
+in_progress_dialogue = "Still looking for flour? Check the general store, or if you've got grain, you might be able to mill some yourself. Please hurry — the oven waits for no one!"
+completion_dialogue = "You are an absolute lifesaver! These rolls are going to be my finest yet. Here — take this, and know that Hubert Crumb owes you a debt of bread."

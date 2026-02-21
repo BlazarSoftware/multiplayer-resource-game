@@ -30,11 +30,13 @@ func _build_ui() -> void:
 	indoor_label.position = Vector2(-150, -20)
 	indoor_label.size = Vector2(300, 40)
 	indoor_label.visible = false
+	indoor_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(indoor_label)
 
 	# Hint at bottom
 	hint_label = Label.new()
 	hint_label.text = "Scroll to zoom  |  Click to set target"
+	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UITheme.style_small(hint_label)
 	hint_label.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

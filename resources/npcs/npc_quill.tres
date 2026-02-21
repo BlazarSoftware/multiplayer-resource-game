@@ -1,0 +1,151 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_quill"
+display_name = "Professor Quill"
+visual_color = Color(0.5, 0.3, 0.6, 1)
+birthday = {
+"month": 4,
+"day": 12
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": 18, "y": 2, "z": 8 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": 5, "y": 1, "z": 10 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["soy_sauce", "mushroom_powder", "herb_salad"],
+"liked": ["grain_bread", "sugar"],
+"disliked": ["hot_sauce", "spice_pepper"],
+"hated": ["sour_vinegar"]
+}
+dialogues = {
+"neutral": [{
+"text": "I've been researching the origin of creatures in this region. Fascinating evolutionary patterns!",
+"choices": [{
+"label": "Tell me more!",
+"points": 4,
+"response": "A curious mind! Food-type creatures adapted to local cuisine traditions..."
+}, {
+"label": "Any practical use?",
+"points": 1,
+"response": "Understanding type advantages in battle could save your life, so... yes."
+}, {
+"label": "Books are boring.",
+"points": -5,
+"response": "I... have no words. Which is ironic, given my profession."
+}]
+}, {
+"text": "Someone returned a book with jam stains on every page. Every. Single. Page.",
+"choices": [{
+"label": "That's terrible! Books deserve better.",
+"points": 3,
+"response": "THANK you! Finally someone who understands."
+}, {
+"label": "Reading during breakfast?",
+"points": 1,
+"response": "A likely explanation, but not an excuse!"
+}, {
+"label": "Was it good jam at least?",
+"points": -2,
+"response": "That is entirely beside the point."
+}]
+}, {
+"text": "I've cataloged every creature species in the region. All twenty-one of them!",
+"choices": [{
+"label": "That's impressive research!",
+"points": 3,
+"response": "Years of fieldwork and library time. Worth every moment."
+}, {
+"label": "Can I see your notes?",
+"points": 3,
+"response": "A fellow scholar! Come by the library anytime."
+}]
+}],
+"like": [{
+"text": "I've written a guide on creature type matchups. Would you like a copy?",
+"choices": [{
+"label": "Yes please! That'd be invaluable.",
+"points": 3,
+"response": "Knowledge shared is knowledge doubled. Here you are!"
+}, {
+"label": "I already know type matchups.",
+"points": 0,
+"response": "Confidence is admirable, but there's always more to learn."
+}]
+}],
+"love": [{
+"text": "I'm naming my newest discovery after you. The species was hiding in plain sight all along.",
+"choices": [{
+"label": "That's the greatest honor!",
+"points": 3,
+"response": "You've inspired more research than you know, my friend."
+}, {
+"label": "We should publish together!",
+"points": 2,
+"response": "A co-authored paper! Now you're speaking my language."
+}]
+}],
+"dislike": [{
+"text": "Ah. An interruption to my studies. How... delightful.",
+"choices": [{
+"label": "I should have been more respectful.",
+"points": 3,
+"response": "...Admitting error is the first step toward wisdom."
+}, {
+"label": "Just a quick question.",
+"points": 0,
+"response": "*adjusts glasses* Make it quick, then."
+}]
+}],
+"hate": [{
+"text": "If ignorance were a creature type, you'd have perfect IVs.",
+"choices": [{
+"label": "Teach me to do better.",
+"points": 5,
+"response": "...The desire to learn is the foundation of all knowledge. Very well."
+}, {
+"label": "That's uncalled for.",
+"points": -1,
+"response": "Perhaps. But so was your behavior."
+}]
+}],
+"birthday": [{
+"text": "My birthday tradition is rereading my favorite research paper. Creature migration patterns!",
+"choices": [{
+"label": "Happy birthday, Professor!",
+"points": 3,
+"response": "Thank you! The best gift is intellectual curiosity."
+}, {
+"label": "What's the paper about?",
+"points": 2,
+"response": "How food-type creatures follow seasonal ingredient availability. Brilliant stuff!"
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "herb_salad",
+"quantity": 2,
+"message": "Brain food! Studies show herbs improve memory retention."
+}, {
+"threshold": 50,
+"item_id": "soy_sauce",
+"quantity": 3,
+"message": "Rare umami essence from my private collection. For science!"
+}, {
+"threshold": 80,
+"item_id": "mushroom_powder",
+"quantity": 5,
+"message": "The rarest fungi in my collection. Your friendship is my greatest discovery."
+}]
+occupation = "Scholar"

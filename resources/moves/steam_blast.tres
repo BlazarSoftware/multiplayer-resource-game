@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "steam_blast"
+display_name = "Steam Blast"
+type = "spicy"
+category = "special"
+power = 80
+accuracy = 90
+pp = 10
+description = "Blasts with superheated steam."

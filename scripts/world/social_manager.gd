@@ -297,8 +297,6 @@ func _on_day_changed() -> void:
 		return
 	for peer_id in NetworkManager.player_data_store:
 		_process_daily_for_peer(peer_id)
-	# Update NPC schedule positions
-	_update_all_npc_schedules()
 
 func _process_daily_for_peer(peer_id: int) -> void:
 	var data = NetworkManager.player_data_store[peer_id]
@@ -326,25 +324,9 @@ func _process_daily_for_peer(peer_id: int) -> void:
 		NetworkManager._sync_npc_friendships.rpc_id(peer_id, friendships)
 
 # === NPC Schedule Movement ===
-
-func _update_all_npc_schedules() -> void:
-	var season_mgr = get_node_or_null("/root/Main/GameWorld/SeasonManager")
-	if season_mgr == null:
-		return
-
-	var time_fraction: float = season_mgr.day_timer / season_mgr.DAY_DURATION if season_mgr.DAY_DURATION > 0 else 0.0
-	var season_str: String = season_mgr.get_current_season()
-
-	DataRegistry.ensure_loaded()
-	for npc_node in get_tree().get_nodes_in_group("social_npc"):
-		if npc_node is Area3D and npc_node.has_meta("npc_id") or "npc_id" in npc_node:
-			var npc_id: String = npc_node.npc_id if "npc_id" in npc_node else ""
-			var npc_def = DataRegistry.get_npc(npc_id)
-			if npc_def == null:
-				continue
-			var new_pos = _resolve_schedule_position(npc_def, time_fraction, season_str)
-			if new_pos != Vector3.ZERO:
-				npc_node.global_position = new_pos
+# Schedule resolution is now handled by each social_npc.gd node independently
+# (runs on both server and client, derived from synced SeasonManager clock).
+# This static function is kept for backward compatibility.
 
 static func _resolve_schedule_position(npc_def: Resource, time_fraction: float, season: String) -> Vector3:
 	for entry in npc_def.schedule:
@@ -580,6 +562,7 @@ func _is_npc_birthday(npc_def: Resource, season_mgr: Node) -> bool:
 @rpc("authority", "reliable")
 func _send_dialogue(_npc_id: String, _text: String, _choices: Array, _friendship_points: int, _tier: String) -> void:
 	# Client-side: forward to DialogueUI
+	AudioManager.play_ui_sfx("dialogue_blip")
 	var dialogue_ui = get_node_or_null("/root/Main/GameWorld/UI/DialogueUI")
 	if dialogue_ui and dialogue_ui.has_method("show_dialogue"):
 		dialogue_ui.show_dialogue(_npc_id, _text, _choices, _friendship_points, _tier)
@@ -592,6 +575,7 @@ func _dialogue_choice_result(_response: String, _new_points: int, _new_tier: Str
 
 @rpc("authority", "reliable")
 func _gift_response(_npc_id: String, _message: String, _points_change: int) -> void:
+	AudioManager.play_sfx("gift")
 	var dialogue_ui = get_node_or_null("/root/Main/GameWorld/UI/DialogueUI")
 	if dialogue_ui and dialogue_ui.has_method("show_gift_response"):
 		dialogue_ui.show_gift_response(_npc_id, _message, _points_change)

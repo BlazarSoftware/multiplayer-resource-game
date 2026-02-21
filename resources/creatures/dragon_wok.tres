@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "dragon_wok"
+display_name = "Dragon Wok"
+types = PackedStringArray("spicy", "mineral")
+base_hp = 90
+base_attack = 22
+base_defense = 18
+base_sp_attack = 24
+base_sp_defense = 16
+base_speed = 14
+moves = PackedStringArray("inferno_fang", "kitchen_fire", "salt_lock", "flash_sear")
+mesh_type = "box"
+mesh_color = Color(0.8, 0.2, 0.1, 1)
+mesh_scale = Vector3(1.1, 1.2, 1.1)
+rarity = "legendary"
+drop_ingredient_ids = PackedStringArray("dragon_pepper")
+drop_min = 2
+drop_max = 4
+learnset = {3: "flash_sear", 6: "salt_lock", 9: "kitchen_fire", 12: "inferno_fang", 15: "flame_sear"}
+ability_ids = PackedStringArray("flame_body", "pressure_cook")
+ev_yield = {"sp_attack": 3}
+base_xp_yield = 150

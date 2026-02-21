@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="EncounterTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/encounter_table.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+table_id = "excursion_fungal_rare"
+display_name = "Fungal Hollow - Rare Grove"
+entries = [{"species_id": "ferment_lord", "weight": 15, "min_level": 18, "max_level": 25}, {"species_id": "mushroom_monarch", "weight": 14, "min_level": 20, "max_level": 28}, {"species_id": "truffle_burrower", "weight": 14, "min_level": 18, "max_level": 25}, {"species_id": "coffee_golem", "weight": 12, "min_level": 20, "max_level": 28}, {"species_id": "hemlock_shade", "weight": 12, "min_level": 22, "max_level": 30}, {"species_id": "wasabi_viper", "weight": 10, "min_level": 22, "max_level": 30}, {"species_id": "truffle_king", "weight": 4, "min_level": 28, "max_level": 35}, {"species_id": "cocoa_imp", "weight": 10, "min_level": 18, "max_level": 25}, {"species_id": "ginger_snap", "weight": 9, "min_level": 20, "max_level": 28}]
+season_bonus = {"spring": "mushroom_monarch", "summer": "coffee_golem", "autumn": "truffle_burrower", "winter": "hemlock_shade"}

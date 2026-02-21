@@ -216,6 +216,12 @@ func _despawn_world_item_client(uid: int) -> void:
 		return
 	var node = _items_container.get_node_or_null("WorldItem_" + str(uid))
 	if node:
+		# Sparkle VFX at pickup location
+		var vfx_path := "res://assets/vfx/magic_orbs/assets/BinbunVFX/magic_orbs/effects/magic_orb_flash/magic_orb_flash_vfx_01.tscn"
+		var game_world := get_node_or_null("/root/Main/GameWorld")
+		if game_world and ResourceLoader.exists(vfx_path):
+			var BattleVFX := preload("res://scripts/battle/battle_vfx.gd")
+			BattleVFX.spawn_vfx(game_world, node.global_position + Vector3(0, 0.5, 0), vfx_path, 1.5)
 		node.queue_free()
 
 @rpc("authority", "reliable")

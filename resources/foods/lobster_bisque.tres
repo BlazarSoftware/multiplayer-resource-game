@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+food_id = "lobster_bisque"
+display_name = "Lobster Bisque"
+description = "Rich and creamy lobster soup."
+icon_color = Color(0.9, 0.4, 0.2, 1)
+sell_price = 80
+buff_type = "creature_heal"
+buff_value = 80.0
+buff_duration_sec = 0.0

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "salt_spray"
+display_name = "Salt Spray"
+type = "sour"
+category = "special"
+power = 60
+accuracy = 95
+pp = 20
+status_effect = "soured"
+status_chance = 20
+description = "Sprays salt crystals."

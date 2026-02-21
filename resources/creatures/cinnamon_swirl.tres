@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "cinnamon_swirl"
+display_name = "Cinnamon Swirl"
+types = PackedStringArray("spicy", "aromatic")
+base_hp = 45
+base_attack = 10
+base_defense = 8
+base_sp_attack = 16
+base_sp_defense = 10
+base_speed = 14
+moves = PackedStringArray("pepper_blast", "herb_breeze", "flash_sear", "simmer")
+mesh_type = "sphere"
+mesh_color = Color(0.7, 0.4, 0.2, 1)
+mesh_scale = Vector3(0.6, 0.6, 0.6)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("cinnamon")
+drop_min = 1
+drop_max = 2
+learnset = {3: "pepper_blast", 6: "herb_breeze", 9: "flash_sear", 12: "simmer", 15: "kitchen_fire"}
+ability_ids = PackedStringArray("spice_aura", "flame_body")
+ev_yield = {"sp_attack": 1}
+base_xp_yield = 50

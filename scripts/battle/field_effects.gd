@@ -10,6 +10,18 @@ const WEATHER_DATA: Dictionary = {
 	"herbal": {"boost_type": "herbal", "weaken_type": "spicy", "name": "Herb Breeze"},
 	"umami": {"boost_type": "umami", "weaken_type": "grain", "name": "Umami Fog"},
 	"grain": {"boost_type": "grain", "weaken_type": "umami", "name": "Grain Dust"},
+	"mineral": {"boost_type": "mineral", "weaken_type": "earthy", "name": "Crystal Storm"},
+	"earthy": {"boost_type": "earthy", "weaken_type": "liquid", "name": "Mudslide"},
+	"liquid": {"boost_type": "liquid", "weaken_type": "spicy", "name": "Downpour"},
+	"aromatic": {"boost_type": "aromatic", "weaken_type": "toxic", "name": "Fragrant Mist"},
+	"toxic": {"boost_type": "toxic", "weaken_type": "aromatic", "name": "Miasma"},
+	"protein": {"boost_type": "protein", "weaken_type": "grain", "name": "Iron Wind"},
+	"tropical": {"boost_type": "tropical", "weaken_type": "dairy", "name": "Monsoon Heat"},
+	"dairy": {"boost_type": "dairy", "weaken_type": "tropical", "name": "Cream Fog"},
+	"bitter": {"boost_type": "bitter", "weaken_type": "sweet", "name": "Dark Drizzle"},
+	"spoiled": {"boost_type": "spoiled", "weaken_type": "dairy", "name": "Rot Cloud"},
+	"fermented": {"boost_type": "fermented", "weaken_type": "spoiled", "name": "Yeast Storm"},
+	"smoked": {"boost_type": "smoked", "weaken_type": "liquid", "name": "Smoke Screen"},
 }
 
 const WEATHER_DURATION: int = 5

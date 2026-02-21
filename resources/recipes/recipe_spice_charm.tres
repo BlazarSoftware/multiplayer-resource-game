@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_spice_charm"
+display_name = "Craft Spice Charm"
+result_item_id = "spice_charm"
+ingredients = {"cinnamon": 2, "chili_pepper": 2}
+description = "A charm that boosts spicy moves by 20%."
+station = "workbench"

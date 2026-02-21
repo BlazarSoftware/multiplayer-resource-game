@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_33_rare_herb"
+display_name = "Murphy's Rare Herb"
+description = "Old Sage Murphy has been searching for a rare mystic herb that only grows in the deepest parts of the wild. He says it's essential for an old recipe."
+category = "main_story"
+quest_giver_npc_id = "npc_murphy"
+prereq_quest_ids = ["ms_32_lost_lure"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "collect",
+"target_id": "mystic_herb",
+"target_count": 1,
+"description": "Find a Mystic Herb"
+}]
+reward_money = 400
+reward_items = {}
+reward_friendship = {"npc_murphy": 15}
+reward_recipe_scroll_id = "recipe_scroll_herbal_elixir"
+reward_unlock_flag = ""
+next_quest_id = "ms_34_spice"
+chapter = 3
+sort_order = 4
+offer_dialogue = "Ah, young one. I've been working on something... a recipe I learned long ago, from someone very dear to this town. But I need a mystic herb — they only grow deep in the wilds, in places most folk don't dare to wander. Would you brave it for an old man?"
+in_progress_dialogue = "The mystic herb glows faintly in the shade. Look for it in excursion zones, tucked between the roots of ancient trees. Be careful out there."
+completion_dialogue = "Magnificent. I can feel the life humming in these leaves. Here — take this recipe scroll. It's the herbal elixir formula I promised. And... thank you. This herb means more to me than you know."

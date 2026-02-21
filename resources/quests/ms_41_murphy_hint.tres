@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_41_murphy_hint"
+display_name = "Murphy Knows Something"
+description = "Murphy's been acting strange lately. Perhaps a closer friendship will get him to open up..."
+category = "main_story"
+quest_giver_npc_id = "npc_murphy"
+prereq_quest_ids = ["ms_40_journal"]
+prereq_friendship = {"npc_murphy": 30}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "talk_to",
+"target_id": "npc_murphy",
+"target_count": 1,
+"description": "Speak with Murphy about Cordelia"
+}]
+reward_money = 400
+reward_items = {}
+reward_friendship = {"npc_murphy": 20}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = "murphy_hint"
+next_quest_id = "ms_42_lighthouse"
+chapter = 4
+sort_order = 2
+offer_dialogue = "You found her journal, did you? ...I suppose it was only a matter of time. Cordelia was... well, she was the heart of this town, once. Sit down. I'll tell you what I remember — but not everything. Some things you'll need to discover for yourself."
+in_progress_dialogue = "Come find me when you're ready to listen. I don't tell this story to just anyone, you know."
+completion_dialogue = "Cordelia was a brilliant woman — a healer, a dreamer, a wanderer. She vanished one autumn night without a word. Left behind only that journal and... something at the lighthouse. Sal knows more than he lets on. Ask him about the light."

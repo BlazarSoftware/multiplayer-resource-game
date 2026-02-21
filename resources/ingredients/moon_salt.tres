@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "moon_salt"
+display_name = "Moon Salt"
+description = "Ethereal silver crystals harvested from tidal pools under a full moon."
+category = "rare"
+icon_color = Color(0.8, 0.85, 0.95, 1)
+sell_price = 28
+season = ""
+grow_time = 60.0
+harvest_min = 1
+harvest_max = 2

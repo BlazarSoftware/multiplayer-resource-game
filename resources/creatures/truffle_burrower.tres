@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "truffle_burrower"
+display_name = "Truffle Burrower"
+types = PackedStringArray("earthy")
+base_hp = 50
+base_attack = 12
+base_defense = 14
+base_sp_attack = 10
+base_sp_defense = 12
+base_speed = 8
+moves = PackedStringArray("root_grip", "truffle_burst", "seed_barrage", "taste_test")
+mesh_type = "sphere"
+mesh_color = Color(0.45, 0.3, 0.2, 1)
+mesh_scale = Vector3(0.6, 0.5, 0.6)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("truffle_shaving")
+drop_min = 1
+drop_max = 2
+learnset = {3: "root_grip", 6: "seed_barrage", 9: "truffle_burst", 12: "taste_test", 15: "ferment"}
+ability_ids = PackedStringArray("harvest_spirit", "thick_skin")
+ev_yield = {"defense": 1}
+base_xp_yield = 50

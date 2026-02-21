@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "oyster_sage"
+display_name = "Oyster Sage"
+types = PackedStringArray("liquid", "mineral")
+base_hp = 70
+base_attack = 8
+base_defense = 22
+base_sp_attack = 14
+base_sp_defense = 18
+base_speed = 4
+moves = PackedStringArray("brine_wave", "salt_lock", "plate_cover", "slow_cook")
+mesh_type = "box"
+mesh_color = Color(0.75, 0.75, 0.7, 1)
+mesh_scale = Vector3(0.8, 0.5, 0.9)
+rarity = "uncommon"
+drop_ingredient_ids = PackedStringArray("oyster")
+drop_min = 1
+drop_max = 2
+learnset = {3: "brine_splash", 6: "salt_lock", 9: "plate_cover", 12: "slow_cook", 15: "brine_wave"}
+ability_ids = PackedStringArray("brine_body", "thick_skin")
+ev_yield = {"defense": 2}
+base_xp_yield = 70

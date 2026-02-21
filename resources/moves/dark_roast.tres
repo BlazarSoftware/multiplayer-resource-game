@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="MoveDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/move_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+move_id = "dark_roast"
+display_name = "Dark Roast"
+type = "spicy"
+category = "special"
+power = 85
+accuracy = 90
+pp = 10
+description = "Blasts with dark coffee energy."

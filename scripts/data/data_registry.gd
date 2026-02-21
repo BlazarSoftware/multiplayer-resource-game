@@ -183,6 +183,12 @@ static func get_item_display_info(item_id: String) -> Dictionary:
 	# Unknown item
 	return {"display_name": item_id.replace("_", " ").capitalize(), "category": "unknown", "icon_color": Color.GRAY, "icon_texture": null}
 
+static func register_dynamic_trainer(trainer_def: TrainerDef) -> void:
+	trainers[trainer_def.trainer_id] = trainer_def
+
+static func unregister_dynamic_trainer(trainer_id: String) -> void:
+	trainers.erase(trainer_id)
+
 static func is_item_giftable(item_id: String) -> bool:
 	ensure_loaded()
 	var info := get_item_display_info(item_id)

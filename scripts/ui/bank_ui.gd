@@ -164,6 +164,7 @@ func open_bank(balance: int, money: int, interest_earned: int, rate: float, fee_
 	is_open = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	NetworkManager.request_set_busy.rpc_id(1, true)
+	ScreenTransition.open(self, "fade_scale")
 
 func update_data(balance: int, money: int, message: String) -> void:
 	current_balance = balance
@@ -208,6 +209,7 @@ func _on_withdraw_all() -> void:
 	NetworkManager.request_withdraw.rpc_id(1, current_balance)
 
 func _close() -> void:
+	await ScreenTransition.close(self, "fade_scale")
 	visible = false
 	is_open = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED

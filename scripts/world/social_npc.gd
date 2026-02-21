@@ -6,6 +6,8 @@ const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 var nearby_peers: Dictionary = {} # peer_id -> true
 var quest_indicator: Label3D = null
+var _anim_state: Dictionary = {}
+var _schedule_throttle: int = 0
 
 func _ready() -> void:
 	add_to_group("social_npc")
@@ -28,17 +30,21 @@ func _create_visual() -> void:
 	col.shape = shape
 	add_child(col)
 
-	# NPC mesh (capsule with occupation color)
-	var mesh_instance = MeshInstance3D.new()
-	var capsule = CapsuleMesh.new()
-	capsule.radius = 0.3
-	capsule.height = 1.5
-	mesh_instance.mesh = capsule
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = npc_color
-	mesh_instance.set_surface_override_material(0, mat)
-	mesh_instance.position.y = 0.75
-	add_child(mesh_instance)
+	# Animated character model (client only — server skips visuals)
+	if not multiplayer.is_server():
+		var anim_config: Dictionary = NpcAnimator.SOCIAL_NPC_ANIMS.get(npc_id, NpcAnimator.DEFAULT_ANIMS)
+		var config := {
+			"idle": anim_config.get("idle", "Idle"),
+			"actions": anim_config.get("actions", ["Yes"]),
+			"color": npc_color,
+		}
+		var npc_appearance := {}
+		if npc_def and npc_def.appearance:
+			npc_appearance = npc_def.appearance.to_dict()
+		if not npc_appearance.is_empty():
+			_anim_state = NpcAnimator.create_character_from_appearance(self, config, npc_appearance)
+		else:
+			_anim_state = NpcAnimator.create_character(self, config)
 
 	# Name label
 	var label = Label3D.new()
@@ -56,9 +62,19 @@ func _create_visual() -> void:
 	quest_indicator.visible = false
 	add_child(quest_indicator)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	# Schedule resolution — runs on BOTH server and client
+	# Both compute the same position from the synced SeasonManager clock
+	_schedule_throttle += 1
+	if _schedule_throttle >= 30:
+		_schedule_throttle = 0
+		_update_schedule_position()
+
 	if multiplayer.is_server():
 		return
+	# Animate mannequin (client only)
+	NpcAnimator.update_movement(_anim_state, self, delta)
+	NpcAnimator.update(_anim_state, delta, self)
 	if quest_indicator == null:
 		return
 	# Update quest indicator based on local player quest state
@@ -93,6 +109,26 @@ func _process(_delta: float) -> void:
 		quest_indicator.visible = true
 	else:
 		quest_indicator.visible = false
+
+func _update_schedule_position() -> void:
+	var season_mgr = get_node_or_null("/root/Main/GameWorld/SeasonManager")
+	if season_mgr == null:
+		return
+	DataRegistry.ensure_loaded()
+	var npc_def = DataRegistry.get_npc(npc_id)
+	if npc_def == null or npc_def.schedule.is_empty():
+		return
+	var time_fraction: float = season_mgr.day_timer / season_mgr.DAY_DURATION if season_mgr.DAY_DURATION > 0 else 0.0
+	var season_str: String = season_mgr.get_current_season()
+	var target_pos: Vector3 = NpcAnimator.resolve_schedule_position(npc_def, time_fraction, season_str)
+	if target_pos == Vector3.ZERO:
+		return
+	if multiplayer.is_server():
+		# Server teleports for accurate Area3D proximity
+		global_position = target_pos
+	else:
+		# Client stores target for smooth lerp via NpcAnimator.update_movement()
+		set_meta("schedule_target", target_pos)
 
 func _on_body_entered(body: Node3D) -> void:
 	if not multiplayer.is_server():
@@ -160,6 +196,7 @@ func request_give_gift(item_id: String) -> void:
 
 @rpc("authority", "reliable")
 func _show_npc_prompt(_npc_id: String) -> void:
+	NpcAnimator.play_reaction(_anim_state, "Yes")
 	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
 	if hud and hud.has_method("show_interaction_prompt"):
 		DataRegistry.ensure_loaded()

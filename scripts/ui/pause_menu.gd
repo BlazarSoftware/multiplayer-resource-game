@@ -2,7 +2,7 @@ extends CanvasLayer
 
 # Unified pause menu with tabbed sidebar. Consolidates Map, Inventory, Party,
 # Quests, Compendium, Friends, and Settings into one overlay.
-# Hotkeys: M/Esc=Map, I=Inventory, P=Party, J=Quests, K=Compendium, F=Friends, N=NPCs.
+# Hotkeys: M/Esc=Map, I=Inventory, P=Party, J=Quests, K=Journal, F=Friends, N=NPCs.
 
 var is_open: bool = false
 
@@ -37,15 +37,15 @@ const TAB_DEFS: Array = [
 	["Inventory", "open_inventory", "res://scripts/ui/tabs/inventory_tab.gd"],
 	["Party", "open_party", "res://scripts/ui/tabs/party_tab.gd"],
 	["Quests", "quest_log", "res://scripts/ui/tabs/quest_tab.gd"],
-	["Compendium", "compendium", "res://scripts/ui/tabs/compendium_tab.gd"],
-	["Fishing", "", "res://scripts/ui/tabs/fishing_tab.gd"],
+	["Journal", "compendium", "res://scripts/ui/tabs/compendium_tab.gd"],
 	["Friends", "friend_list", "res://scripts/ui/tabs/friend_tab.gd"],
 	["NPCs", "open_npcs", "res://scripts/ui/tabs/npc_tab.gd"],
+	["Character", "", "res://scripts/ui/tabs/character_tab.gd"],
 	["Settings", "", "res://scripts/ui/tabs/settings_tab.gd"],
 ]
 
 const SIDEBAR_WIDTH := 120
-const BLOCKING_UIS := ["BattleUI", "CraftingUI", "StorageUI", "ShopUI", "TradeUI", "DialogueUI", "CalendarUI", "CreatureDestinationUI"]
+const BLOCKING_UIS := ["BattleUI", "CraftingUI", "StorageUI", "ShopUI", "TradeUI", "DialogueUI", "CalendarUI", "CreatureDestinationUI", "CharacterCreatorUI"]
 const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 func _ready() -> void:
@@ -320,12 +320,12 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("friend_list"):
-		_handle_hotkey(6)
+		_handle_hotkey(5)
 		get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("open_npcs"):
-		_handle_hotkey(7)
+		_handle_hotkey(6)
 		get_viewport().set_input_as_handled()
 		return
 
@@ -362,13 +362,19 @@ func _open(tab_index: int = 0) -> void:
 	_switch_tab(tab_index)
 	_set_visible(true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	AudioManager.play_ui_sfx("ui_open")
 	if multiplayer.multiplayer_peer != null:
 		NetworkManager.request_set_busy.rpc_id(1, true)
+	# Animate open
+	_animate_open()
 
 func close() -> void:
 	if not is_open:
 		return
 	is_open = false
+	AudioManager.play_ui_sfx("ui_close")
+	# Animate close
+	await _animate_close()
 	# Deactivate current tab
 	if active_tab_index < tabs.size():
 		tabs[active_tab_index].visible = false
@@ -380,19 +386,33 @@ func close() -> void:
 		NetworkManager.request_set_busy.rpc_id(1, false)
 
 func _switch_tab(tab_index: int) -> void:
+	var old_tab: Control = tabs[active_tab_index] if active_tab_index < tabs.size() else null
 	# Deactivate old tab
-	if active_tab_index < tabs.size():
-		tabs[active_tab_index].visible = false
-		if tabs[active_tab_index].has_method("deactivate"):
-			tabs[active_tab_index].deactivate()
+	if old_tab:
+		if old_tab.has_method("deactivate"):
+			old_tab.deactivate()
 	active_tab_index = tab_index
-	# Activate new tab
-	if active_tab_index < tabs.size():
-		tabs[active_tab_index].visible = true
-		if tabs[active_tab_index].has_method("activate"):
-			tabs[active_tab_index].activate()
+	var new_tab: Control = tabs[active_tab_index] if active_tab_index < tabs.size() else null
+	# Crossfade between tabs
+	if old_tab != null and old_tab != new_tab and old_tab.visible:
+		var out_tween := create_tween()
+		out_tween.tween_property(old_tab, "modulate:a", 0.0, 0.1)
+		await out_tween.finished
+		old_tab.visible = false
+		old_tab.modulate.a = 1.0
+	elif old_tab != null:
+		old_tab.visible = false
+	# Activate new tab with fade in
+	if new_tab:
+		new_tab.modulate.a = 0.0
+		new_tab.visible = true
+		if new_tab.has_method("activate"):
+			new_tab.activate()
+		var in_tween := create_tween()
+		in_tween.tween_property(new_tab, "modulate:a", 1.0, 0.15)
 	# Update sidebar button highlights
 	_update_sidebar_highlights()
+	AudioManager.play_ui_sfx("ui_tab")
 
 func _update_sidebar_highlights() -> void:
 	for i in range(tab_buttons.size()):
@@ -400,6 +420,33 @@ func _update_sidebar_highlights() -> void:
 
 func _on_tab_button_pressed(index: int) -> void:
 	_switch_tab(index)
+
+func _animate_open() -> void:
+	# Fade + scale the main children
+	for node in [bg, main_hbox]:
+		if node:
+			node.modulate.a = 0.0
+			node.scale = Vector2(0.95, 0.95)
+			node.pivot_offset = node.size / 2.0
+	var tween := create_tween().set_parallel(true)
+	for node in [bg, main_hbox]:
+		if node:
+			tween.tween_property(node, "modulate:a", 1.0, 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+			tween.tween_property(node, "scale", Vector2.ONE, 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+
+func _animate_close() -> void:
+	var tween := create_tween().set_parallel(true)
+	for node in [bg, main_hbox]:
+		if node:
+			node.pivot_offset = node.size / 2.0
+			tween.tween_property(node, "modulate:a", 0.0, 0.15).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+			tween.tween_property(node, "scale", Vector2(0.95, 0.95), 0.15).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	await tween.finished
+	# Reset
+	for node in [bg, main_hbox]:
+		if node:
+			node.modulate.a = 1.0
+			node.scale = Vector2.ONE
 
 func _set_visible(v: bool) -> void:
 	# CanvasLayer visible=false does NOT propagate to children.

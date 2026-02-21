@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "miso"
+display_name = "Miso Paste"
+description = "Fermented soybean paste with deep, complex umami used in soups and glazes."
+category = "oil_sauce"
+icon_color = Color(0.7, 0.5, 0.25, 1)
+sell_price = 7
+season = ""
+grow_time = 60.0
+harvest_min = 1
+harvest_max = 2

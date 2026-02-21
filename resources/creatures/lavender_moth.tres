@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "lavender_moth"
+display_name = "Lavender Moth"
+types = PackedStringArray("aromatic")
+base_hp = 40
+base_attack = 8
+base_defense = 6
+base_sp_attack = 14
+base_sp_defense = 12
+base_speed = 18
+moves = PackedStringArray("herb_breeze", "pollen_cloud", "taste_and_dash", "dream_feast")
+mesh_type = "capsule"
+mesh_color = Color(0.7, 0.55, 0.85, 1)
+mesh_scale = Vector3(0.5, 0.5, 0.7)
+rarity = "common"
+drop_ingredient_ids = PackedStringArray("herb_basil")
+drop_min = 1
+drop_max = 2
+learnset = {3: "herb_breeze", 6: "pollen_cloud", 9: "taste_and_dash", 12: "dream_feast", 15: "encore_flavor"}
+ability_ids = PackedStringArray("photosynthesis", "quick_cook")
+ev_yield = {"speed": 1}
+base_xp_yield = 45

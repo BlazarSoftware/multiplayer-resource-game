@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "turmeric_titan"
+display_name = "Turmeric Titan"
+types = PackedStringArray("spicy", "earthy")
+base_hp = 70
+base_attack = 18
+base_defense = 16
+base_sp_attack = 14
+base_sp_defense = 12
+base_speed = 8
+moves = PackedStringArray("pepper_blast", "root_grip", "flame_sear", "slow_cook")
+mesh_type = "box"
+mesh_color = Color(0.9, 0.75, 0.1, 1)
+mesh_scale = Vector3(0.9, 0.9, 0.9)
+rarity = "uncommon"
+drop_ingredient_ids = PackedStringArray("turmeric")
+drop_min = 1
+drop_max = 3
+learnset = {3: "pepper_blast", 6: "root_grip", 9: "flame_sear", 12: "slow_cook", 15: "inferno_fang"}
+ability_ids = PackedStringArray("spice_aura", "slow_burn")
+ev_yield = {"attack": 2}
+base_xp_yield = 70

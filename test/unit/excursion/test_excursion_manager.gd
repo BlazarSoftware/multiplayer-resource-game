@@ -216,3 +216,62 @@ func test_solo_excursion_single_member():
 	assert_has(members, 10)
 	# Level boost should be 0 for solo
 	assert_eq(mgr.get_level_boost_for_peer(10), 0, "Solo excursion should have 0 level boost")
+
+# --- Zone Type Instance Tests ---
+
+func test_instance_stores_zone_type():
+	var instance_id := "zone-test-1"
+	mgr.excursion_instances[instance_id] = {
+		"instance_id": instance_id,
+		"party_id": 1,
+		"seed": 42,
+		"members": [10],
+		"zone_type": "coastal_wreckage",
+	}
+	assert_eq(mgr.excursion_instances[instance_id]["zone_type"], "coastal_wreckage",
+		"Instance should store zone_type")
+
+func test_instance_zone_type_defaults_to_default():
+	var instance_id := "zone-test-2"
+	mgr.excursion_instances[instance_id] = {
+		"instance_id": instance_id,
+		"party_id": 1,
+		"seed": 42,
+		"members": [10],
+	}
+	var zone_type: String = mgr.excursion_instances[instance_id].get("zone_type", "default")
+	assert_eq(zone_type, "default", "Missing zone_type should default to 'default'")
+
+func test_each_zone_type_in_instance():
+	var zone_types = ["default", "coastal_wreckage", "fungal_hollow", "volcanic_crest", "frozen_pantry"]
+	for i in zone_types.size():
+		var instance_id := "zone-test-%d" % i
+		mgr.excursion_instances[instance_id] = {
+			"instance_id": instance_id,
+			"party_id": i,
+			"seed": 100 + i,
+			"members": [10 + i],
+			"zone_type": zone_types[i],
+		}
+		mgr.player_excursion_map[10 + i] = instance_id
+	# Verify each instance has correct zone_type
+	for i in zone_types.size():
+		var instance_id := "zone-test-%d" % i
+		assert_eq(mgr.excursion_instances[instance_id]["zone_type"], zone_types[i],
+			"Instance %d should have zone_type '%s'" % [i, zone_types[i]])
+
+func test_late_join_reads_zone_type_from_instance():
+	var instance_id := "zone-late-join"
+	mgr.excursion_instances[instance_id] = {
+		"instance_id": instance_id,
+		"party_id": 1,
+		"seed": 42,
+		"season": "summer",
+		"offset": {"x": 5000, "y": 0, "z": 0},
+		"members": [10],
+		"allowed_player_ids": ["player_a", "player_b"],
+		"zone_type": "fungal_hollow",
+	}
+	# Simulate what late-join does: read zone_type from instance
+	var inst_zone_type: String = mgr.excursion_instances[instance_id].get("zone_type", "default")
+	assert_eq(inst_zone_type, "fungal_hollow", "Late-join should read zone_type from instance")

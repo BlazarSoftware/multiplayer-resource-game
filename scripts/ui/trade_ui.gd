@@ -261,6 +261,7 @@ func _on_trade_started(p_name: String) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	NetworkManager.request_set_busy.rpc_id(1, true)
 	_refresh_all()
+	ScreenTransition.open(self, "slide_up")
 
 func _on_offer_updated(new_my_offer: Dictionary, new_their_offer: Dictionary) -> void:
 	my_offer = new_my_offer
@@ -322,6 +323,7 @@ func _on_cancel_pressed() -> void:
 	_close()
 
 func _close() -> void:
+	await ScreenTransition.close(self, "slide_up")
 	trade_panel.visible = false
 	request_panel.visible = false
 	visible = false

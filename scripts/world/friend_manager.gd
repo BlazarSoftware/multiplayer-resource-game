@@ -878,6 +878,7 @@ func _sync_friends_list(friends_arr: Array, incoming: Array, outgoing: Array, bl
 @rpc("authority", "reliable")
 func _notify_friend_request(from_name: String, _from_id: String) -> void:
 	print("[FM-DEBUG-CLIENT] _notify_friend_request from '", from_name, "'")
+	AudioManager.play_sfx("friend_request")
 	# Show HUD toast
 	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
 	if hud and hud.has_method("show_toast"):
@@ -913,6 +914,7 @@ func _sync_party_state(party_data: Dictionary) -> void:
 
 @rpc("authority", "reliable")
 func _notify_party_invite(from_name: String, party_id: int) -> void:
+	AudioManager.play_sfx("friend_request")
 	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
 	if hud and hud.has_method("show_toast"):
 		hud.show_toast("Party invite from " + from_name)

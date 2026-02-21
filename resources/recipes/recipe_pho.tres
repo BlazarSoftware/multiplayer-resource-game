@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "pho"
+display_name = "Cook Pho"
+result_food_id = "pho"
+ingredients = {"broth": 3, "rice": 1, "beef": 1, "basil": 1}
+description = "Vietnamese pho soup."
+station = "kitchen"

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "ramen"
+display_name = "Cook Ramen"
+result_food_id = "ramen"
+ingredients = {"flour": 2, "egg": 1, "broth": 2, "seaweed": 1}
+description = "Steaming bowl of ramen."
+station = "kitchen"

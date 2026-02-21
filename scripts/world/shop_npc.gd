@@ -3,6 +3,7 @@ extends Area3D
 @export var shop_id: String = ""
 
 var nearby_peers: Dictionary = {} # peer_id -> true
+var _anim_state: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("shop_npc")
@@ -23,23 +24,25 @@ func _create_visual() -> void:
 	col.shape = shape
 	add_child(col)
 
-	# NPC mesh (teal capsule)
-	var mesh_instance = MeshInstance3D.new()
-	var capsule = CapsuleMesh.new()
-	capsule.radius = 0.3
-	capsule.height = 1.5
-	mesh_instance.mesh = capsule
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.2, 0.7, 0.7)
-	mesh_instance.set_surface_override_material(0, mat)
-	mesh_instance.position.y = 0.75
-	add_child(mesh_instance)
+	# Animated mannequin model (client only — server skips visuals)
+	if not multiplayer.is_server():
+		var config := {
+			"idle": NpcAnimator.SHOP_ANIMS.get("idle", "Idle"),
+			"actions": NpcAnimator.SHOP_ANIMS.get("actions", ["Yes"]),
+			"color": Color(0.2, 0.7, 0.7),
+		}
+		_anim_state = NpcAnimator.create_character(self, config)
 
 	# Label
 	var label = Label3D.new()
 	UITheme.style_label3d(label, display_name, "npc_name")
 	label.position.y = 2.0
 	add_child(label)
+
+func _process(delta: float) -> void:
+	if multiplayer.is_server():
+		return
+	NpcAnimator.update(_anim_state, delta, self)
 
 func _on_body_entered(body: Node3D) -> void:
 	if not multiplayer.is_server():
@@ -91,6 +94,7 @@ func _open_shop_client(sid: String, shop_name: String, catalog: Array) -> void:
 
 @rpc("authority", "reliable")
 func _show_shop_prompt(sid: String) -> void:
+	NpcAnimator.play_reaction(_anim_state, "Counter_Show")
 	var hud = get_node_or_null("/root/Main/GameWorld/UI/HUD")
 	if hud and hud.has_method("show_trainer_prompt"):
 		DataRegistry.ensure_loaded()

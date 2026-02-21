@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "side_clementine_cook"
+display_name = "Cooking Rivals"
+description = "Clementine has heard about your cooking skills and wants to see if you can keep up. Craft five dishes to prove you're worthy of her respect."
+category = "side"
+quest_giver_npc_id = "npc_clementine"
+prereq_quest_ids = ["ms_22_first_cook"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "craft",
+"target_id": "",
+"target_count": 5,
+"description": "Craft any food recipes (5)"
+}]
+reward_money = 500
+reward_items = {}
+reward_friendship = {"npc_clementine": 10}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = ""
+chapter = 0
+sort_order = 0
+offer_dialogue = "So you're the one everyone's been talking about? The new cook in town? Please. I've been running circles in the kitchen since I could hold a whisk. Craft five dishes — any five — and maybe I'll admit you've got some talent. Maybe."
+in_progress_dialogue = "Still working on those dishes? Take your time — quality over speed. But not too much time, or I'll think you've given up!"
+completion_dialogue = "Hmph. Fine. Those were... actually pretty good. Don't let it go to your head, but you've earned my respect. A little. Here — consider it an investment in a future rival."

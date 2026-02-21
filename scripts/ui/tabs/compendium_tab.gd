@@ -1,21 +1,36 @@
 extends Control
 
-# Compendium tab content for PauseMenu. Ported from compendium_ui.gd.
+# Journal tab content for PauseMenu (formerly Compendium). Includes Items,
+# Creatures, Fishing, and Stats sub-tabs with card-grid layout.
+# Cards flip in-place on click to reveal details on the back.
 const UITokens = preload("res://scripts/ui/ui_tokens.gd")
 
 var tab_bar: TabBar
 var count_label: Label
 var content_scroll: ScrollContainer
-var content_list: VBoxContainer
-var detail_scroll: ScrollContainer
-var detail_panel: VBoxContainer
+var card_grid: GridContainer
 var filter_bar: HBoxContainer
 
 var _current_tab: int = 0
 var _current_filter: String = "all"
 
+# Card flip state
+var _flipped_cards: Dictionary = {}   # card -> bool
+var _card_fronts: Dictionary = {}     # card -> VBoxContainer
+var _card_backs: Dictionary = {}      # card -> VBoxContainer
+
 const ITEM_FILTERS = ["all", "ingredient", "food", "tool", "held_item", "battle_item", "recipe_scroll"]
 const FILTER_LABELS = {"all": "All", "ingredient": "Ingredients", "food": "Foods", "tool": "Tools", "held_item": "Held Items", "battle_item": "Battle Items", "recipe_scroll": "Scrolls"}
+
+const FISH_FILTERS: Array = ["all", "pond", "river", "ocean"]
+const FISH_FILTER_LABELS: Dictionary = {"all": "All", "pond": "Pond", "river": "River", "ocean": "Ocean"}
+
+const MOVEMENT_HINTS: Dictionary = {
+	"smooth": "Floating",
+	"dart": "Darting",
+	"sinker": "Deep",
+	"mixed": "Tricky",
+}
 
 const STAT_SECTIONS = {
 	"Battle": [
@@ -63,6 +78,8 @@ func _ready() -> void:
 	_build_ui()
 	PlayerData.compendium_changed.connect(_refresh)
 	PlayerData.stats_changed.connect(_refresh)
+	if PlayerData.has_signal("fishing_log_changed"):
+		PlayerData.fishing_log_changed.connect(_refresh)
 
 func _build_ui() -> void:
 	var main_vbox := VBoxContainer.new()
@@ -73,7 +90,7 @@ func _build_ui() -> void:
 	var title_row := HBoxContainer.new()
 	main_vbox.add_child(title_row)
 	var title := Label.new()
-	title.text = "Compendium"
+	title.text = "Journal"
 	UITheme.style_subheading(title)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_row.add_child(title)
@@ -86,43 +103,33 @@ func _build_ui() -> void:
 	tab_bar = TabBar.new()
 	tab_bar.add_tab("Items")
 	tab_bar.add_tab("Creatures")
+	tab_bar.add_tab("Fishing")
 	tab_bar.add_tab("Stats")
 	tab_bar.tab_changed.connect(_on_tab_changed)
 	main_vbox.add_child(tab_bar)
 
-	# Filter bar (for Items tab)
+	# Filter bar (context-dependent per sub-tab)
 	filter_bar = HBoxContainer.new()
 	main_vbox.add_child(filter_bar)
-	for filter_id in ITEM_FILTERS:
-		var btn := Button.new()
-		btn.text = FILTER_LABELS.get(filter_id, filter_id)
-		btn.custom_minimum_size.x = 80
-		UITheme.style_button(btn, "secondary")
-		btn.pressed.connect(_on_filter_pressed.bind(filter_id))
-		filter_bar.add_child(btn)
 
-	# Content split
-	var hsplit := HSplitContainer.new()
-	hsplit.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	main_vbox.add_child(hsplit)
-
+	# Content area — full width, no split
 	content_scroll = ScrollContainer.new()
-	content_scroll.custom_minimum_size = Vector2(280, 0)
 	content_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hsplit.add_child(content_scroll)
-	content_list = VBoxContainer.new()
-	content_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_scroll.add_child(content_list)
+	content_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_vbox.add_child(content_scroll)
 
-	detail_scroll = ScrollContainer.new()
-	detail_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hsplit.add_child(detail_scroll)
-	detail_panel = VBoxContainer.new()
-	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	detail_scroll.add_child(detail_panel)
+	card_grid = GridContainer.new()
+	card_grid.columns = 6
+	card_grid.add_theme_constant_override("h_separation", 8)
+	card_grid.add_theme_constant_override("v_separation", 8)
+	card_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_scroll.add_child(card_grid)
 
 func activate() -> void:
 	NetworkManager.request_compendium_sync.rpc_id(1)
+	var fishing_mgr = get_node_or_null("/root/Main/GameWorld/FishingManager")
+	if fishing_mgr:
+		fishing_mgr.request_fishing_log_sync.rpc_id(1)
 	_refresh()
 
 func deactivate() -> void:
@@ -138,17 +145,95 @@ func _on_filter_pressed(filter_id: String) -> void:
 	_refresh()
 
 func _refresh() -> void:
-	_clear_children(content_list)
-	_clear_children(detail_panel)
-	filter_bar.visible = (_current_tab == 0)
+	_clear_children(card_grid)
+	_flipped_cards.clear()
+	_card_fronts.clear()
+	_card_backs.clear()
+	_rebuild_filter_bar()
 	match _current_tab:
-		0: _refresh_items()
-		1: _refresh_creatures()
-		2: _refresh_stats()
+		0:
+			card_grid.columns = 6
+			_refresh_items()
+		1:
+			card_grid.columns = 6
+			_refresh_creatures()
+		2:
+			card_grid.columns = 6
+			_refresh_fishing()
+		3:
+			card_grid.columns = 1
+			_refresh_stats()
+
+func _rebuild_filter_bar() -> void:
+	_clear_children(filter_bar)
+	if _current_tab == 0:
+		filter_bar.visible = true
+		for filter_id in ITEM_FILTERS:
+			var btn := Button.new()
+			btn.text = FILTER_LABELS.get(filter_id, filter_id)
+			btn.custom_minimum_size.x = 80
+			UITheme.style_button(btn, "secondary")
+			btn.pressed.connect(_on_filter_pressed.bind(filter_id))
+			filter_bar.add_child(btn)
+	elif _current_tab == 2:
+		filter_bar.visible = true
+		for filter_id in FISH_FILTERS:
+			var btn := Button.new()
+			btn.text = FISH_FILTER_LABELS.get(filter_id, filter_id)
+			btn.custom_minimum_size.x = 70
+			UITheme.style_button(btn, "secondary")
+			btn.pressed.connect(_on_filter_pressed.bind(filter_id))
+			filter_bar.add_child(btn)
+	else:
+		filter_bar.visible = false
 
 func _clear_children(node: Control) -> void:
 	for child in node.get_children():
 		child.queue_free()
+
+# === SHARED CARD HELPERS ===
+
+func _make_card_shell(is_locked: bool, border_color: Color = UITokens.ACCENT_CHESTNUT) -> PanelContainer:
+	var card := PanelContainer.new()
+	var card_w := UITheme.scaled(88)
+	var card_h := UITheme.scaled(100)
+	card.custom_minimum_size = Vector2(card_w, card_h)
+
+	var style := StyleBoxFlat.new()
+	if is_locked:
+		style.bg_color = UITokens.PAPER_EDGE
+		style.border_color = Color(border_color.r, border_color.g, border_color.b, 0.3)
+	else:
+		style.bg_color = UITokens.PAPER_CARD
+		style.border_color = border_color
+	style.set_corner_radius_all(UITokens.CORNER_RADIUS)
+	style.set_border_width_all(1)
+	style.content_margin_left = 4
+	style.content_margin_top = 4
+	style.content_margin_right = 4
+	style.content_margin_bottom = 4
+	card.add_theme_stylebox_override("panel", style)
+	return card
+
+func _add_flip_overlay(card: PanelContainer, front: VBoxContainer, back: VBoxContainer) -> void:
+	back.visible = false
+	_card_fronts[card] = front
+	_card_backs[card] = back
+	_flipped_cards[card] = false
+	var overlay := Button.new()
+	overlay.flat = true
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var captured_card := card
+	overlay.pressed.connect(func(): _on_card_clicked(captured_card))
+	card.add_child(overlay)
+
+func _on_card_clicked(card: PanelContainer) -> void:
+	var is_flipped: bool = _flipped_cards.get(card, false)
+	_card_fronts[card].visible = is_flipped
+	_card_backs[card].visible = not is_flipped
+	_flipped_cards[card] = not is_flipped
 
 # === ITEMS TAB ===
 
@@ -187,69 +272,110 @@ func _refresh_items() -> void:
 	)
 
 	var total = filtered.size()
-	count_label.text = "Items: " + str(unlocked_count) + "/" + str(total)
+	count_label.text = "Items: %d/%d" % [unlocked_count, total]
 
 	for entry in filtered:
-		var row := HBoxContainer.new()
-		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		if entry.unlocked:
-			var info_dict = DataRegistry.get_item_display_info(entry.item_id)
-			var icon = UITheme.create_item_icon(info_dict, 16)
-			row.add_child(icon)
-		var btn := Button.new()
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		UITheme.style_button(btn, "secondary")
-		if entry.unlocked:
-			btn.text = "  " + entry.info.display_name
-			btn.add_theme_color_override("font_color", entry.info.get("icon_color", UITokens.INK_DARK))
-		else:
-			btn.text = "  ???"
-			btn.add_theme_color_override("font_color", UITokens.INK_LIGHT)
-		btn.pressed.connect(_on_item_selected.bind(entry.item_id, entry.unlocked))
-		row.add_child(btn)
-		content_list.add_child(row)
+		var is_unlocked: bool = entry.unlocked
+		var card := _make_card_shell(not is_unlocked)
 
-func _on_item_selected(item_id: String, is_unlocked: bool) -> void:
-	_clear_children(detail_panel)
+		# Front
+		var front := _build_item_front(entry, is_unlocked)
+		card.add_child(front)
+
+		# Back
+		var back := _build_card_back_items(entry, is_unlocked)
+		card.add_child(back)
+
+		_add_flip_overlay(card, front, back)
+		card_grid.add_child(card)
+
+func _build_item_front(entry: Dictionary, is_unlocked: bool) -> VBoxContainer:
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 2)
+
+	if is_unlocked:
+		var icon := UITheme.create_item_icon(entry.info, 32)
+		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		vbox.add_child(icon)
+	else:
+		var placeholder := ColorRect.new()
+		placeholder.custom_minimum_size = Vector2(UITheme.scaled(32), UITheme.scaled(32))
+		placeholder.color = Color(UITokens.INK_DISABLED.r, UITokens.INK_DISABLED.g, UITokens.INK_DISABLED.b, 0.3)
+		placeholder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		vbox.add_child(placeholder)
+
+	var name_lbl := Label.new()
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_caption(name_lbl)
+	name_lbl.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+	if is_unlocked:
+		name_lbl.text = entry.info.display_name
+	else:
+		name_lbl.text = "???"
+		name_lbl.add_theme_color_override("font_color", UITokens.INK_DISABLED)
+	vbox.add_child(name_lbl)
+
+	if is_unlocked:
+		var cat_lbl := Label.new()
+		cat_lbl.text = entry.info.get("category", "").replace("_", " ").capitalize()
+		cat_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(cat_lbl)
+		cat_lbl.add_theme_font_size_override("font_size", UITheme.scaled(10))
+		cat_lbl.add_theme_color_override("font_color", UITokens.INK_SECONDARY)
+		vbox.add_child(cat_lbl)
+
+	return vbox
+
+func _build_card_back_items(entry: Dictionary, is_unlocked: bool) -> VBoxContainer:
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 2)
+
 	if not is_unlocked:
-		var label := Label.new()
-		label.text = "???\n\nNot yet discovered."
-		UITheme.style_small(label)
-		label.add_theme_color_override("font_color", UITokens.INK_LIGHT)
-		detail_panel.add_child(label)
-		return
+		var msg := Label.new()
+		msg.text = "Not yet\ndiscovered."
+		msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(msg)
+		msg.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+		msg.add_theme_color_override("font_color", UITokens.INK_DISABLED)
+		vbox.add_child(msg)
+		return vbox
 
-	var info = DataRegistry.get_item_display_info(item_id)
-	# Large icon
-	var detail_icon = UITheme.create_item_icon(info, 32)
-	detail_panel.add_child(detail_icon)
-	var name_label := Label.new()
-	name_label.text = info.get("display_name", item_id)
-	UITheme.style_heading(name_label)
-	name_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_BODY))
-	name_label.add_theme_color_override("font_color", info.get("icon_color", UITokens.INK_DARK))
-	detail_panel.add_child(name_label)
+	# Larger icon
+	var icon := UITheme.create_item_icon(entry.info, 40)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vbox.add_child(icon)
 
-	var cat_label := Label.new()
-	cat_label.text = "Category: " + info.get("category", "unknown").replace("_", " ").capitalize()
-	UITheme.style_small(cat_label)
-	cat_label.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
-	detail_panel.add_child(cat_label)
+	# Name
+	var name_lbl := Label.new()
+	name_lbl.text = entry.info.display_name
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_caption(name_lbl)
+	name_lbl.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+	vbox.add_child(name_lbl)
 
-	var id_label := Label.new()
-	id_label.text = "ID: " + item_id
-	UITheme.style_small(id_label)
-	id_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
-	id_label.add_theme_color_override("font_color", UITokens.INK_LIGHT)
-	detail_panel.add_child(id_label)
+	# Category
+	var cat_lbl := Label.new()
+	cat_lbl.text = entry.info.get("category", "").replace("_", " ").capitalize()
+	cat_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_caption(cat_lbl)
+	cat_lbl.add_theme_font_size_override("font_size", UITheme.scaled(9))
+	cat_lbl.add_theme_color_override("font_color", UITokens.INK_SECONDARY)
+	vbox.add_child(cat_lbl)
 
-	var sell_price = DataRegistry.get_sell_price(item_id)
-	if sell_price > 0:
-		var price_label := Label.new()
-		price_label.text = "Sell Price: $" + str(sell_price)
-		UITheme.style_small(price_label)
-		detail_panel.add_child(price_label)
+	# Sell price
+	var price := DataRegistry.get_sell_price(entry.item_id)
+	if price > 0:
+		var price_lbl := Label.new()
+		price_lbl.text = "$%d" % price
+		price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(price_lbl)
+		price_lbl.add_theme_font_size_override("font_size", UITheme.scaled(9))
+		price_lbl.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
+		vbox.add_child(price_lbl)
+
+	return vbox
 
 # === CREATURES TAB ===
 
@@ -269,118 +395,356 @@ func _refresh_creatures() -> void:
 		if sid in owned:
 			owned_count += 1
 
-	count_label.text = "Creatures: " + str(seen_count) + "/" + str(all_species.size()) + " seen, " + str(owned_count) + "/" + str(all_species.size()) + " owned"
+	count_label.text = "Creatures: %d/%d seen, %d/%d owned" % [seen_count, all_species.size(), owned_count, all_species.size()]
 
 	for species_id in all_species:
 		var sp = DataRegistry.get_species(species_id)
 		if sp == null:
 			continue
-		var btn := Button.new()
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		UITheme.style_button(btn, "secondary")
-		if species_id in owned:
-			btn.text = "  " + sp.display_name + "  [Owned]"
-			btn.add_theme_color_override("font_color", UITokens.STAMP_GREEN)
-		elif species_id in seen:
-			btn.text = "  " + sp.display_name
-			btn.add_theme_color_override("font_color", UITokens.INK_MEDIUM)
+		var is_owned: bool = species_id in owned
+		var is_seen: bool = species_id in seen
+
+		var card: PanelContainer
+		if is_owned:
+			card = _make_card_shell(false, UITokens.ACCENT_CHESTNUT)
+		elif is_seen:
+			card = _make_card_shell(false, Color.GRAY)
 		else:
-			btn.text = "  ???"
-			btn.add_theme_color_override("font_color", UITokens.INK_LIGHT)
-		btn.pressed.connect(_on_creature_selected.bind(species_id))
-		content_list.add_child(btn)
+			card = _make_card_shell(true)
 
-func _on_creature_selected(species_id: String) -> void:
-	_clear_children(detail_panel)
-	var seen: Array = PlayerData.compendium.get("creatures_seen", [])
-	var owned: Array = PlayerData.compendium.get("creatures_owned", [])
+		# Front
+		var front := _build_creature_front(sp, is_owned, is_seen)
+		card.add_child(front)
 
-	if species_id not in seen:
-		var label := Label.new()
-		label.text = "???\n\nNot yet encountered."
-		UITheme.style_small(label)
-		label.add_theme_color_override("font_color", UITokens.INK_LIGHT)
-		detail_panel.add_child(label)
-		return
+		# Back
+		var back := _build_card_back_creature(species_id, sp, is_owned, is_seen)
+		card.add_child(back)
 
-	var sp = DataRegistry.get_species(species_id)
-	if sp == null:
-		return
+		_add_flip_overlay(card, front, back)
+		card_grid.add_child(card)
 
-	var name_label := Label.new()
-	name_label.text = sp.display_name
-	UITheme.style_heading(name_label)
-	name_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_BODY))
-	detail_panel.add_child(name_label)
+func _build_creature_front(sp: CreatureSpecies, is_owned: bool, is_seen: bool) -> VBoxContainer:
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 2)
 
-	var type_label := Label.new()
-	var type_str = ""
-	for t in sp.types:
-		if type_str != "":
-			type_str += " / "
-		type_str += str(t).capitalize()
-	type_label.text = "Type: " + type_str
-	UITheme.style_small(type_label)
-	detail_panel.add_child(type_label)
-
-	if species_id in owned:
-		var stats_label := Label.new()
-		stats_label.text = "Base Stats:\n" \
-			+ "  HP: " + str(sp.base_hp) + "\n" \
-			+ "  ATK: " + str(sp.base_attack) + "\n" \
-			+ "  DEF: " + str(sp.base_defense) + "\n" \
-			+ "  SPA: " + str(sp.base_sp_attack) + "\n" \
-			+ "  SPD: " + str(sp.base_sp_defense) + "\n" \
-			+ "  SPE: " + str(sp.base_speed)
-		UITheme.style_small(stats_label)
-		detail_panel.add_child(stats_label)
-
-		if sp.ability_ids.size() > 0:
-			var ab_label := Label.new()
-			var ab_str = "Abilities: "
-			for ab_id in sp.ability_ids:
-				var ab = DataRegistry.get_ability(ab_id)
-				if ab:
-					ab_str += ab.display_name + " "
-				else:
-					ab_str += str(ab_id) + " "
-			ab_label.text = ab_str
-			UITheme.style_small(ab_label)
-			detail_panel.add_child(ab_label)
-
-		if sp.evolves_to != "":
-			var evo_sp = DataRegistry.get_species(sp.evolves_to)
-			var evo_name = evo_sp.display_name if evo_sp else sp.evolves_to
-			var evo_label := Label.new()
-			evo_label.text = "Evolves to: " + evo_name + " at Lv " + str(sp.evolution_level)
-			evo_label.add_theme_color_override("font_color", UITokens.STAMP_BLUE)
-			UITheme.style_small(evo_label)
-			detail_panel.add_child(evo_label)
-
-		var stats = PlayerData.stats
-		var encounters = stats.get("species_encounters", {}).get(species_id, 0)
-		var catches = stats.get("species_catches", {}).get(species_id, 0)
-		var evolutions = stats.get("species_evolutions", {}).get(species_id, 0)
-		if encounters > 0 or catches > 0 or evolutions > 0:
-			var sep := HSeparator.new()
-			detail_panel.add_child(sep)
-			var your_label := Label.new()
-			your_label.text = "Your Stats:"
-			UITheme.style_body(your_label)
-			detail_panel.add_child(your_label)
-			if encounters > 0:
-				_add_stat_row(detail_panel, "Encounters", encounters)
-			if catches > 0:
-				_add_stat_row(detail_panel, "Obtained", catches)
-			if evolutions > 0:
-				_add_stat_row(detail_panel, "Evolutions", evolutions)
+	var icon_rect := ColorRect.new()
+	icon_rect.custom_minimum_size = Vector2(UITheme.scaled(32), UITheme.scaled(32))
+	icon_rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	if is_owned:
+		icon_rect.color = sp.mesh_color if sp.mesh_color else Color.GRAY
+	elif is_seen:
+		icon_rect.color = Color(sp.mesh_color.r, sp.mesh_color.g, sp.mesh_color.b, 0.4) if sp.mesh_color else Color(0.5, 0.5, 0.5, 0.4)
 	else:
+		icon_rect.color = Color(0.15, 0.12, 0.1, 0.5)
+	vbox.add_child(icon_rect)
+
+	var name_lbl := Label.new()
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_caption(name_lbl)
+	name_lbl.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+	if is_seen or is_owned:
+		name_lbl.text = sp.display_name
+	else:
+		name_lbl.text = "???"
+		name_lbl.add_theme_color_override("font_color", UITokens.INK_DISABLED)
+	vbox.add_child(name_lbl)
+
+	if is_seen or is_owned:
+		var type_lbl := Label.new()
+		var type_parts: Array = []
+		for t in sp.types:
+			type_parts.append(str(t).capitalize())
+		type_lbl.text = " / ".join(type_parts)
+		type_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(type_lbl)
+		type_lbl.add_theme_font_size_override("font_size", UITheme.scaled(10))
+		type_lbl.add_theme_color_override("font_color", UITokens.INK_SECONDARY)
+		vbox.add_child(type_lbl)
+
+	return vbox
+
+func _build_card_back_creature(species_id: String, sp: CreatureSpecies, is_owned: bool, is_seen: bool) -> VBoxContainer:
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 1)
+
+	if not is_seen and not is_owned:
+		var msg := Label.new()
+		msg.text = "Not yet\nencountered."
+		msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(msg)
+		msg.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+		msg.add_theme_color_override("font_color", UITokens.INK_DISABLED)
+		vbox.add_child(msg)
+		return vbox
+
+	if is_seen and not is_owned:
+		# Type info
+		var type_lbl := Label.new()
+		var type_parts: Array = []
+		for t in sp.types:
+			type_parts.append(str(t).capitalize())
+		type_lbl.text = " / ".join(type_parts)
+		type_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(type_lbl)
+		type_lbl.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+		vbox.add_child(type_lbl)
 		var hint := Label.new()
-		hint.text = "\nOwn this creature to see full details."
-		UITheme.style_small(hint)
-		hint.add_theme_color_override("font_color", UITokens.INK_LIGHT)
-		detail_panel.add_child(hint)
+		hint.text = "Own to see\nfull details"
+		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(hint)
+		hint.add_theme_font_size_override("font_size", UITheme.scaled(9))
+		hint.add_theme_color_override("font_color", UITokens.INK_SECONDARY)
+		vbox.add_child(hint)
+		return vbox
+
+	# Owned — show base stats compact grid
+	var tiny_fs := UITheme.scaled(9)
+	var stats_grid := GridContainer.new()
+	stats_grid.columns = 2
+	stats_grid.add_theme_constant_override("h_separation", 2)
+	stats_grid.add_theme_constant_override("v_separation", 0)
+	var stat_pairs: Array = [
+		["HP", sp.base_hp], ["ATK", sp.base_attack],
+		["DEF", sp.base_defense], ["SPA", sp.base_sp_attack],
+		["SPD", sp.base_sp_defense], ["SPE", sp.base_speed],
+	]
+	for pair in stat_pairs:
+		var lbl := Label.new()
+		lbl.text = "%s:%d" % [pair[0], pair[1]]
+		UITheme.style_caption(lbl)
+		lbl.add_theme_font_size_override("font_size", tiny_fs)
+		stats_grid.add_child(lbl)
+	vbox.add_child(stats_grid)
+
+	# Ability
+	if sp.ability_ids.size() > 0:
+		var ab = DataRegistry.get_ability(sp.ability_ids[0])
+		if ab:
+			var ab_lbl := Label.new()
+			ab_lbl.text = ab.display_name
+			ab_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			UITheme.style_caption(ab_lbl)
+			ab_lbl.add_theme_font_size_override("font_size", tiny_fs)
+			ab_lbl.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
+			vbox.add_child(ab_lbl)
+
+	# Evolution info
+	if sp.evolves_to != "":
+		var evo_sp = DataRegistry.get_species(sp.evolves_to)
+		var evo_name: String = evo_sp.display_name if evo_sp else sp.evolves_to
+		var evo_lbl := Label.new()
+		evo_lbl.text = "-> %s Lv%d" % [evo_name, sp.evolution_level]
+		evo_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(evo_lbl)
+		evo_lbl.add_theme_font_size_override("font_size", tiny_fs)
+		evo_lbl.add_theme_color_override("font_color", UITokens.INK_SECONDARY)
+		vbox.add_child(evo_lbl)
+
+	return vbox
+
+# === FISHING TAB ===
+
+func _refresh_fishing() -> void:
+	DataRegistry.ensure_loaded()
+	var catches: Dictionary = PlayerData.fishing_log.get("catches", {})
+
+	var all_fish: Dictionary = {}
+	for table_id in DataRegistry.fishing_tables:
+		var table: FishingTable = DataRegistry.fishing_tables[table_id]
+		for entry in table.entries:
+			var fid: String = entry.get("fish_id", "")
+			if fid == "":
+				continue
+			if fid not in all_fish:
+				all_fish[fid] = {
+					"difficulty": entry.get("difficulty", 1),
+					"movement_type": entry.get("movement_type", "smooth"),
+					"min_rod_tier": entry.get("min_rod_tier", 0),
+					"season": entry.get("season", ""),
+					"tables": [],
+				}
+			if table_id not in all_fish[fid]["tables"]:
+				all_fish[fid]["tables"].append(table_id)
+
+	var filtered_fish: Array = []
+	for fid in all_fish:
+		if _current_filter != "all":
+			if _current_filter not in all_fish[fid]["tables"]:
+				continue
+		filtered_fish.append(fid)
+	filtered_fish.sort()
+
+	var caught_count: int = 0
+	for fid in filtered_fish:
+		if fid in catches:
+			caught_count += 1
+	count_label.text = "%d/%d species" % [caught_count, filtered_fish.size()]
+
+	for fid in filtered_fish:
+		var is_caught: bool = fid in catches
+		var fish_data: Dictionary = all_fish[fid]
+		var catch_data: Dictionary = catches.get(fid, {})
+		var card := _make_card_shell(not is_caught)
+
+		# Front
+		var front := _build_fish_front(fid, fish_data, is_caught, catch_data)
+		card.add_child(front)
+
+		# Back
+		var back := _build_card_back_fish(fid, fish_data, is_caught, catch_data)
+		card.add_child(back)
+
+		_add_flip_overlay(card, front, back)
+		card_grid.add_child(card)
+
+func _build_fish_front(fish_id: String, fish_data: Dictionary, is_caught: bool, catch_data: Dictionary) -> VBoxContainer:
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 2)
+
+	# Icon
+	if is_caught:
+		var info := DataRegistry.get_item_display_info(fish_id)
+		if not info.is_empty():
+			var icon := UITheme.create_item_icon(info, 32)
+			icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			vbox.add_child(icon)
+		else:
+			var placeholder := Control.new()
+			placeholder.custom_minimum_size = Vector2(UITheme.scaled(32), UITheme.scaled(32))
+			vbox.add_child(placeholder)
+	else:
+		var placeholder := ColorRect.new()
+		placeholder.custom_minimum_size = Vector2(UITheme.scaled(32), UITheme.scaled(32))
+		placeholder.color = Color(UITokens.INK_DISABLED.r, UITokens.INK_DISABLED.g, UITokens.INK_DISABLED.b, 0.3)
+		placeholder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		vbox.add_child(placeholder)
+
+	# Name
+	var name_label := Label.new()
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_caption(name_label)
+	name_label.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+	if is_caught:
+		var fish_def = DataRegistry.get_ingredient(fish_id)
+		name_label.text = fish_def.display_name if fish_def else fish_id.capitalize()
+	else:
+		name_label.text = "???"
+		name_label.add_theme_color_override("font_color", UITokens.INK_DISABLED)
+	vbox.add_child(name_label)
+
+	# Stars
+	var difficulty: int = fish_data.get("difficulty", 1)
+	var stars_text := ""
+	for s_i in 5:
+		if s_i < difficulty:
+			stars_text += "\u2605"
+		else:
+			stars_text += "\u2606"
+	var stars_label := Label.new()
+	stars_label.text = stars_text
+	stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_caption(stars_label)
+	stars_label.add_theme_font_size_override("font_size", UITheme.scaled(10))
+	if is_caught:
+		stars_label.add_theme_color_override("font_color", UITokens.ACCENT_HONEY)
+	else:
+		stars_label.add_theme_color_override("font_color", UITokens.INK_DISABLED)
+	vbox.add_child(stars_label)
+
+	return vbox
+
+func _build_card_back_fish(fish_id: String, fish_data: Dictionary, is_caught: bool, catch_data: Dictionary) -> VBoxContainer:
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 1)
+	var tiny_fs := UITheme.scaled(9)
+
+	# Stars always shown
+	var difficulty: int = fish_data.get("difficulty", 1)
+	var stars_text := ""
+	for s_i in 5:
+		if s_i < difficulty:
+			stars_text += "\u2605"
+		else:
+			stars_text += "\u2606"
+	var stars_label := Label.new()
+	stars_label.text = stars_text
+	stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_caption(stars_label)
+	stars_label.add_theme_font_size_override("font_size", UITheme.scaled(10))
+	if is_caught:
+		stars_label.add_theme_color_override("font_color", UITokens.ACCENT_HONEY)
+	else:
+		stars_label.add_theme_color_override("font_color", UITokens.INK_DISABLED)
+	vbox.add_child(stars_label)
+
+	if not is_caught:
+		var msg := Label.new()
+		msg.text = "Not yet\ncaught."
+		msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(msg)
+		msg.add_theme_font_size_override("font_size", UITheme.scaled(UITokens.FONT_TINY))
+		msg.add_theme_color_override("font_color", UITokens.INK_DISABLED)
+		vbox.add_child(msg)
+		return vbox
+
+	# Season
+	var season: String = fish_data.get("season", "")
+	if season != "":
+		var s_lbl := Label.new()
+		s_lbl.text = season.capitalize()
+		s_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(s_lbl)
+		s_lbl.add_theme_font_size_override("font_size", tiny_fs)
+		s_lbl.add_theme_color_override("font_color", UITokens.INK_SECONDARY)
+		vbox.add_child(s_lbl)
+
+	# Movement type
+	var move_type: String = fish_data.get("movement_type", "smooth")
+	var move_lbl := Label.new()
+	move_lbl.text = MOVEMENT_HINTS.get(move_type, move_type.capitalize())
+	move_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UITheme.style_caption(move_lbl)
+	move_lbl.add_theme_font_size_override("font_size", tiny_fs)
+	vbox.add_child(move_lbl)
+
+	# Rod tier
+	var rod_tier: int = fish_data.get("min_rod_tier", 0)
+	if rod_tier > 0:
+		var rod_lbl := Label.new()
+		rod_lbl.text = "Rod T%d+" % rod_tier
+		rod_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(rod_lbl)
+		rod_lbl.add_theme_font_size_override("font_size", tiny_fs)
+		rod_lbl.add_theme_color_override("font_color", UITokens.INK_SECONDARY)
+		vbox.add_child(rod_lbl)
+
+	# Location
+	var tables: Array = fish_data.get("tables", [])
+	if tables.size() > 0:
+		var loc_lbl := Label.new()
+		loc_lbl.text = str(tables[0]).capitalize()
+		loc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(loc_lbl)
+		loc_lbl.add_theme_font_size_override("font_size", tiny_fs)
+		loc_lbl.add_theme_color_override("font_color", UITokens.INK_SECONDARY)
+		vbox.add_child(loc_lbl)
+
+	# Catch count
+	var count: int = catch_data.get("count", 0)
+	if count > 0:
+		var count_lbl := Label.new()
+		count_lbl.text = "x%d" % count
+		count_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.style_caption(count_lbl)
+		count_lbl.add_theme_font_size_override("font_size", tiny_fs)
+		count_lbl.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
+		vbox.add_child(count_lbl)
+
+	return vbox
 
 # === STATS TAB ===
 
@@ -393,18 +757,18 @@ func _refresh_stats() -> void:
 		header.text = section_name
 		UITheme.style_subheading(header)
 		header.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
-		content_list.add_child(header)
+		card_grid.add_child(header)
 
 		var entries: Array = STAT_SECTIONS[section_name]
 		for entry in entries:
 			var stat_key: String = entry[0]
 			var stat_label: String = entry[1]
 			var value = stats.get(stat_key, 0)
-			_add_stat_row(content_list, stat_label, value)
+			_add_stat_row(card_grid, stat_label, value)
 
 		var spacer := Control.new()
 		spacer.custom_minimum_size.y = 8
-		content_list.add_child(spacer)
+		card_grid.add_child(spacer)
 
 	var species_encounters = stats.get("species_encounters", {})
 	var species_catches = stats.get("species_catches", {})
@@ -413,22 +777,22 @@ func _refresh_stats() -> void:
 
 	if has_species_data:
 		var sep := HSeparator.new()
-		content_list.add_child(sep)
+		card_grid.add_child(sep)
 		var header := Label.new()
 		header.text = "Species Breakdown"
 		UITheme.style_subheading(header)
 		header.add_theme_color_override("font_color", UITokens.STAMP_GOLD)
-		content_list.add_child(header)
+		card_grid.add_child(header)
 
-		var all_species: Dictionary = {}
+		var all_species_dict: Dictionary = {}
 		for sid in species_encounters:
-			all_species[sid] = true
+			all_species_dict[sid] = true
 		for sid in species_catches:
-			all_species[sid] = true
+			all_species_dict[sid] = true
 		for sid in species_evolutions:
-			all_species[sid] = true
+			all_species_dict[sid] = true
 
-		for sid in all_species:
+		for sid in all_species_dict:
 			DataRegistry.ensure_loaded()
 			var sp = DataRegistry.get_species(sid)
 			var display_name = sp.display_name if sp else sid
@@ -447,7 +811,7 @@ func _refresh_stats() -> void:
 				parts.append(str(evo) + " evo")
 			row.text = "  " + display_name + ": " + ", ".join(parts)
 			UITheme.style_small(row)
-			content_list.add_child(row)
+			card_grid.add_child(row)
 
 func _add_stat_row(parent: Control, label_text: String, value: int) -> void:
 	var row := HBoxContainer.new()

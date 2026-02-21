@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_shell_bell"
+display_name = "Craft Shell Bell"
+result_item_id = "shell_bell"
+ingredients = {"clam": 2, "scallop": 2}
+description = "Heals 12.5% of damage dealt."
+station = "workbench"

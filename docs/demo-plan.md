@@ -5,7 +5,7 @@ This is the target demo plan we are building toward. The status list below track
 ## Status (Cross-Check)
 
 ### Done (Implemented Today)
-- Battle system with wild, trainer, and PvP modes (21 Munchies, 57 moves, 20 abilities).
+- Battle system with wild, trainer, and PvP modes (61 Munchies, 57 moves, 20 abilities).
 - Crafting system with Kitchen, Workbench, and Cauldron stations (67 recipes).
 - Farming actions and tool upgrades (plant, water, harvest, till).
 - NPC dialogue, gifting, and friendship tiers (5 NPCs currently implemented).
@@ -14,6 +14,10 @@ This is the target demo plan we are building toward. The status list below track
 - Restaurant interiors with farm plots and enter/exit flow.
 - Weather and calendar system (day cycle, seasonal calendar, rain auto-watering).
 - Compendium and stats tracking.
+- Excursion system expanded to 160x160 procedural arenas with Synty 3D models, cliff boundaries, path navigation, season-themed vegetation, and rare grove ruins.
+- Poacher trainer NPCs in excursions: 3-5 hostile trainers per instance with difficulty scaling by distance, dynamic team composition, and shared party rewards.
+- Multiple excursion zone types with themed biomes: Coastal Wreckage (pirate/beach), Fungal Hollow (dark caves), Volcanic Crest (scorched desert), Frozen Pantry (snow/ice), plus default seasonal wilds.
+- 5 excursion portals spread across Cast Iron Cove with zone-specific visuals, glow colors, encounter tables, terrain tinting, and ambient lighting.
 
 ### To Do (Target for Demo)
 - Train arrival intro and letter UI sequence.
@@ -31,6 +35,72 @@ This is the target demo plan we are building toward. The status list below track
 - Implemented encounter zones: Herb Garden, Flame Kitchen, Frost Pantry, Harvest Field, Sour Springs, Fusion Kitchen.
 - Starter Munchie: Rice Ball (Grain).
 - Restaurant is an instanced interior plus farm plots; no customer service loop yet.
+
+### Implemented Munchies (61)
+
+| # | Name | Types |
+|---|------|-------|
+| 1 | Banana Split | Tropical, Sweet |
+| 2 | Basil Sprite | Herbal |
+| 3 | Beet Boxer | Earthy |
+| 4 | Blaze Wyvern | Spicy |
+| 5 | Butter Sprite | Dairy, Sweet |
+| 6 | Cheese Golem | Dairy |
+| 7 | Chili Drake | Spicy |
+| 8 | Cinnamon Swirl | Spicy, Aromatic |
+| 9 | Citrus Fiend | Sour, Spicy |
+| 10 | Cocoa Imp | Bitter, Sweet |
+| 11 | Coconut Crab | Tropical, Mineral |
+| 12 | Coffee Golem | Bitter, Earthy |
+| 13 | Crab Knight | Liquid, Mineral |
+| 14 | Cream Elemental | Dairy, Sweet |
+| 15 | Dragon Wok | Spicy, Mineral |
+| 16 | Drumstick Warrior | Protein |
+| 17 | Ferment Lord | Toxic, Earthy |
+| 18 | Frost Berry | Sweet |
+| 19 | Ginger Snap | Spicy |
+| 20 | Hemlock Shade | Toxic |
+| 21 | Herb Guardian | Herbal, Grain |
+| 22 | Iron Pot | Mineral, Grain |
+| 23 | Jellyfish Drift | Liquid, Toxic |
+| 24 | Kraken Broth | Liquid, Umami |
+| 25 | Lavender Moth | Aromatic |
+| 26 | Lemon Imp | Sour |
+| 27 | Lobster Lord | Liquid, Mineral |
+| 28 | Mango Parrot | Tropical, Aromatic |
+| 29 | Mint Wisp | Herbal, Sweet |
+| 30 | Moonlight Souffle | Sweet, Aromatic |
+| 31 | Mushroom Cap | Umami |
+| 32 | Mushroom Monarch | Earthy, Toxic |
+| 33 | Obsidian Chef | Mineral, Spicy |
+| 34 | Onigiri Knight | Grain |
+| 35 | Oyster Sage | Liquid, Mineral |
+| 36 | Pickle Toad | Sour, Herbal |
+| 37 | Pineapple Knight | Tropical, Sour |
+| 38 | Potato Brute | Earthy, Grain |
+| 39 | Pumpkin Guard | Grain, Umami |
+| 40 | Rice Ball | Grain |
+| 41 | Rosemary Elk | Aromatic, Herbal |
+| 42 | Saffron Spirit | Spicy, Aromatic |
+| 43 | Salt Crystal | Mineral |
+| 44 | Sear Slug | Spicy, Umami |
+| 45 | Shrimp Scout | Liquid |
+| 46 | Sorbet Phoenix | Sweet, Spicy |
+| 47 | Sourdough Sentinel | Sour, Grain |
+| 48 | Squid Mystic | Liquid |
+| 49 | Steak Beast | Protein |
+| 50 | Sushi Samurai | Grain, Umami |
+| 51 | Taffy Serpent | Sweet, Sour |
+| 52 | Tempeh Titan | Protein, Earthy |
+| 53 | Tofu Block | Umami, Herbal |
+| 54 | Tofu Sage | Protein |
+| 55 | Truffle Burrower | Earthy |
+| 56 | Truffle King | Umami |
+| 57 | Turmeric Titan | Spicy, Earthy |
+| 58 | Vanilla Fairy | Aromatic, Sweet |
+| 59 | Wasabi Viper | Toxic, Spicy |
+| 60 | Wheat Golem | Grain |
+| 61 | Yogurt Wisp | Dairy |
 
 ## Core Concept
 Pokemon meets Stardew Valley through cooking. You inherit your eccentric Great-Aunt Cordelia's quirky restaurant and overgrown garden after she mysteriously disappears, leaving only a cryptic note about "settling an old debt." Master her unconventional Munchie-care methods, restore her farm-to-table empire, and follow recipe clues to discover her fate.

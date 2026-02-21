@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "hemlock_shade"
+display_name = "Hemlock Shade"
+types = PackedStringArray("toxic")
+base_hp = 65
+base_attack = 12
+base_defense = 10
+base_sp_attack = 22
+base_sp_defense = 16
+base_speed = 12
+moves = PackedStringArray("acid_rain", "pollen_cloud", "bitter_pill", "umami_fog")
+mesh_type = "capsule"
+mesh_color = Color(0.3, 0.15, 0.35, 1)
+mesh_scale = Vector3(0.6, 1.0, 0.6)
+rarity = "rare"
+drop_ingredient_ids = PackedStringArray("mystic_herb")
+drop_min = 1
+drop_max = 2
+learnset = {3: "pollen_cloud", 6: "bitter_pill", 9: "acid_rain", 12: "umami_fog", 15: "ferment"}
+ability_ids = PackedStringArray("sour_stomach", "bitter_guard")
+ev_yield = {"sp_attack": 2}
+base_xp_yield = 90

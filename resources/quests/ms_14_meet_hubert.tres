@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_14_meet_hubert"
+display_name = "A Friendly Baker"
+description = "Mayor Rosemary says the town baker, Hubert Crumb, would love to meet you. Pay him a visit at the bakery!"
+category = "main_story"
+quest_giver_npc_id = "npc_mayor"
+prereq_quest_ids = ["ms_13_wild_munchie"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "talk_to",
+"target_id": "npc_hubert",
+"target_count": 1,
+"description": "Meet Hubert Crumb at the bakery"
+}]
+reward_money = 100
+reward_items = {}
+reward_friendship = {"npc_hubert": 10}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = "ms_20_garden_battle"
+chapter = 1
+sort_order = 5
+offer_dialogue = "Now that you've got a taste for adventure, there's someone you absolutely must meet — Hubert Crumb, our town baker. He's been here since before I was mayor! You'll find him elbow-deep in flour, no doubt."
+in_progress_dialogue = "Hubert's bakery is near the town square. Just follow the scent of fresh sourdough — and maybe a hint of cinnamon if you're lucky!"
+completion_dialogue = "Wonderful! Hubert is one of the kindest souls in Cast Iron Cove. I'm sure he'll teach you a thing or two about baking — and maybe even about munchies. He knows more than he lets on!"

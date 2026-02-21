@@ -6,5 +6,5 @@
 script = ExtResource("1")
 table_id = "flame_kitchen"
 display_name = "Flame Kitchen"
-entries = [{"species_id": "chili_drake", "weight": 30, "min_level": 2, "max_level": 5}, {"species_id": "sear_slug", "weight": 30, "min_level": 3, "max_level": 6}, {"species_id": "mushroom_cap", "weight": 20, "min_level": 2, "max_level": 4}, {"species_id": "mint_wisp", "weight": 10, "min_level": 4, "max_level": 7}, {"species_id": "lemon_imp", "weight": 10, "min_level": 3, "max_level": 5}]
+entries = [{"species_id": "chili_drake", "weight": 25, "min_level": 2, "max_level": 5}, {"species_id": "sear_slug", "weight": 25, "min_level": 3, "max_level": 6}, {"species_id": "mushroom_cap", "weight": 15, "min_level": 2, "max_level": 4}, {"species_id": "mint_wisp", "weight": 8, "min_level": 4, "max_level": 7}, {"species_id": "lemon_imp", "weight": 8, "min_level": 3, "max_level": 5}, {"species_id": "ginger_snap", "weight": 10, "min_level": 3, "max_level": 6}, {"species_id": "cinnamon_swirl", "weight": 5, "min_level": 5, "max_level": 8}, {"species_id": "drumstick_warrior", "weight": 4, "min_level": 4, "max_level": 7}]
 season_bonus = {"summer": "chili_drake"}

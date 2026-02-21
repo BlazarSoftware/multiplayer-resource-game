@@ -13,6 +13,44 @@
 - **6 battle items**: herb_poultice (30 HP), spicy_tonic (60 HP), full_feast (full HP), mint_extract (cure status), flavor_essence (5 PP), revival_soup (revive 50% HP). Used via "Items" button in battle UI. Item use consumes a turn. Blocked in PvP battles. Server processes via `_process_item_use()`.
 - **Defeat penalty**: 50% money loss, teleport to spawn point, all creatures healed
 
+## Type Effectiveness (18 Types)
+
+**18 types**: spicy, sweet, sour, herbal, umami, grain, mineral, earthy, liquid, aromatic, toxic, protein, tropical, dairy, bitter, spoiled, fermented, smoked
+
+Super effective = 2.0x, not very effective = 0.5x, immune = 0.0x, neutral = 1.0x. Dual-type defenders multiply both matchups.
+
+**Immunities** (only 2):
+- Sour → Grain = 0.0
+- Herbal → Umami = 0.0
+
+**Original 6 types:**
+| Type | Super effective vs | Resisted by | Weak to |
+|------|-------------------|-------------|---------|
+| Spicy | Sweet, Herbal, Dairy | Sour, Umami, Liquid, Smoked | Sour, Umami, Liquid |
+| Sweet | Sour, Umami, Bitter | Spicy, Grain, Spoiled | Spicy, Herbal, Bitter |
+| Sour | Spicy, Mineral, Dairy | Sweet, Herbal | Sweet, Herbal |
+| Herbal | Sour, Sweet, Earthy | Spicy, Aromatic, Toxic | Spicy, Umami, Toxic |
+| Umami | Herbal, Spicy, Aromatic | Sweet, Grain | Sweet, Grain, Aromatic |
+| Grain | Sweet, Umami, Protein | Sour, Herbal, Mineral | Sour, Herbal, Mineral |
+
+**New 12 types:**
+| Type | Super effective vs | Resisted by | Weak to |
+|------|-------------------|-------------|---------|
+| Mineral | Grain, Toxic, Smoked | Sour, Earthy, Liquid | Sour, Earthy, Liquid |
+| Earthy | Mineral, Liquid, Fermented | Herbal, Toxic, Tropical | Herbal, Liquid, Tropical |
+| Liquid | Spicy, Mineral, Smoked | Herbal, Earthy, Tropical | Herbal, Earthy, Tropical |
+| Aromatic | Herbal, Toxic, Tropical | Umami, Protein, Bitter | Umami, Toxic, Bitter |
+| Toxic | Herbal, Earthy, Protein, Dairy | Mineral, Spoiled | Mineral, Aromatic |
+| Protein | Aromatic, Bitter, Spoiled | Grain, Toxic, Smoked | Grain, Toxic, Aromatic |
+| Tropical | Earthy, Liquid, Dairy | Aromatic, Fermented | Aromatic, Dairy, Fermented |
+| Dairy | Bitter, Spoiled, Fermented | Spicy, Sour, Toxic, Tropical | Spicy, Sour, Toxic |
+| Bitter | Aromatic, Spoiled, Fermented | Sweet, Protein, Dairy | Sweet, Protein, Dairy |
+| Spoiled | Sweet, Toxic, Fermented, Smoked | Aromatic, Protein, Dairy | Aromatic, Protein, Bitter |
+| Fermented | Protein, Tropical, Smoked | Earthy, Dairy, Bitter, Spoiled | Earthy, Dairy, Bitter |
+| Smoked | Spicy, Protein | Mineral, Liquid, Spoiled, Fermented | Mineral, Liquid, Spoiled |
+
+**Weather** (18 types): Each weather boosts its type 1.5x and weakens one opposing type 0.5x. Lasts 5 turns. Set by status moves.
+
 ## IVs, Bond, and Crit Stages
 - **IVs**: 6 stats (hp/atk/def/spa/spd/spe), 0-31 range, rolled on creation via `CreatureInstance.create_from_species()`. Formula: `stat = int(base_stat * level_mult) + iv`. Old saves auto-backfilled. `CreatureInstance.IV_STATS` constant.
 - **Bond**: Points earned via battles (+10 active, +1 bench) and feeding (+15). Levels 0-5, thresholds: 50/150/300/500/750 (`CreatureInstance.compute_bond_level()`). Modifiers: Lv2 +5% accuracy, Lv3 1.2x XP, Lv4 endure (survive lethal hit at 1 HP once), Lv5 +10% all stats. Battle affinities tracked for future expansion.

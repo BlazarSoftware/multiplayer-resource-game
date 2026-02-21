@@ -6,9 +6,9 @@
 script = ExtResource("1")
 quest_id = "side_herbalist_remedy"
 display_name = "Herbal Remedy"
-description = "The Sage Herbalist needs herb basil to prepare a remedy. Gather 5 herb basil and discover the Herb Garden."
+description = "Old Sage Murphy needs herb basil to prepare a remedy. Gather 5 herb basil and discover the Herb Garden."
 category = "side"
-quest_giver_npc_id = "npc_herbalist"
+quest_giver_npc_id = "npc_murphy"
 prereq_quest_ids = []
 prereq_friendship = {}
 prereq_locations = []
@@ -20,7 +20,7 @@ objectives = [{
 "target_id": "herb_basil",
 "target_count": 5,
 "description": "Deliver 5 Herb Basil",
-"deliver_to_npc": "npc_herbalist",
+"deliver_to_npc": "npc_murphy",
 "consumes_items": true
 }, {
 "type": "discover_location",
@@ -30,7 +30,7 @@ objectives = [{
 }]
 reward_money = 200
 reward_items = {}
-reward_friendship = {"npc_herbalist": 10}
+reward_friendship = {"npc_murphy": 10}
 reward_recipe_scroll_id = ""
 reward_unlock_flag = ""
 next_quest_id = ""

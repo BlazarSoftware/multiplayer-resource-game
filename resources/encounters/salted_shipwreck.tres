@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="EncounterTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/encounter_table.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+table_id = "salted_shipwreck"
+display_name = "Salted Shipwreck"
+entries = [{"species_id": "crab_knight", "weight": 25, "min_level": 12, "max_level": 16}, {"species_id": "oyster_sage", "weight": 22, "min_level": 14, "max_level": 18}, {"species_id": "cocoa_imp", "weight": 22, "min_level": 10, "max_level": 14}, {"species_id": "lobster_lord", "weight": 12, "min_level": 18, "max_level": 22}, {"species_id": "iron_pot", "weight": 10, "min_level": 16, "max_level": 20}, {"species_id": "kraken_broth", "weight": 5, "min_level": 25, "max_level": 30}, {"species_id": "saffron_spirit", "weight": 4, "min_level": 20, "max_level": 24}]
+season_bonus = {"winter": "crab_knight", "autumn": "oyster_sage"}

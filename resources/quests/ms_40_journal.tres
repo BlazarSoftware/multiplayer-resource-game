@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_40_journal"
+display_name = "The Hidden Journal"
+description = "A weathered page blew past you on the wind... it looks like part of a journal. Where did it come from?"
+category = "main_story"
+quest_giver_npc_id = ""
+prereq_quest_ids = ["ms_36_social"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "discover_location",
+"target_id": "secret_nook",
+"target_count": 1,
+"description": "Find the source of the journal page"
+}]
+reward_money = 300
+reward_items = {}
+reward_friendship = {}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = "found_journal"
+next_quest_id = "ms_41_murphy_hint"
+chapter = 4
+sort_order = 1
+offer_dialogue = "A torn page tumbles past your feet, carried by the evening breeze. The handwriting is elegant but faded — something about 'the secret beneath the old stone.' It came from somewhere nearby..."
+in_progress_dialogue = "That journal page has to have come from somewhere close. Look for hidden spots — places where someone might tuck away their secrets."
+completion_dialogue = "Tucked into a hollow beneath the roots... a leather-bound journal, its pages yellowed with age. The name on the inside cover reads 'Cordelia.' Who was she, and why was this hidden away?"

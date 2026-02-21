@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "mushroom_monarch"
+display_name = "Mushroom Monarch"
+types = PackedStringArray("earthy", "toxic")
+base_hp = 80
+base_attack = 14
+base_defense = 18
+base_sp_attack = 20
+base_sp_defense = 16
+base_speed = 8
+moves = PackedStringArray("truffle_burst", "pollen_cloud", "ferment", "umami_fog")
+mesh_type = "cylinder"
+mesh_color = Color(0.5, 0.3, 0.5, 1)
+mesh_scale = Vector3(0.9, 1.1, 0.9)
+rarity = "rare"
+drop_ingredient_ids = PackedStringArray("mushroom", "truffle_shaving")
+drop_min = 2
+drop_max = 3
+evolves_from = "mushroom_cap"
+learnset = {3: "ferment", 6: "pollen_cloud", 9: "truffle_burst", 12: "umami_fog", 15: "acid_rain"}
+ability_ids = PackedStringArray("harvest_spirit", "slow_burn")
+ev_yield = {"sp_attack": 2}
+base_xp_yield = 95

@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_43_letter"
+display_name = "A Letter from the Woods"
+description = "Whispers speak of a letter hidden deep in the woods... something Cordelia left behind."
+category = "main_story"
+quest_giver_npc_id = ""
+prereq_quest_ids = ["ms_42_lighthouse"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "collect",
+"target_id": "ancient_letter",
+"target_count": 1,
+"description": "Find the letter Cordelia left in the woods"
+}]
+reward_money = 300
+reward_items = {}
+reward_friendship = {}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = "woods_letter"
+next_quest_id = "ms_44_revelation"
+chapter = 4
+sort_order = 4
+offer_dialogue = "The carving on the lighthouse wall mentioned the old woods — 'where the roots remember.' Cordelia left something there, a letter meant for someone she trusted. The forest is deep and full of whispers... but the letter is waiting."
+in_progress_dialogue = "The woods hold their secrets close. Look where the oldest trees grow — beneath roots that have been undisturbed for years."
+completion_dialogue = "The letter is sealed with wax, stamped with a tiny crescent moon. Inside, Cordelia's handwriting spills across the page: 'If you're reading this, then the Cove has found its new keeper. There is more to this town than anyone knows. Seek Sal — he was there the night I left.'"

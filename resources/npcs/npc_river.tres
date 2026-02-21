@@ -1,0 +1,167 @@
+[gd_resource type="Resource" script_class="NPCDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+npc_id = "npc_river"
+display_name = "River Song"
+visual_color = Color(0.3, 0.55, 0.75, 1)
+birthday = {
+"month": 10,
+"day": 3
+}
+schedule = [{
+"time_start": 0.0,
+"time_end": 0.5,
+"position": { "x": -12, "y": 0, "z": -8 },
+"seasons": []
+}, {
+"time_start": 0.5,
+"time_end": 1.0,
+"position": { "x": -14, "y": 0, "z": -5 },
+"seasons": []
+}]
+gift_preferences = {
+"loved": ["fish", "seaweed", "salt", "mushroom"],
+"liked": ["wood", "stone", "berry"],
+"disliked": ["chili_powder", "pepper", "garlic"],
+"hated": ["sugar", "vinegar"]
+}
+dialogues = {
+"neutral": [{
+"text": "...The tide's pulling out. See how the water leaves little mirrors in the sand? Each one holds a tiny piece of sky. Sorry, I was just... thinking out loud.",
+"choices": [{
+"label": "That's beautiful. You see things most people miss.",
+"points": 3,
+"response": "...Thank you. The world is always talking. Most people are just too busy to listen."
+}, {
+"label": "Catching anything today?",
+"points": 0,
+"response": "A few small ones. But I come here more for the quiet than the catch, honestly."
+}, {
+"label": "You're always spacing out.",
+"points": -2,
+"response": "...Spacing out? I call it tuning in. But I suppose it looks the same from the outside."
+}]
+}, {
+"text": "I drew the sunrise this morning. Forty-seven different shades of orange. And I still didn't capture it. Some things refuse to be contained.",
+"choices": [{
+"label": "The attempt itself is art. Can I see the drawing?",
+"points": 3,
+"response": "...You want to see it? Most people don't ask. Here... be honest. But gently."
+}, {
+"label": "Forty-seven seems excessive.",
+"points": 0,
+"response": "The sunrise uses infinite shades. Forty-seven is already a compromise."
+}, {
+"label": "Maybe try a camera instead.",
+"points": -2,
+"response": "A camera captures light. A drawing captures feeling. They're not the same."
+}]
+}, {
+"text": "Found this shell today. If you hold it up to the light, the inside looks like the Milky Way. Nature builds galaxies at every scale.",
+"choices": [{
+"label": "It's amazing. You find the most incredible things.",
+"points": 3,
+"response": "The beach gives gifts to anyone who walks slowly enough. Here... you can have this one."
+}, {
+"label": "That's a cool shell.",
+"points": 0,
+"response": "Cool. Yes. Also: ancient, impossibly intricate, and quietly perfect. But 'cool' works too."
+}, {
+"label": "It's just a shell.",
+"points": -2,
+"response": "...Maybe. But 'just' is a heavy word to put on something so light."
+}]
+}],
+"like": [{
+"text": "I wrote something for you. It's not a poem exactly. More like... words that arranged themselves when I was thinking about you. 'The best tides are the ones that bring someone who stays.'",
+"choices": [{
+"label": "River... that's the most beautiful thing anyone's said to me.",
+"points": 3,
+"response": "...I'm glad the words landed. They were nervous. So was I, honestly."
+}, {
+"label": "You think about me?",
+"points": 0,
+"response": "...Sometimes. When the light does something interesting. Or when it's quiet. So... often."
+}]
+}, {
+"text": "I don't show my art to many people. But I painted something and... I want you to have it. It's the harbor at dusk. Your favorite time.",
+"choices": [{
+"label": "You remembered my favorite time of day? River, this is incredible.",
+"points": 3,
+"response": "...I remember everything you tell me. It all becomes paint eventually. I hope that's okay."
+}, {
+"label": "Thank you. I'll hang it somewhere special.",
+"points": 0,
+"response": "...Wherever you put it, the light will find it. That's how good art works."
+}]
+}],
+"love": [{
+"text": "I've spent my whole life watching the ocean, looking for something I couldn't name. Turns out it wasn't out there at all. It was standing right next to me. You're my shore.",
+"choices": [{
+"label": "And you're my horizon, River. Always showing me there's more to see.",
+"points": 3,
+"response": "...I'm going to paint this moment. Every color. Every feeling. But mostly, I'm just going to remember it."
+}, {
+"label": "I'll always be here.",
+"points": 2,
+"response": "...I know. And that's the most beautiful thing in a world full of beautiful things."
+}]
+}],
+"dislike": [{
+"text": "...The tide goes out and comes back. Maybe you will too. But right now I'd like to be alone with the water.",
+"choices": [{
+"label": "I understand. And I'm sorry for how I've been.",
+"points": 3,
+"response": "...Apologies are like sea glass. Rough edges smoothed by time and sincerity. I'll hold onto yours."
+}, {
+"label": "Okay. I'll go.",
+"points": 0,
+"response": "...The waves will keep me company. They always do."
+}]
+}],
+"hate": [{
+"text": "Some things, once broken, become sea glass. Beautiful, but you can see where the fractures were. That's us now. Please go.",
+"choices": [{
+"label": "Sea glass is still worth picking up. I'm not giving up on us.",
+"points": 5,
+"response": "...That was poetic. And I'm a sucker for poetry. Fine. But rebuild slowly. Like the tide."
+}, {
+"label": "You're being dramatic.",
+"points": -1,
+"response": "...The ocean is dramatic. I'm just honest."
+}]
+}],
+"birthday": [{
+"text": "It's my birthday. I'm spending it on the beach, watching the tide. Same as every year. But... it would be nice to watch it with someone. If you're not busy.",
+"choices": [{
+"label": "Happy birthday, River. I can't think of a better way to spend it than with you.",
+"points": 3,
+"response": "...Sit here. The sunset is about to do something extraordinary. I can feel it. Best birthday in years."
+}, {
+"label": "I brought you something.",
+"points": 2,
+"response": "...You brought a gift to the beach. For me. That's... the tide's blurring my vision. Must be the salt air."
+}]
+}]
+}
+npc_gifts = [{
+"threshold": 20,
+"item_id": "seaweed",
+"quantity": 5,
+"message": "Dried kelp from the secret cove. The colors are best at dawn. I gathered these at first light."
+}, {
+"threshold": 50,
+"item_id": "fish",
+"quantity": 5,
+"message": "My best catch this season. I released a dozen, but kept these for you. They earned it. So did you."
+}, {
+"threshold": 80,
+"item_id": "salt",
+"quantity": 10,
+"message": "Hand-harvested sea salt from the cave pools. The crystals catch moonlight. My most precious find. Yours now."
+}]
+creature_trades = []
+occupation = "Fisher-Artist"

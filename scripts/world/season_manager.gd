@@ -125,6 +125,17 @@ func _broadcast_time(year: int, month: int, day: int, total_days: int, weather: 
 	season_changed.emit(get_current_season())
 	day_changed.emit()
 	weather_changed.emit(get_weather_name())
+	# Update weather ambience (client-side)
+	if not multiplayer.is_server():
+		match current_weather:
+			Weather.RAINY:
+				AudioManager.play_ambience(1, "rain")
+			Weather.STORMY:
+				AudioManager.play_ambience(1, "storm")
+			Weather.WINDY:
+				AudioManager.play_ambience(1, "wind")
+			_:
+				AudioManager.stop_ambience(1)
 
 func get_current_season() -> String:
 	return MONTH_TO_SEASON.get(current_month, "spring")

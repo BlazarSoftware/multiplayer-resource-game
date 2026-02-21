@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "ferment_lord"
+display_name = "Ferment Lord"
+types = PackedStringArray("toxic", "earthy")
+base_hp = 85
+base_attack = 16
+base_defense = 22
+base_sp_attack = 20
+base_sp_defense = 24
+base_speed = 8
+moves = PackedStringArray("ferment", "acid_rain", "pollen_cloud", "truffle_burst")
+mesh_type = "cylinder"
+mesh_color = Color(0.35, 0.45, 0.2, 1)
+mesh_scale = Vector3(1.0, 1.2, 1.0)
+rarity = "legendary"
+drop_ingredient_ids = PackedStringArray("shadow_truffle")
+drop_min = 2
+drop_max = 4
+learnset = {3: "ferment", 6: "pollen_cloud", 9: "acid_rain", 12: "truffle_burst", 15: "kombucha_burst"}
+ability_ids = PackedStringArray("slow_burn", "sour_stomach")
+ev_yield = {"sp_defense": 3}
+base_xp_yield = 150

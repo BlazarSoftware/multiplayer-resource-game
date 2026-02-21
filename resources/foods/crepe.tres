@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+food_id = "crepe"
+display_name = "Crepe"
+description = "A thin French crepe with strawberries."
+icon_color = Color(0.95, 0.8, 0.6, 1)
+sell_price = 35
+buff_type = "speed_boost"
+buff_value = 1.2
+buff_duration_sec = 90.0

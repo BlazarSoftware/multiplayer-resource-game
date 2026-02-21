@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="IngredientDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ingredient_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ingredient_id = "grape"
+display_name = "Grape"
+description = "Plump vine fruits enjoyed fresh, dried as raisins, or pressed into juice."
+category = "fruit"
+icon_color = Color(0.45, 0.2, 0.55, 1)
+sell_price = 7
+season = "summer"
+grow_time = 100.0
+harvest_min = 1
+harvest_max = 2

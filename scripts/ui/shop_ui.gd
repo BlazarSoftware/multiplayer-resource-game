@@ -81,8 +81,10 @@ func open_shop(shop_id: String, shop_name: String, catalog: Array) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	NetworkManager.request_set_busy.rpc_id(1, true)
 	_refresh()
+	ScreenTransition.open(self, "fade_scale")
 
 func _close() -> void:
+	await ScreenTransition.close(self, "fade_scale")
 	visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	NetworkManager.request_set_busy.rpc_id(1, false)
@@ -160,9 +162,11 @@ func _refresh_sell() -> void:
 
 func _buy_item(item_id: String, qty: int, shop_id: String) -> void:
 	NetworkManager.request_buy_item.rpc_id(1, item_id, qty, shop_id)
+	AudioManager.play_sfx("item_coin")
 	# Refresh after a short delay to allow server sync
 	get_tree().create_timer(0.2).timeout.connect(_refresh)
 
 func _sell_item(item_id: String, qty: int) -> void:
 	NetworkManager.request_sell_item.rpc_id(1, item_id, qty)
+	AudioManager.play_sfx("item_coin")
 	get_tree().create_timer(0.2).timeout.connect(_refresh)

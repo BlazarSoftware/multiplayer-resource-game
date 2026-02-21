@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_iron_pot"
+display_name = "Cook Iron Pot"
+result_species_id = "iron_pot"
+ingredients = {"potato": 2, "carrot": 2, "broth": 1}
+description = "Forge an Iron Pot."
+station = "cauldron"
+unlockable = true

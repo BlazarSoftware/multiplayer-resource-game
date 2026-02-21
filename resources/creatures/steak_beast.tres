@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "steak_beast"
+display_name = "Steak Beast"
+types = PackedStringArray("protein")
+base_hp = 75
+base_attack = 20
+base_defense = 15
+base_sp_attack = 10
+base_sp_defense = 12
+base_speed = 8
+moves = PackedStringArray("savory_slam", "flame_sear", "sharpen_knife", "plate_cover")
+mesh_type = "box"
+mesh_color = Color(0.7, 0.3, 0.25, 1)
+mesh_scale = Vector3(0.9, 0.8, 0.9)
+rarity = "uncommon"
+drop_ingredient_ids = PackedStringArray("beef")
+drop_min = 1
+drop_max = 3
+evolves_from = "drumstick_warrior"
+learnset = {3: "quick_bite", 6: "flame_sear", 9: "savory_slam", 12: "sharpen_knife", 15: "inferno_fang"}
+ability_ids = PackedStringArray("thick_skin", "flame_body")
+ev_yield = {"attack": 2}
+base_xp_yield = 75

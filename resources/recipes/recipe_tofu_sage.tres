@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_tofu_sage"
+display_name = "Cook Tofu Sage"
+result_species_id = "tofu_sage"
+ingredients = {"tofu_raw": 3, "soy_sauce": 1}
+description = "Shape a Tofu Sage."
+station = "cauldron"
+unlockable = true

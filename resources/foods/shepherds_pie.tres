@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+food_id = "shepherds_pie"
+display_name = "Shepherd's Pie"
+description = "Comforting shepherd's pie with mashed potato top."
+icon_color = Color(0.7, 0.5, 0.2, 1)
+sell_price = 55
+buff_type = "creature_heal"
+buff_value = 55.0
+buff_duration_sec = 0.0

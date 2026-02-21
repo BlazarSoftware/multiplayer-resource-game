@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CreatureSpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_species.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_id = "saffron_spirit"
+display_name = "Saffron Spirit"
+types = PackedStringArray("spicy", "aromatic")
+base_hp = 55
+base_attack = 10
+base_defense = 12
+base_sp_attack = 22
+base_sp_defense = 18
+base_speed = 14
+moves = PackedStringArray("pepper_blast", "herb_breeze", "sizzle_sun", "flash_marinade")
+mesh_type = "sphere"
+mesh_color = Color(0.95, 0.7, 0.15, 1)
+mesh_scale = Vector3(0.7, 0.8, 0.7)
+rarity = "rare"
+drop_ingredient_ids = PackedStringArray("saffron")
+drop_min = 1
+drop_max = 2
+learnset = {3: "pepper_blast", 6: "herb_breeze", 9: "sizzle_sun", 12: "flash_marinade", 15: "inferno_fang"}
+ability_ids = PackedStringArray("spice_aura", "sharp_taste")
+ev_yield = {"sp_attack": 2}
+base_xp_yield = 90

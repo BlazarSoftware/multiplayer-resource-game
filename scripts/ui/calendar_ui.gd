@@ -147,8 +147,10 @@ func open_calendar(month: int, day: int, year: int) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	NetworkManager.request_set_busy.rpc_id(1, true)
 	_refresh_display()
+	ScreenTransition.open(self, "fade_scale")
 
 func close_calendar() -> void:
+	await ScreenTransition.close(self, "fade_scale")
 	visible = false
 	is_open = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED

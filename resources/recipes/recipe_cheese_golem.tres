@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_cheese_golem"
+display_name = "Cook Cheese Golem"
+result_species_id = "cheese_golem"
+ingredients = {"cheese": 3, "milk": 1}
+description = "Mold a Cheese Golem."
+station = "cauldron"
+unlockable = true

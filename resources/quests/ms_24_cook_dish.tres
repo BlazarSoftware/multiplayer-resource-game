@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "ms_24_cook_dish"
+display_name = "First Dish Served"
+description = "You've grown ingredients, battled munchies, and learned to bake. Now it's time to cook your very first dish!"
+category = "main_story"
+quest_giver_npc_id = ""
+prereq_quest_ids = ["ms_23_plant_seeds"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "craft",
+"target_id": "",
+"target_count": 1,
+"description": "Cook any dish at the Kitchen"
+}]
+reward_money = 250
+reward_items = {}
+reward_friendship = {}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = "can_cook"
+next_quest_id = "ms_25_meet_shopkeepers"
+chapter = 2
+sort_order = 5
+offer_dialogue = "You've been learning so much — farming, baking, even creating munchies! But the true heart of Cast Iron Cove is its kitchen. Head to The Salty Ladle and cook your very first dish. Something tells me you'll be a natural."
+in_progress_dialogue = "The kitchen is waiting for you at The Salty Ladle! Pick a recipe, gather your ingredients, and let the magic happen. Every great chef starts with one dish."
+completion_dialogue = "That smells absolutely divine! Your first real dish, cooked with your own ingredients. The Salty Ladle hasn't seen this kind of talent in years. Cast Iron Cove is lucky to have you!"

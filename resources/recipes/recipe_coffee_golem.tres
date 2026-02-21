@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_coffee_golem"
+display_name = "Cook Coffee Golem"
+result_species_id = "coffee_golem"
+ingredients = {"cocoa": 2, "milk": 1, "sugar": 1}
+description = "Brew a Coffee Golem."
+station = "cauldron"
+unlockable = true

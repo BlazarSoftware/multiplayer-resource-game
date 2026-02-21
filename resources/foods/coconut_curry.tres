@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+food_id = "coconut_curry"
+display_name = "Coconut Curry"
+description = "Aromatic tropical coconut curry."
+icon_color = Color(0.9, 0.7, 0.2, 1)
+sell_price = 60
+buff_type = "speed_boost"
+buff_value = 1.4
+buff_duration_sec = 150.0

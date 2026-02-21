@@ -104,10 +104,15 @@ func request_craft(recipe_id: String) -> void:
 @rpc("authority", "reliable")
 func _receive_crafted_item(item_id: String, item_name: String) -> void:
 	PlayerData.add_to_inventory(item_id, 1)
+	AudioManager.play_sfx("item_craft")
 	craft_result.emit(true, item_name, "Crafted " + item_name + "!")
 
 @rpc("authority", "reliable")
 func _craft_result_client(success: bool, result_name: String, message: String) -> void:
+	if success:
+		AudioManager.play_sfx("item_craft")
+	else:
+		AudioManager.play_ui_sfx("ui_error")
 	craft_result.emit(success, result_name, message)
 
 # === Recipe listing ===

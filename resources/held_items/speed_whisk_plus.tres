@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HeldItemDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/held_item_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_id = "speed_whisk_plus"
+display_name = "Speed Whisk+"
+description = "A turbo-charged whisk. Doubles Speed when HP falls below 50%."
+effect_type = "on_hp_threshold"
+effect_params = {"threshold": 0.5, "effect": "boost_speed", "stages": 2}
+consumable = false
+icon_color = Color(0.5, 0.8, 0.9, 1)

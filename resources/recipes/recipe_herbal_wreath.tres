@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "recipe_herbal_wreath"
+display_name = "Craft Herbal Wreath"
+result_item_id = "herbal_wreath"
+ingredients = {"basil": 2, "rosemary": 2}
+description = "A wreath that boosts herbal moves by 20%."
+station = "workbench"

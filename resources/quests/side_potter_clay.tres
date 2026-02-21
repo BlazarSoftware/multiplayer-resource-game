@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+quest_id = "side_potter_clay"
+display_name = "A Potter's Request"
+description = "Clay the potter needs smooth stones to finish a new batch of glazed bowls. He'd be grateful if you could gather some for him."
+category = "side"
+quest_giver_npc_id = "npc_potter"
+prereq_quest_ids = ["ms_25_meet_shopkeepers"]
+prereq_friendship = {}
+prereq_locations = []
+prereq_season = ""
+prereq_weather = ""
+prereq_main_story_quest_id = ""
+objectives = [{
+"type": "collect",
+"target_id": "stone",
+"target_count": 10,
+"description": "Gather stones (10)"
+}]
+reward_money = 300
+reward_items = {}
+reward_friendship = {"npc_potter": 10}
+reward_recipe_scroll_id = ""
+reward_unlock_flag = ""
+next_quest_id = ""
+chapter = 0
+sort_order = 0
+offer_dialogue = "Hey there! I'm working on a new set of glazed bowls, but I've run clean out of good stone for the base material. Could you bring me some? I'll pay you for the trouble, and maybe I'll throw in a little something extra."
+in_progress_dialogue = "Still looking for stones? Try the rocky areas near the cliffs — the smooth ones work best for what I need."
+completion_dialogue = "These are perfect! Smooth, solid, just the right weight. You've got a good eye. Thanks — these bowls are going to be my finest work yet!"
